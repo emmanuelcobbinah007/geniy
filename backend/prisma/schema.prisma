@@ -61,6 +61,7 @@ model Workspace {
   id          String             @id @default(uuid())
   ownerId     String
   name        String
+  businessContext String?   @db.Text // Extracted text from the uploaded document
   planTier    PlanTier           @default(FREE)
   createdAt   DateTime           @default(now())
 

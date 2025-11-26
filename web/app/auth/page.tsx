@@ -1,5 +1,7 @@
+"use client"
+
 import { AuthForm } from "@/components/auth/auth-form"
-import Image from "next/image"
+import { motion } from "framer-motion"
 import Link from "next/link"
 
 export default function AuthPage() {
@@ -11,11 +13,12 @@ export default function AuthPage() {
         <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-violet-500/20 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-4">
-        <div className="mb-8 text-center">
-          
-        </div>
-        
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md px-4"
+      >
         <AuthForm />
 
         <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
@@ -29,7 +32,7 @@ export default function AuthPage() {
           </Link>
           .
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }
