@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, Lock, ArrowRight, Github, Loader2, User } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { useFormik } from "formik"
 import * as Yup from "yup"
@@ -18,6 +19,7 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
   const [isLoading, setIsLoading] = useState(false)
   const { login, signup, googleLogin } = useAuth()
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const validationSchema = Yup.object({
     name: Yup.string().when([], {
@@ -47,7 +49,11 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
         } else {
           await signup(values.name, values.email, values.password)
         }
-        if (onSuccess) onSuccess()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push("/dashboard")
+        }
       } catch (err: any) {
         setError(err.message || "Authentication failed")
       } finally {
@@ -68,7 +74,11 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
       setError(null)
       try {
         await googleLogin(tokenResponse.access_token)
-        if (onSuccess) onSuccess()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push("/dashboard")
+        }
       } catch (err: any) {
         setError(err.message || "Google authentication failed")
       } finally {

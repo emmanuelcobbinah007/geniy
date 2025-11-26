@@ -1,8 +1,9 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect } from "react"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 interface User {
   id: string
@@ -23,72 +24,55 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token")
-    if (storedToken) {
-      setToken(storedToken)
-      fetchUser(storedToken)
-    } else {
-      setIsLoading(false)
-    }
-  }, [])
+  // Fetch user query
+  const { data: user, isLoading, isError } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return null
+      try {
+        return await api.get("/auth/me", token)
+      } catch (error) {
+        localStorage.removeItem("token")
+        return null
+      }
+    },
+    retry: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
 
-  const fetchUser = async (authToken: string) => {
-    try {
-      const userData = await api.get("/auth/me", authToken)
-      setUser(userData)
-    } catch (error) {
-      console.error("Failed to fetch user", error)
-      logout()
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Helper to get token (for consistency with old API, though we rely on localStorage in queryFn)
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
   const login = async (email: string, password: string) => {
     const data = await api.post("/auth/signin", { email, password })
     localStorage.setItem("token", data.token)
-    setToken(data.token)
-    setUser(data) // The backend returns user data along with token usually, or we fetch it
-    // If backend only returns token, we should fetch user immediately:
-    // await fetchUser(data.token)
-    // Assuming backend returns { token, id, name, email } based on typical controller logic
-    // Let's verify controller logic later, but for now assuming standard response.
-    // Actually, looking at authController.js (implied), it likely returns token + user info.
-    // If not, we can do a follow-up fetch.
-    // For now, let's assume we need to fetch user profile if it's not full.
-    // But to be safe, let's just fetch /me after login to ensure we have the full object.
-    await fetchUser(data.token)
+    await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
   const signup = async (name: string, email: string, password: string) => {
     const data = await api.post("/auth/signup", { name, email, password })
     localStorage.setItem("token", data.token)
-    setToken(data.token)
-    await fetchUser(data.token)
+    await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
   const googleLogin = async (token: string) => {
     const data = await api.post("/auth/google", { token })
     localStorage.setItem("token", data.token)
-    setToken(data.token)
-    await fetchUser(data.token)
+    await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
   const logout = () => {
     localStorage.removeItem("token")
-    setToken(null)
-    setUser(null)
+    queryClient.setQueryData(["user"], null)
     router.push("/")
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, signup, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   )

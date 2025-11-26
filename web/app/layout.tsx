@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { AuthProvider } from "@/context/auth-context"
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Providers } from "@/components/providers";
 
 const outfit = Outfit({ 
   subsets: ["latin"],
@@ -31,20 +32,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(outfit.variable, poppins.variable, "font-sans antialiased bg-background text-foreground")}>
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-          <AuthProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              storageKey="geniy-theme-preference"
-            >
-              <SmoothScroll>
-                {children}
-              </SmoothScroll>
-            </ThemeProvider>
-          </AuthProvider>
-        </GoogleOAuthProvider>
+        <Providers>
+          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+            <AuthProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                storageKey="geniy-theme-preference"
+              >
+                <SmoothScroll>
+                  {children}
+                </SmoothScroll>
+              </ThemeProvider>
+            </AuthProvider>
+          </GoogleOAuthProvider>
+        </Providers>
       </body>
     </html>
   );

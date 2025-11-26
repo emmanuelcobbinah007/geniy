@@ -9,10 +9,20 @@ import { motion } from "framer-motion"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/auth-context"
 
 export function Hero() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const router = useRouter()
+  const { user } = useAuth()
+
+  const handleStartSurvey = () => {
+    if (user) {
+      router.push("/create-survey")
+    } else {
+      setShowAuthModal(true)
+    }
+  }
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false)
@@ -86,7 +96,7 @@ export function Hero() {
             <Button 
               size="lg" 
               className="h-14 px-8 text-lg rounded-full bg-foreground text-background hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-lg transition-all hover:scale-105"
-              onClick={() => setShowAuthModal(true)}
+              onClick={handleStartSurvey}
             >
               Start with a Survey
               <ArrowRight className="ml-2 w-5 h-5" />

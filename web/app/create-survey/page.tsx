@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AuthModal } from "@/components/auth/auth-modal"
+import { useAuth } from "@/context/auth-context"
 
 import { Reorder, useDragControls } from "framer-motion"
 
@@ -21,16 +22,13 @@ export default function CreateSurveyPage() {
     { id: 1, type: "multiple_choice", title: "What is your primary goal?", required: true, options: ["Market Research", "Product Feedback", "Customer Satisfaction"], logic: [] as any[] }
   ])
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const { user, isLoading } = useAuth()
 
-  // Simulate check for auth on mount
   useEffect(() => {
-    // In a real app, check session here.
-    // For now, we force the modal to show after a short delay to simulate "unauthenticated" state
-    const timer = setTimeout(() => {
+    if (!isLoading && !user) {
       setShowAuthModal(true)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [])
+    }
+  }, [isLoading, user])
 
   const addLogic = (qId: number) => {
     setQuestions(questions.map(q => {
