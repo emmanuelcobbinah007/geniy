@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -12,9 +13,8 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.get('/', (req, res) => {
-    res.send('API is running...');
-});
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/', require('./routes/index'));
 
 // Start server
 app.listen(PORT, () => {
