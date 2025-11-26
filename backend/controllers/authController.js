@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, MemberRole } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -37,13 +37,35 @@ const signup = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                passwordHash: hashedPassword,
-            },
+        // Create user and default workspace transactionally
+        const user = await prisma.$transaction(async (prisma) => {
+            // 1. Create User
+            const newUser = await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    passwordHash: hashedPassword,
+                },
+            });
+
+            // 2. Create Default Workspace
+            const workspace = await prisma.workspace.create({
+                data: {
+                    name: `${name}'s Workspace`,
+                    ownerId: newUser.id,
+                },
+            });
+
+            // 3. Create Workspace Member (Owner)
+            await prisma.workspaceMember.create({
+                data: {
+                    userId: newUser.id,
+                    workspaceId: workspace.id,
+                    role: MemberRole.OWNER,
+                },
+            });
+
+            return newUser;
         });
 
         if (user) {
@@ -116,12 +138,34 @@ const googleAuth = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
-            user = await prisma.user.create({
-                data: {
-                    name,
-                    email,
-                    passwordHash: hashedPassword,
-                },
+            user = await prisma.$transaction(async (prisma) => {
+                // 1. Create User
+                const newUser = await prisma.user.create({
+                    data: {
+                        name,
+                        email,
+                        passwordHash: hashedPassword,
+                    },
+                });
+
+                // 2. Create Default Workspace
+                const workspace = await prisma.workspace.create({
+                    data: {
+                        name: `${name}'s Workspace`,
+                        ownerId: newUser.id,
+                    },
+                });
+
+                // 3. Create Workspace Member (Owner)
+                await prisma.workspaceMember.create({
+                    data: {
+                        userId: newUser.id,
+                        workspaceId: workspace.id,
+                        role: MemberRole.OWNER,
+                    },
+                });
+
+                return newUser;
             });
         }
 

@@ -15,7 +15,7 @@ interface AuthContextType {
   token: string | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string) => Promise<void>
+  signup: (name: string, email: string, password: string) => Promise<void>
   googleLogin: (token: string) => Promise<void>
   logout: () => void
 }
@@ -66,8 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUser(data.token)
   }
 
-  const signup = async (email: string, password: string) => {
-    const data = await api.post("/auth/signup", { email, password })
+  const signup = async (name: string, email: string, password: string) => {
+    const data = await api.post("/auth/signup", { name, email, password })
     localStorage.setItem("token", data.token)
     setToken(data.token)
     await fetchUser(data.token)

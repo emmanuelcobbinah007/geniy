@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Lock, ArrowRight, Github, Loader2 } from "lucide-react"
+import { Mail, Lock, ArrowRight, Github, Loader2, User } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useFormik } from "formik"
@@ -20,6 +20,11 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
   const [error, setError] = useState<string | null>(null)
 
   const validationSchema = Yup.object({
+    name: Yup.string().when([], {
+      is: () => !isLogin,
+      then: (schema) => schema.required("Name is required"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
     email: Yup.string().email("Invalid email address").required("Email is required"),
     password: Yup.string()
       .min(8, "Password must be at least 8 characters")
@@ -28,6 +33,7 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
 
   const formik = useFormik({
     initialValues: {
+      name: "",
       email: "",
       password: "",
     },
@@ -39,7 +45,7 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
         if (isLogin) {
           await login(values.email, values.password)
         } else {
-          await signup(values.email, values.password)
+          await signup(values.name, values.email, values.password)
         }
         if (onSuccess) onSuccess()
       } catch (err: any) {
@@ -81,7 +87,20 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
         {!isModal && (
           <div className="flex justify-center mb-4">
             <Link href="/">
-              <Image src="/geniy_logo_dark.png" alt="Geniy Logo" width={50} height={50} />
+              <div className="relative w-[50px] h-[50px]">
+                <Image 
+                  src="/geniy_logo_light.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain dark:hidden" 
+                />
+                <Image 
+                  src="/geniy_logo_dark.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain hidden dark:block" 
+                />
+              </div>
             </Link>
           </div>
         )}
@@ -100,6 +119,23 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
       <CardContent className="space-y-4">
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            {!isLogin && (
+              <>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                  <Input 
+                    id="name"
+                    placeholder="John Doe" 
+                    className={`pl-10 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500 ${formik.touched.name && formik.errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    type="text"
+                    {...formik.getFieldProps("name")}
+                  />
+                </div>
+                {formik.touched.name && formik.errors.name && (
+                  <p className="text-xs text-red-500 pl-1">{formik.errors.name}</p>
+                )}
+              </>
+            )}
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
               <Input 

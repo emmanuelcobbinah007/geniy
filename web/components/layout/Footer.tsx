@@ -8,7 +8,20 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <Image src="/geniy_logo_dark.png" alt="Geniy Logo" width={50} height={50} />
+              <div className="relative w-[50px] h-[50px]">
+                <Image 
+                  src="/geniy_logo_light.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain dark:hidden" 
+                />
+                <Image 
+                  src="/geniy_logo_dark.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain hidden dark:block" 
+                />
+              </div>
               <span className="text-xl font-bold font-display tracking-tight text-foreground">Geniy</span>
             </Link>
             <p className="text-zinc-500 text-sm leading-relaxed">
