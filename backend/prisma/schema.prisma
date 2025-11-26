@@ -1,0 +1,176 @@
+// ------------------------------------------------------
+//  GENIY — Prisma Database Schema
+// ------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+//  ENUMS
+// ------------------------------------------------------
+
+enum PlanTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum InsightType {
+  SUMMARY
+  SENTIMENT
+  TREND
+  RECOMMENDATION
+}
+
+// ------------------------------------------------------
+//  USERS
+// ------------------------------------------------------
+
+model User {
+  id            String             @id @default(uuid())
+  name          String?
+  email         String             @unique
+  passwordHash  String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  workspaces    Workspace[]        @relation("UserWorkspaces")
+  memberships   WorkspaceMember[]
+  activityLogs  ActivityLog[]
+}
+
+// ------------------------------------------------------
+//  WORKSPACES (Multi-Tenant Container)
+// ------------------------------------------------------
+
+model Workspace {
+  id          String             @id @default(uuid())
+  ownerId     String
+  name        String
+  planTier    PlanTier           @default(FREE)
+  createdAt   DateTime           @default(now())
+
+  owner       User               @relation("UserWorkspaces", fields: [ownerId], references: [id])
+  members     WorkspaceMember[]
+  campaigns   Campaign[]
+  activityLogs ActivityLog[]
+}
+
+// ------------------------------------------------------
+//  WORKSPACE MEMBERS (Team Access)
+// ------------------------------------------------------
+
+model WorkspaceMember {
+  id           String     @id @default(uuid())
+  workspaceId  String
+  userId       String
+  role         MemberRole @default(EDITOR)
+
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
+
+  @@unique([workspaceId, userId])
+}
+
+// ------------------------------------------------------
+//  CAMPAIGNS (Research Projects)
+// ------------------------------------------------------
+
+model Campaign {
+  id           String        @id @default(uuid())
+  workspaceId  String
+  name         String
+  description  String?
+  createdAt    DateTime      @default(now())
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id])
+  surveys     Survey[]
+  insights    AIInsight[]
+  activityLogs ActivityLog[]
+}
+
+// ------------------------------------------------------
+//  SURVEYS (AI-Generated Dynamic Surveys)
+// ------------------------------------------------------
+
+model Survey {
+  id           String      @id @default(uuid())
+  campaignId   String
+  title        String
+  jsonSchema   Json        // stores the full questions.json
+  themeConfig  Json?
+  isPublished  Boolean     @default(false)
+  publicSlug   String      @unique
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  campaign     Campaign    @relation(fields: [campaignId], references: [id])
+  responses    Response[]
+  insights     AIInsight[] // optional insights tied directly to a survey
+  activityLogs ActivityLog[]
+}
+
+// ------------------------------------------------------
+//  RESPONSES (Survey Submissions)
+// ------------------------------------------------------
+
+model Response {
+  id           String     @id @default(uuid())
+  surveyId     String
+  rawAnswers   Json       // { "Q1": "...", "Q2": "...", ... }
+  metadata     Json?
+  submittedAt  DateTime   @default(now())
+
+  survey       Survey     @relation(fields: [surveyId], references: [id])
+}
+
+// ------------------------------------------------------
+//  AI INSIGHTS (AI Generated Summaries & Analysis)
+// ------------------------------------------------------
+
+model AIInsight {
+  id           String     @id @default(uuid())
+  campaignId   String
+  surveyId     String?    // optional — insights may come from entire campaign
+  insightType  InsightType
+  content      Json
+  modelUsed    String
+  tokenUsage   Json?
+  createdAt    DateTime   @default(now())
+
+  campaign     Campaign   @relation(fields: [campaignId], references: [id])
+  survey       Survey?    @relation(fields: [surveyId], references: [id])
+}
+
+// ------------------------------------------------------
+//  ACTIVITY LOGS (Auditing & History)
+// ------------------------------------------------------
+
+model ActivityLog {
+  id           String      @id @default(uuid())
+  workspaceId  String?
+  campaignId   String?
+  surveyId     String?
+  userId       String?
+  action       String
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+
+  workspace    Workspace?  @relation(fields: [workspaceId], references: [id])
+  campaign     Campaign?   @relation(fields: [campaignId], references: [id])
+  survey       Survey?     @relation(fields: [surveyId], references: [id])
+  user         User?       @relation(fields: [userId], references: [id])
+}
