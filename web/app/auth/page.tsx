@@ -1,5 +1,5 @@
 import { AuthForm } from "@/components/auth/auth-form"
-import { Zap } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 
 export default function AuthPage() {
@@ -13,12 +13,7 @@ export default function AuthPage() {
 
       <div className="relative z-10 w-full max-w-md px-4">
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-white">
-              <Zap className="h-6 w-6 fill-current" />
-            </div>
-            <span className="text-2xl font-bold font-display tracking-tight text-foreground">Geniy</span>
-          </Link>
+          
         </div>
         
         <AuthForm />

@@ -4,8 +4,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Zap, Mail, Lock, ArrowRight, Github, Loader2 } from "lucide-react"
+import { Mail, Lock, ArrowRight, Github, Loader2 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 
@@ -79,9 +80,9 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
       <CardHeader className="space-y-1 text-center">
         {!isModal && (
           <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-500/20">
-              <Zap className="h-6 w-6 fill-current" />
-            </div>
+            <Link href="/">
+              <Image src="/geniy_logo_dark.png" alt="Geniy Logo" width={50} height={50} />
+            </Link>
           </div>
         )}
         <CardTitle className="text-2xl font-bold font-display tracking-tight text-foreground">

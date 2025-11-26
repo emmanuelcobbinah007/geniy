@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Zap, Menu, X, User, Settings, LogOut, LayoutDashboard } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
+import Image from "next/image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +40,7 @@ export function Navbar() {
         <nav className="w-full max-w-6xl rounded-full py-3 border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-sm shadow-sm transition-all duration-300">
           <div className="flex h-14 items-center justify-between px-4 md:px-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
-                <Zap className="h-5 w-5 fill-current" />
-              </div>
+              <Image src="/geniy_logo_dark.png" alt="Geniy Logo" width={50} height={50} />
               <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">Geniy</span>
             </Link>
 
