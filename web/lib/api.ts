@@ -43,4 +43,29 @@ export const api = {
 
     return response.json();
   },
+
+  // Campaigns & Surveys
+  async createCampaign(data: any, token: string) {
+    return this.post('/campaigns', data, token);
+  },
+
+  async getSurveyBySlug(slug: string) {
+    return this.get(`/campaigns/public/${slug}`);
+  },
+
+  async submitResponse(slug: string, answers: any) {
+    return this.post(`/campaigns/public/${slug}/response`, { answers });
+  },
+
+  async getCampaignResponses(id: string, token: string) {
+    return this.get(`/campaigns/${id}/responses`, token);
+  },
+
+  async getCampaigns(workspaceId: string, token: string) {
+    return this.get(`/campaigns?workspaceId=${workspaceId}`, token);
+  },
+
+  async getCampaign(id: string, token: string) {
+    return this.get(`/campaigns/${id}`, token);
+  }
 };

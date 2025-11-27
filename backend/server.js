@@ -14,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/', require('./routes/index'));
 
 // Start server

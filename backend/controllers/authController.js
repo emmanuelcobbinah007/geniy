@@ -69,10 +69,16 @@ const signup = async (req, res) => {
         });
 
         if (user) {
+            // Fetch created workspace to return
+            const workspace = await prisma.workspace.findFirst({
+                where: { ownerId: user.id }
+            });
+
             res.status(201).json({
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                workspaces: [workspace],
                 token: generateToken(user.id),
             });
         } else {
@@ -94,6 +100,7 @@ const signin = async (req, res) => {
         // Check for user email
         const user = await prisma.user.findUnique({
             where: { email },
+            include: { workspaces: true }
         });
 
         if (user && (await bcrypt.compare(password, user.passwordHash))) {
@@ -101,6 +108,7 @@ const signin = async (req, res) => {
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                workspaces: user.workspaces,
                 token: generateToken(user.id),
             });
         } else {
@@ -129,6 +137,7 @@ const googleAuth = async (req, res) => {
         // Check if user exists
         let user = await prisma.user.findUnique({
             where: { email },
+            include: { workspaces: true }
         });
 
         if (!user) {
@@ -165,6 +174,8 @@ const googleAuth = async (req, res) => {
                     },
                 });
 
+                // Return user with workspace
+                newUser.workspaces = [workspace];
                 return newUser;
             });
         }
@@ -173,6 +184,7 @@ const googleAuth = async (req, res) => {
             _id: user.id,
             name: user.name,
             email: user.email,
+            workspaces: user.workspaces,
             token: generateToken(user.id),
         });
     } catch (error) {

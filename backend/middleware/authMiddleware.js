@@ -25,6 +25,7 @@ const protect = async (req, res, next) => {
                     email: true,
                     createdAt: true,
                     updatedAt: true,
+                    workspaces: true,
                 },
             });
 

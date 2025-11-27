@@ -10,15 +10,40 @@ import { motion, AnimatePresence, Reorder } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export function SurveyEditor() {
-  const [questions, setQuestions] = useState([
-    { id: 1, type: "multiple_choice", title: "What is your primary goal?", required: true, options: ["Market Research", "Product Feedback", "Customer Satisfaction"], logic: [] as any[] }
-  ])
+interface SurveyEditorProps {
+  questions: any[];
+  setQuestions: (questions: any[]) => void;
+  title: string;
+  setTitle: (title: string) => void;
+  description: string;
+  setDescription: (description: string) => void;
+}
+
+export function SurveyEditor({ 
+  questions, 
+  setQuestions, 
+  title, 
+  setTitle, 
+  description, 
+  setDescription 
+}: SurveyEditorProps) {
 
   const addLogic = (qId: number) => {
     setQuestions(questions.map(q => {
       if (q.id === qId) {
-        return { ...q, logic: [...q.logic, { if: "", then: "" }] }
+        const defaultIf = q.type === "multiple_choice" ? "" : true
+        return { ...q, logic: [...(q.logic || []), { if: defaultIf, then: "" }] }
+      }
+      return q
+    }))
+  }
+
+  const removeLogic = (qId: number, index: number) => {
+    setQuestions(questions.map(q => {
+      if (q.id === qId) {
+        const newLogic = [...(q.logic || [])]
+        newLogic.splice(index, 1)
+        return { ...q, logic: newLogic }
       }
       return q
     }))
@@ -28,8 +53,48 @@ export function SurveyEditor() {
     setQuestions(questions.filter(q => q.id !== id))
   }
 
+  const updateQuestion = (id: number, field: string, value: any) => {
+    setQuestions(questions.map(q => {
+      if (q.id === id) {
+        return { ...q, [field]: value }
+      }
+      return q
+    }))
+  }
+
+  const addOption = (qId: number) => {
+    setQuestions(questions.map(q => {
+      if (q.id === qId) {
+        return { ...q, options: [...(q.options || []), `Option ${(q.options?.length || 0) + 1}`] }
+      }
+      return q
+    }))
+  }
+
+  const updateOption = (qId: number, index: number, value: string) => {
+    setQuestions(questions.map(q => {
+      if (q.id === qId) {
+        const newOptions = [...(q.options || [])]
+        newOptions[index] = value
+        return { ...q, options: newOptions }
+      }
+      return q
+    }))
+  }
+
+  const removeOption = (qId: number, index: number) => {
+    setQuestions(questions.map(q => {
+      if (q.id === qId) {
+        const newOptions = [...(q.options || [])]
+        newOptions.splice(index, 1)
+        return { ...q, options: newOptions }
+      }
+      return q
+    }))
+  }
+
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-8">
+    <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 p-8 min-h-full">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Survey Header Card */}
@@ -42,11 +107,14 @@ export function SurveyEditor() {
             <Input 
               className="text-4xl md:text-5xl font-bold font-display bg-transparent border-none px-0 h-auto placeholder:text-zinc-400 focus-visible:ring-0 text-foreground" 
               placeholder="Survey Title"
-              defaultValue="Market Research Survey"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
             <Textarea 
               className="mt-4 text-xl text-zinc-600 dark:text-zinc-300 bg-transparent border-none px-0 resize-none min-h-[60px] focus-visible:ring-0 placeholder:text-zinc-400 leading-relaxed"
               placeholder="Describe what this survey is about..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
         </motion.div>
@@ -79,22 +147,35 @@ export function SurveyEditor() {
                           <Input 
                             className="bg-transparent border-none text-xl font-medium text-foreground placeholder:text-zinc-400 px-0 focus-visible:ring-0 h-auto"
                             placeholder="Type your question here..."
-                            defaultValue={q.title}
+                            value={q.title}
+                            onChange={(e) => updateQuestion(q.id, "title", e.target.value)}
                           />
                           
                           {/* Options Area (if applicable) */}
                           {q.type === "multiple_choice" && (
                             <div className="space-y-2 pl-1">
-                              {q.options?.map((opt, i) => (
-                                <div key={i} className="flex items-center gap-3">
+                              {q.options?.map((opt: string, i: number) => (
+                                <div key={i} className="flex items-center gap-3 group/opt">
                                   <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700" />
                                   <Input 
                                     className="h-8 bg-transparent border-none text-zinc-600 dark:text-zinc-300 placeholder:text-zinc-400 px-2 focus-visible:ring-0 focus:bg-zinc-100 dark:focus:bg-zinc-950/50 rounded"
-                                    defaultValue={opt}
+                                    value={opt}
+                                    onChange={(e) => updateOption(q.id, i, e.target.value)}
                                   />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover/opt:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
+                                    onClick={() => removeOption(q.id, i)}
+                                  >
+                                      <Trash2 className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               ))}
-                              <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
+                              <div 
+                                className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                                onClick={() => addOption(q.id)}
+                              >
                                 <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 border-dashed" />
                                 <span className="text-sm text-zinc-500 px-2">Add option</span>
                               </div>
@@ -103,7 +184,10 @@ export function SurveyEditor() {
 
                           {/* Controls */}
                           <div className="flex items-center gap-4 pt-2">
-                            <Select defaultValue={q.type || "text"}>
+                            <Select 
+                                value={q.type || "text"}
+                                onValueChange={(val) => updateQuestion(q.id, "type", val)}
+                            >
                               <SelectTrigger className="w-[140px] h-8 text-xs bg-zinc-100 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
                                 <SelectValue placeholder="Select type" />
                               </SelectTrigger>
@@ -118,7 +202,13 @@ export function SurveyEditor() {
                             <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
                             
                             <div className="flex items-center gap-2">
-                              <input type="checkbox" id={`req-${q.id}`} className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-violet-600 focus:ring-violet-600 focus:ring-offset-white dark:focus:ring-offset-zinc-950" defaultChecked={q.required} />
+                              <input 
+                                type="checkbox" 
+                                id={`req-${q.id}`} 
+                                className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-violet-600 focus:ring-violet-600 focus:ring-offset-white dark:focus:ring-offset-zinc-950" 
+                                checked={q.required} 
+                                onChange={(e) => updateQuestion(q.id, "required", e.target.checked)}
+                              />
                               <label htmlFor={`req-${q.id}`} className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors">Required</label>
                             </div>
 
@@ -142,21 +232,41 @@ export function SurveyEditor() {
                               animate={{ opacity: 1, height: "auto" }}
                               className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800/50 space-y-2"
                             >
-                              {q.logic.map((rule, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/50 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800/50">
+                              {q.logic.map((rule: any, i: number) => (
+                                <div key={i} className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/50 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800/50 group/logic">
                                   <GitBranch className="w-3.5 h-3.5 text-violet-500" />
-                                  <span>If answer is</span>
-                                  <Select>
-                                    <SelectTrigger className="w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
-                                      <SelectValue placeholder="Select option..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {q.options?.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
+                                  {q.type === "multiple_choice" ? (
+                                    <>
+                                      <span>If answer is</span>
+                                      <Select 
+                                        value={rule.if as string} 
+                                        onValueChange={(val) => {
+                                            const newLogic = [...q.logic]
+                                            newLogic[i].if = val
+                                            updateQuestion(q.id, "logic", newLogic)
+                                        }}
+                                      >
+                                        <SelectTrigger className="w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
+                                          <SelectValue placeholder="Select option..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {q.options?.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                        </SelectContent>
+                                      </Select>
+                                    </>
+                                  ) : (
+                                    <span className="font-medium text-zinc-700 dark:text-zinc-300">After answering</span>
+                                  )}
                                   <ArrowRight className="w-3 h-3 text-zinc-400" />
                                   <span>jump to</span>
-                                  <Select>
+                                  <Select
+                                    value={rule.then}
+                                    onValueChange={(val) => {
+                                        const newLogic = [...q.logic]
+                                        newLogic[i].then = val
+                                        updateQuestion(q.id, "logic", newLogic)
+                                    }}
+                                  >
                                     <SelectTrigger className="w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
                                       <SelectValue placeholder="Select question..." />
                                     </SelectTrigger>
@@ -169,6 +279,14 @@ export function SurveyEditor() {
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 ml-auto opacity-0 group-hover/logic:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
+                                    onClick={() => removeLogic(q.id, i)}
+                                  >
+                                      <Trash2 className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               ))}
                             </motion.div>
@@ -202,7 +320,10 @@ export function SurveyEditor() {
           <Button 
             variant="ghost" 
             className="text-zinc-500 hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
-            onClick={() => setQuestions([...questions, { id: questions.length + 1, type: "text", title: "", required: false, options: [], logic: [] }])}
+            onClick={() => {
+              const newId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1
+              setQuestions([...questions, { id: newId, type: "text", title: "", required: false, options: [], logic: [] }])
+            }}
           >
             <Plus className="w-5 h-5 mr-2" />
             Add Question

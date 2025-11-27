@@ -13,6 +13,7 @@ import {
   LogOut,
   Plus
 } from "lucide-react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
@@ -52,11 +53,27 @@ export function Sidebar() {
     >
       {/* Header / Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800">
-        {!collapsed && (
-          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-            Geniy
-          </span>
-        )}
+        <div className={cn("flex items-center gap-2 transition-all", collapsed ? "justify-center w-full" : "justify-start")}>
+          <div className="relative w-8 h-8 shrink-0">
+             <Image 
+               src="/geniy_logo_light.png" 
+               alt="Geniy" 
+               fill
+               className="object-contain dark:hidden"
+             />
+             <Image 
+               src="/geniy_logo_dark.png" 
+               alt="Geniy" 
+               fill
+               className="object-contain hidden dark:block"
+             />
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-xl tracking-tight text-foreground">
+              Geniy
+            </span>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="icon"
