@@ -15,6 +15,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
+app.use('/api/context', require('./routes/contextRoutes'));
+app.use('/api/workspaces', require('./routes/workspaceRoutes'));
 app.use('/', require('./routes/index'));
 
 // Start server

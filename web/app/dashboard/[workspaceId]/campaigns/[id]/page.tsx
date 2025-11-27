@@ -34,7 +34,9 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ id:
       if (!token) return null
       return api.getCampaign(id, token)
     },
-    enabled: !!token
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   })
 
   const survey = campaign?.surveys?.[0]

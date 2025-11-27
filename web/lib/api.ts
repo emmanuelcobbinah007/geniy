@@ -1,6 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const api = {
+  async handleResponse(response: Response) {
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Something went wrong');
+    }
+    return response.json();
+  },
+
   async get(endpoint: string, token?: string) {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -14,12 +22,7 @@ export const api = {
       headers,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Something went wrong');
-    }
-
-    return response.json();
+    return this.handleResponse(response);
   },
 
   async post(endpoint: string, data: any, token?: string) {
@@ -36,12 +39,24 @@ export const api = {
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Something went wrong');
+    return this.handleResponse(response);
+  },
+
+  async put(endpoint: string, data: any, token?: string) {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return response.json();
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
   },
 
   // Campaigns & Surveys
@@ -67,5 +82,50 @@ export const api = {
 
   async getCampaign(id: string, token: string) {
     return this.get(`/campaigns/${id}`, token);
-  }
+  },
+
+  // Context
+  async getContext(workspaceId: string, token: string) {
+    return this.get(`/context?workspaceId=${workspaceId}`, token);
+  },
+
+  async updateContext(workspaceId: string, businessContext: string, token: string) {
+    return this.put("/context", { businessContext, workspaceId }, token);
+  },
+
+  async uploadDocument(workspaceId: string, file: File, token: string) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("workspaceId", workspaceId);
+    
+    const response = await fetch(`${API_URL}/context/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    return this.handleResponse(response);
+  },
+
+  // Settings
+  async updateUser(data: any, token: string) {
+    return this.put("/auth/me", data, token);
+  },
+
+  async updateWorkspace(id: string, name: string, token: string) {
+    return this.put(`/workspaces/${id}`, { name }, token);
+  },
+
+  async createWorkspace(name: string, token: string) {
+    return this.post("/workspaces", { name }, token);
+  },
+
+  async getWorkspaceMembers(id: string, token: string) {
+    return this.get(`/workspaces/${id}/members`, token);
+  },
+
+  async addMember(workspaceId: string, email: string, token: string) {
+    return this.post(`/workspaces/${workspaceId}/members`, { email }, token);
+  },
 };

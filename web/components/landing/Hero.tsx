@@ -114,7 +114,7 @@ export function Hero() {
           transition={{ duration: 1, delay: 0.5 }}
           className="relative mt-24 mb-12 mx-auto max-w-6xl"
         >
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-6 items-center">
             
             {/* Step 1: Input (Raw Context) */}
             <motion.div 
@@ -151,6 +151,9 @@ export function Hero() {
               {/* Connecting Lines (Desktop) */}
               <div className="hidden md:block absolute left-0 right-0 top-1/2 h-0.5 bg-gradient-to-r from-zinc-200 via-violet-500/50 to-zinc-200 dark:from-zinc-800 dark:to-zinc-800 -z-10" />
               
+              {/* Connecting Line (Mobile) */}
+              <div className="md:hidden absolute top-[-4rem] bottom-[-10rem] w-0.5 bg-gradient-to-b from-zinc-200 via-violet-500/50 to-zinc-200 dark:from-zinc-800 dark:to-zinc-800 -z-10" />
+
               <div className="relative w-48 h-48">
                 <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-3xl animate-pulse" />
                 <div className="relative w-full h-full bg-white dark:bg-zinc-950 border border-violet-500/30 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(124,58,237,0.2)]">

@@ -17,17 +17,37 @@ const protect = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             // Get user from the token
-            req.user = await prisma.user.findUnique({
+            const user = await prisma.user.findUnique({
                 where: { id: decoded.id },
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    createdAt: true,
-                    updatedAt: true,
+                include: {
                     workspaces: true,
-                },
+                    memberships: {
+                        include: {
+                            workspace: true
+                        }
+                    }
+                }
             });
+
+            if (!user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+
+            // Segregate workspaces
+            const ownedWorkspaces = user.workspaces;
+            const sharedWorkspaces = user.memberships
+                .filter(m => m.role !== 'OWNER')
+                .map(m => m.workspace);
+
+            req.user = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                workspaces: ownedWorkspaces,
+                sharedWorkspaces
+            };
 
             if (!req.user) {
                 return res.status(401).json({ message: 'Not authorized, user not found' });

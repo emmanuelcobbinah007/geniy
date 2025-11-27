@@ -68,7 +68,24 @@ model Workspace {
   owner       User               @relation("UserWorkspaces", fields: [ownerId], references: [id])
   members     WorkspaceMember[]
   campaigns   Campaign[]
+  documents   Document[]
   activityLogs ActivityLog[]
+}
+
+// ------------------------------------------------------
+//  DOCUMENTS (Context Files)
+// ------------------------------------------------------
+
+model Document {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  type        String
+  size        Int
+  url         String?
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }
 
 // ------------------------------------------------------

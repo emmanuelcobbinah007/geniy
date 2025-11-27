@@ -7,6 +7,7 @@ import { SmoothScroll } from "@/components/smooth-scroll";
 import { AuthProvider } from "@/context/auth-context"
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Providers } from "@/components/providers";
+import { Toaster } from "sonner";
 
 const outfit = Outfit({ 
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
               >
                 <SmoothScroll>
                   {children}
+                  <Toaster />
                 </SmoothScroll>
               </ThemeProvider>
             </AuthProvider>

@@ -10,16 +10,22 @@ import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 
+import { useParams } from "next/navigation"
+
 export default function CampaignsPage() {
   const { user, token } = useAuth()
+  const params = useParams()
+  const workspaceId = params?.workspaceId as string
   
   const { data: campaigns, isLoading } = useQuery({
-    queryKey: ['campaigns', user?.workspaces?.[0]?.id],
+    queryKey: ['campaigns', workspaceId],
     queryFn: async () => {
-      if (!user?.workspaces?.[0]?.id || !token) return []
-      return api.getCampaigns(user.workspaces[0].id, token)
+      if (!workspaceId || !token) return []
+      return api.getCampaigns(workspaceId, token)
     },
-    enabled: !!user?.workspaces?.[0]?.id && !!token
+    enabled: !!workspaceId && !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   })
 
   const container = {

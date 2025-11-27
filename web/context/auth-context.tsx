@@ -10,6 +10,7 @@ interface User {
   name: string | null
   email: string
   workspaces?: any[]
+  sharedWorkspaces?: any[]
 }
 
 interface AuthContextType {
