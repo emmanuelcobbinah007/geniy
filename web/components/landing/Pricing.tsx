@@ -11,7 +11,7 @@ const tiers = [
     price: "$0",
     description: "Perfect for testing the waters.",
     features: [
-      "1 AI-generated form",
+      "3 AI-generated forms",
       "50 responses",
       "Basic analytics",
       "Simple themes",
@@ -26,11 +26,11 @@ const tiers = [
     period: "/mo",
     description: "For solo founders and creators.",
     features: [
-      "Unlimited surveys",
+      "Unlimited surveys & responses",
       "AI analysis & insights",
       "Basic Competitor research",
       "Advanced themes",
-      "Team collaboration (1 seat)"
+      "Shareable Live Reports"
     ],
     cta: "Get Pro",
     variant: "secondary"
@@ -43,7 +43,7 @@ const tiers = [
     popular: true,
     features: [
       "Everything in Pro",
-      "Full competitor tracking",
+      "Track up to 10 Competitors",
       "Deep Insight reports",
       "Multi-user teams (5 seats)",
       "API access",

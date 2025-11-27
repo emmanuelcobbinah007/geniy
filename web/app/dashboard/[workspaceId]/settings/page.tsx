@@ -29,21 +29,21 @@ const PLANS = [
         name: "Free",
         price: "$0",
         description: "Perfect for testing the waters.",
-        features: ["1 AI-generated form", "50 responses", "Basic analytics", "Simple themes", "CSV export"]
+        features: ["3 AI-generated forms", "50 responses", "Basic analytics", "Simple themes", "CSV export"]
     },
     {
         name: "Pro",
         price: "$29",
         period: "/mo",
         description: "For solo founders and creators.",
-        features: ["Unlimited surveys", "AI analysis & insights", "Basic Competitor research", "Advanced themes", "Team collaboration (1 seat)"]
+        features: ["Unlimited surveys & responses", "AI analysis & insights", "Basic Competitor research", "Advanced themes", "Shareable Live Reports"]
     },
     {
         name: "Business",
         price: "$149",
         period: "/mo",
         description: "For growing startups and agencies.",
-        features: ["Everything in Pro", "Full competitor tracking", "Deep Insight reports", "Multi-user teams (5 seats)", "API access", "AI persona generation"],
+        features: ["Everything in Pro", "Track up to 10 Competitors", "Deep Insight reports", "Multi-user teams (5 seats)", "API access", "AI persona generation"],
         popular: true
     },
     {
