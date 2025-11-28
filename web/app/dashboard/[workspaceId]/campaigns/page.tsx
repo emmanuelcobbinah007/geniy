@@ -101,6 +101,7 @@ export default function CampaignsPage() {
                 // Mock data for now as backend doesn't provide these yet
                 trend={undefined} 
                 insight={undefined}
+                workspaceId={workspaceId}
             />
             ))
         )}

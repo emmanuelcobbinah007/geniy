@@ -17,6 +17,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/campaigns', require('./routes/campaignRoutes'));
 app.use('/api/context', require('./routes/contextRoutes'));
 app.use('/api/workspaces', require('./routes/workspaceRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/', require('./routes/index'));
 
 // Start server

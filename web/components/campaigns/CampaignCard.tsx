@@ -20,9 +20,10 @@ interface CampaignCardProps {
   date: string
   trend?: number
   insight?: string
+  workspaceId: string
 }
 
-export function CampaignCard({ id, name, status, responses, date, trend, insight }: CampaignCardProps) {
+export function CampaignCard({ id, name, status, responses, date, trend, insight, workspaceId }: CampaignCardProps) {
   return (
     <Card className="p-6 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group relative overflow-hidden bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
       {/* Status Badge */}
@@ -51,7 +52,7 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
       <div className="space-y-6">
         <div>
           <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-white transition-colors pr-24 truncate">
-            <Link href={`/dashboard/campaigns/${id}`}>{name}</Link>
+            <Link href={`/dashboard/${workspaceId}/campaigns/${id}`}>{name}</Link>
           </h3>
           <p className="text-sm text-zinc-500 mt-1">{date}</p>
         </div>
@@ -87,7 +88,7 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
 
         {/* Footer Action */}
         <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-between">
-            <Link href={`/dashboard/campaigns/${id}`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center transition-colors">
+            <Link href={`/dashboard/${workspaceId}/campaigns/${id}`} className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white flex items-center transition-colors">
               View Insights <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
         </div>
