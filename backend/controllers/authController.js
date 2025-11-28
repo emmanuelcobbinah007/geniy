@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
+const axios = require('axios');
 const { PrismaClient, MemberRole } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -156,12 +157,14 @@ const googleAuth = async (req, res) => {
     const { token } = req.body;
 
     try {
-        const ticket = await client.verifyIdToken({
-            idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+        // Verify Access Token by fetching user info
+        const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
         });
 
-        const { name, email, sub } = ticket.getPayload();
+        const { name, email, sub } = response.data;
 
         // Check if user exists
         let user = await prisma.user.findUnique({
@@ -217,7 +220,7 @@ const googleAuth = async (req, res) => {
             token: generateToken(user.id),
         });
     } catch (error) {
-        console.error(error);
+        console.error('Google Auth Error:', error.response?.data || error.message);
         res.status(400).json({ message: 'Google authentication failed' });
     }
 };

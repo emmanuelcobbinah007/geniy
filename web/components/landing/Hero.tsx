@@ -18,7 +18,7 @@ export function Hero() {
 
   const handleStartSurvey = () => {
     if (user) {
-      router.push("/create-survey")
+      router.push("/create-survey?source=hero")
     } else {
       setShowAuthModal(true)
     }
@@ -26,7 +26,7 @@ export function Hero() {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false)
-    router.push("/create-survey")
+    router.push("/create-survey?source=hero")
   }
 
   return (

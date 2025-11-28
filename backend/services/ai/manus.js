@@ -14,11 +14,11 @@ class ManusService {
 
         try {
             const response = await axios.post(`${this.baseUrl}/tasks`, {
-                instruction: instruction,
+                prompt: instruction, // Changed from instruction to prompt
                 mode: "agent"
             }, {
                 headers: {
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    'API_KEY': this.apiKey, // Changed from X-API-Key
                     'Content-Type': 'application/json'
                 }
             });
@@ -34,7 +34,7 @@ class ManusService {
         try {
             const response = await axios.get(`${this.baseUrl}/tasks/${taskId}`, {
                 headers: {
-                    'Authorization': `Bearer ${this.apiKey}`
+                    'API_KEY': this.apiKey // Changed from X-API-Key
                 }
             });
             return response.data;
@@ -42,6 +42,29 @@ class ManusService {
             console.error("Manus API Error:", error);
             return null;
         }
+    }
+    async runTask(instruction) {
+        const task = await this.createTask(instruction);
+        if (!task || !task.id) return null;
+
+        // Poll for result
+        let attempts = 0;
+        const maxAttempts = 30; // 30 * 2s = 60s timeout
+
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const result = await this.getTaskResult(task.id);
+
+            if (result && result.status === 'completed') {
+                return result.output; // Assuming output contains the data
+            }
+            if (result && result.status === 'failed') {
+                console.error("Manus Task Failed:", result.error);
+                return null;
+            }
+            attempts++;
+        }
+        return null; // Timeout
     }
 }
 

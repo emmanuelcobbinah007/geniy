@@ -15,6 +15,9 @@ import { api } from "@/lib/api"
 
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
+import { ShareModal } from "@/components/create-survey/ShareModal"
+import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSelectionModal"
+import { useSearchParams } from "next/navigation"
 
 export default function CreateSurveyPage() {
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -33,18 +36,33 @@ export default function CreateSurveyPage() {
 
   const [initialContext, setInitialContext] = useState<string>("")
 
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareUrl, setShareUrl] = useState("")
+  const [createdCampaignId, setCreatedCampaignId] = useState("")
+
+  const searchParams = useSearchParams()
+  const workspaceId = searchParams.get("workspaceId")
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
+
   useEffect(() => {
     if (!isLoading && !user) {
       setShowAuthModal(true)
-    } else if (user && user.workspaces?.[0]?.id && token) {
-        // Fetch existing context
-        api.getContext(user.workspaces[0].id, token).then(data => {
-            if (data?.businessContext) {
-                setInitialContext(data.businessContext)
-            }
-        }).catch(err => console.error("Failed to fetch context:", err))
+    } else if (user && token) {
+        if (workspaceId) {
+            // Workspace selected, fetch context
+            api.getContext(workspaceId, token).then(data => {
+                if (data?.businessContext) {
+                    setInitialContext(data.businessContext)
+                }
+            }).catch(err => console.error("Failed to fetch context:", err))
+        } else {
+            // No workspace selected, show selection modal
+            // Only if we have workspaces to select from, otherwise force create? 
+            // The modal handles both cases.
+            setShowWorkspaceModal(true)
+        }
     }
-  }, [isLoading, user, token])
+  }, [isLoading, user, token, workspaceId])
 
   const getSurveyData = () => {
     return {
@@ -81,7 +99,7 @@ export default function CreateSurveyPage() {
     setIsPublishing(true)
     try {
       const payload = {
-        workspaceId: user.workspaces?.[0]?.id, 
+        workspaceId: workspaceId || user.workspaces?.[0]?.id, // Fallback just in case, but modal should ensure workspaceId
         name: title,
         description: description,
         surveyTitle: title,
@@ -94,7 +112,12 @@ export default function CreateSurveyPage() {
       }
 
       const result = await api.createCampaign(payload, token);
-      router.push(`/dashboard/campaigns/${result.campaign.id}`);
+      
+      // Show Share Modal instead of immediate redirect
+      const url = `${window.location.origin}/s/${result.survey.publicSlug}`;
+      setShareUrl(url);
+      setCreatedCampaignId(result.campaign.id);
+      setShowShareModal(true);
 
     } catch (error) {
       console.error("Failed to publish:", error)
@@ -104,9 +127,20 @@ export default function CreateSurveyPage() {
     }
   }
 
+  const handleDashboardRedirect = () => {
+      router.push(`/dashboard/${workspaceId || user?.workspaces?.[0]?.id}/campaigns/${createdCampaignId}`);
+  }
+
   return (
     <main className="min-h-screen flex flex-col bg-background text-foreground font-sans">
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} onSuccess={handleAuthSuccess} />
+      <WorkspaceSelectionModal open={showWorkspaceModal} onOpenChange={setShowWorkspaceModal} />
+      <ShareModal 
+        open={showShareModal} 
+        onOpenChange={setShowShareModal} 
+        shareUrl={shareUrl} 
+        onDashboard={handleDashboardRedirect} 
+      />
       
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>

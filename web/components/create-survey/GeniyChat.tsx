@@ -32,10 +32,17 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
   // Initialize messages based on context
   useEffect(() => {
     if (initialContext) {
+        // Simple parsing of the context string
+        const companyMatch = initialContext.match(/Company:\s*(.+?)(\n|$)/);
+        const industryMatch = initialContext.match(/Industry:\s*(.+?)(\n|$)/);
+        
+        const company = companyMatch ? companyMatch[1].trim() : "your company";
+        const industry = industryMatch ? industryMatch[1].trim() : "your industry";
+
         setMessages([{
             id: "1",
             role: "assistant",
-            content: `Hi! I see you have some existing context about your business. I'll use that to help you build your survey. You can add more details or upload a new document if you like!`
+            content: `Hi! I see you're working on **${company}** in the **${industry}** space. I've loaded your context and I'm ready to help you build a survey. What's your goal for this campaign?`
         }])
     } else {
         setMessages([{
@@ -95,7 +102,10 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             title: q.question,
             required: q.required !== false, // Default to true if undefined
             options: q.options || [],
-            logic: []
+            logic: q.branches ? q.branches.map((b: any) => ({
+                if: b.if,
+                then: b.next.replace(/^Q/, '')
+            })) : []
         }))
         setQuestions(editorQuestions)
 
@@ -151,7 +161,10 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             title: q.question,
             required: q.required !== false,
             options: q.options || [],
-            logic: []
+            logic: q.branches ? q.branches.map((b: any) => ({
+                if: b.if,
+                then: b.next.replace(/^Q/, '')
+            })) : []
         }))
         setQuestions(editorQuestions)
 
@@ -195,7 +208,13 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-bl-none"
                 }`}
               >
-                {msg.content}
+                {msg.content.split(/(\*\*.*?\*\*)/).map((part, i) => 
+                    part.startsWith('**') && part.endsWith('**') ? (
+                        <strong key={i}>{part.slice(2, -2)}</strong>
+                    ) : (
+                        <span key={i}>{part}</span>
+                    )
+                )}
               </div>
             </motion.div>
           ))}

@@ -10,9 +10,10 @@ exports.analyzeContext = async (req, res) => {
         // Step 1: Analyze Context
         const contextSummary = await genesisAgent.analyzeContext(contextText);
 
-        // Step 2: Discover Competitors (Optional/Async in real app)
-        // For MVP, we might skip or do it synchronously if fast enough
-        // const enrichedContext = await genesisAgent.discoverCompetitors(contextSummary);
+        // Step 2: Discover Competitors (Agentic)
+        const competitors = await genesisAgent.discoverCompetitors(contextSummary);
+        console.log("Manus Agent Competitors:", competitors); // Log for debugging
+        contextSummary.competitors = competitors;
 
         res.json(contextSummary);
     } catch (error) {

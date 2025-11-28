@@ -74,6 +74,24 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
     },
     onSuccess: (data) => {
       setAnalysisResult(data)
+      
+      // Format context string
+      let contextString = `Company: ${data.companyName}\nIndustry: ${data.industry}\nTarget Audience: ${data.targetAudience.join(', ')}\n\n`;
+      
+      if (data.competitors && data.competitors.length > 0) {
+          contextString += `Competitors:\n- ${data.competitors.join('\n- ')}\n\n`;
+      }
+
+      // Trigger strategy generation automatically
+      strategyMutation.mutate(data);
+      
+      // Update local state
+      setContext(contextString);
+      
+      // Save to DB
+      api.updateContext(workspaceId, contextString, token!)
+        .then(() => queryClient.invalidateQueries({ queryKey: ["context", workspaceId] }))
+        .catch(err => console.error("Failed to save context", err));
     },
     onError: () => {
       alert("Failed to analyze context")
@@ -82,12 +100,30 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
 
   // Generate Strategy Mutation
   const strategyMutation = useMutation({
-    mutationFn: async () => {
-      if (!token || !analysisResult) return
-      return api.generateStrategy(analysisResult, token)
+    mutationFn: async (analysisData?: any) => {
+      const dataToUse = analysisData || analysisResult;
+      if (!token || !dataToUse) return
+      return api.generateStrategy(dataToUse, token)
     },
     onSuccess: (data) => {
       setStrategy(data)
+      
+      // Append strategy to context string
+      setContext(prev => {
+          let newContext = prev;
+          if (!newContext.includes("Strategy Objectives:")) {
+              newContext += `Strategy Objectives:\n- ${data.objectives.join('\n- ')}\n\n`;
+              newContext += `Hypotheses:\n- ${data.hypotheses.join('\n- ')}\n`;
+              
+              // Save updated context with strategy
+              if (token) {
+                api.updateContext(workspaceId, newContext, token)
+                    .then(() => queryClient.invalidateQueries({ queryKey: ["context", workspaceId] }))
+                    .catch(err => console.error("Failed to save strategy", err));
+              }
+          }
+          return newContext;
+      })
     },
     onError: () => {
       alert("Failed to generate strategy")
@@ -110,38 +146,32 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
             <Button 
                 onClick={() => analyzeMutation.mutate()} 
                 disabled={analyzeMutation.isPending || !context}
-                variant="outline"
-                className="border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-900/20"
-            >
-            {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Analyze with AI
-            </Button>
-            <Button 
-                onClick={() => updateContextMutation.mutate()} 
-                disabled={updateContextMutation.isPending}
                 className="bg-violet-600 hover:bg-violet-700 text-white"
             >
-            {updateContextMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save Context
+            {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            {analyzeMutation.isPending ? "Analyzing..." : "Analyze Context"}
             </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 gap-6 flex-1 min-h-0">
         <div className="flex flex-col gap-6 h-full">
             {/* Text Context */}
-            <Card className="p-4 flex flex-col flex-1 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <label className="text-sm font-medium text-zinc-500 mb-2">Business Context</label>
+            <Card className="p-6 flex flex-col flex-1 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-zinc-500">Business Context</label>
+                {strategyMutation.isPending && <span className="text-xs text-violet-500 animate-pulse">Generating Strategy...</span>}
+            </div>
             <Textarea 
                 value={context}
-                onChange={(e) => setContext(e.target.value)}
-                className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-violet-500 bg-transparent dark:text-white"
-                placeholder="Describe your business, target audience, and key value propositions..."
+                readOnly
+                className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-0 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed"
+                placeholder="Context will appear here after AI analysis or document upload..."
             />
             </Card>
 
             {/* Documents */}
-            <Card className="p-4 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <Card className="p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
             <div className="flex items-center justify-between mb-4">
                 <label className="text-sm font-medium text-zinc-500">Documents</label>
                 <div className="relative">
@@ -187,88 +217,6 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                 )}
             </div>
             </Card>
-        </div>
-
-        {/* AI Analysis & Strategy Column */}
-        <div className="flex flex-col gap-6 h-full overflow-y-auto">
-            {analysisResult && (
-                <Card className="p-6 border-violet-200 dark:border-violet-900 bg-violet-50/50 dark:bg-violet-900/10">
-                    <h3 className="text-lg font-semibold text-violet-900 dark:text-violet-100 mb-4 flex items-center">
-                        <Sparkles className="w-5 h-5 mr-2 text-violet-600" />
-                        AI Analysis
-                    </h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-xs font-bold text-violet-600 uppercase tracking-wider">Company</label>
-                            <p className="text-zinc-800 dark:text-zinc-200">{analysisResult.companyName}</p>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-violet-600 uppercase tracking-wider">Industry</label>
-                            <p className="text-zinc-800 dark:text-zinc-200">{analysisResult.industry}</p>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-violet-600 uppercase tracking-wider">Target Audience</label>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {analysisResult.targetAudience.map((aud: string, i: number) => (
-                                    <span key={i} className="px-2 py-1 bg-white dark:bg-zinc-800 rounded text-xs border border-violet-100 dark:border-violet-900">
-                                        {aud}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        {!strategy && (
-                            <Button 
-                                onClick={() => strategyMutation.mutate()}
-                                disabled={strategyMutation.isPending}
-                                className="w-full mt-4 bg-violet-600 hover:bg-violet-700 text-white"
-                            >
-                                {strategyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                Generate Research Strategy
-                            </Button>
-                        )}
-                    </div>
-                </Card>
-            )}
-
-            {strategy && (
-                <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                    <h3 className="text-lg font-semibold mb-4">Research Strategy</h3>
-                    <div className="space-y-6">
-                        <div>
-                            <h4 className="font-medium mb-2 text-sm text-zinc-500">Objectives</h4>
-                            <ul className="list-disc list-inside space-y-1">
-                                {strategy.objectives.map((obj: string, i: number) => (
-                                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">{obj}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-medium mb-2 text-sm text-zinc-500">Hypotheses</h4>
-                            <ul className="list-disc list-inside space-y-1">
-                                {strategy.hypotheses.map((hyp: string, i: number) => (
-                                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">{hyp}</li>
-                                ))}
-                            </ul>
-                        </div>
-                         <Button 
-                            className="w-full bg-black hover:bg-zinc-800 text-white dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                            onClick={() => alert("Coming soon: Generate Survey!")}
-                        >
-                            Create Survey from Strategy
-                        </Button>
-                    </div>
-                </Card>
-            )}
-            
-            {!analysisResult && (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/50">
-                    <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                    <p className="text-center max-w-xs">
-                        Analyze your context to unlock AI-powered insights and strategy generation.
-                    </p>
-                </div>
-            )}
         </div>
       </div>
     </div>

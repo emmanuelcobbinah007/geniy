@@ -36,14 +36,31 @@ class GenesisAgent {
             return contextSummary.competitors;
         }
 
-        const instruction = `Find top 5 direct competitors for ${contextSummary.companyName} in the ${contextSummary.industry} industry. Return a list of names.`;
+        const instruction = `Find top 5 direct competitors for ${contextSummary.companyName} in the ${contextSummary.industry} industry. Return ONLY a JSON array of strings, e.g. ["Comp1", "Comp2"].`;
 
         // Trigger Manus Agent
-        // Note: In a real async flow, we'd kick this off and poll later. 
-        // For MVP, we might skip or mock this if it takes too long.
-        const task = await manus.createTask(instruction);
+        try {
+            const agentOutput = await manus.runTask(instruction);
+            if (agentOutput) {
+                // Try to parse JSON from output
+                try {
+                    // Extract JSON if wrapped in code blocks
+                    const jsonMatch = agentOutput.match(/\[.*\]/s);
+                    if (jsonMatch) {
+                        return JSON.parse(jsonMatch[0]);
+                    }
+                    return JSON.parse(agentOutput);
+                } catch (e) {
+                    console.warn("Failed to parse Manus output as JSON, returning raw list", e);
+                    // Fallback: split by newlines if it looks like a list
+                    return agentOutput.split('\n').filter(line => line.trim().length > 0).map(l => l.replace(/^- /, '').trim());
+                }
+            }
+        } catch (err) {
+            console.error("Manus discovery failed:", err);
+        }
 
-        // For now, return existing or empty to not block
+        // Fallback to existing or empty
         return contextSummary.competitors || [];
     }
 
