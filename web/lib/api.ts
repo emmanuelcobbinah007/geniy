@@ -128,4 +128,17 @@ export const api = {
   async addMember(workspaceId: string, email: string, token: string) {
     return this.post(`/workspaces/${workspaceId}/members`, { email }, token);
   },
+
+  // AI Integration
+  async analyzeContext(contextText: string, token: string) {
+    return this.post('/ai/analyze-context', { contextText }, token);
+  },
+
+  async generateStrategy(contextSummary: any, token: string) {
+    return this.post('/ai/generate-strategy', { contextSummary }, token);
+  },
+
+  async generateSurvey(contextSummary: any, strategy: any, token: string) {
+    return this.post('/ai/generate-survey', { contextSummary, strategy }, token);
+  },
 };

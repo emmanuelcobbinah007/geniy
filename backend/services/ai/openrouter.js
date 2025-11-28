@@ -25,7 +25,7 @@ class OpenRouterService {
         return this.client;
     }
 
-    async complete(prompt, model = "openai/gpt-4o-mini", jsonMode = false) {
+    async complete(prompt, model = "openai/gpt-4o-mini", jsonMode = false, maxTokens = 1000) {
         try {
             const client = this.getClient();
             if (!client) {
@@ -37,7 +37,8 @@ class OpenRouterService {
                 messages: [
                     { role: "user", content: prompt }
                 ],
-                response_format: jsonMode ? { type: "json_object" } : undefined
+                response_format: jsonMode ? { type: "json_object" } : undefined,
+                max_tokens: maxTokens
             });
 
             return completion.choices[0].message.content;

@@ -40,12 +40,19 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const handleAnswer = (value: any) => {
     if (!currentQuestionId) return
 
+    // Validation
+    const questions = getQuestions()
+    const currentQ = questions[currentQuestionId]
+    
+    if (currentQ.required && (value === null || value === "" || (Array.isArray(value) && value.length === 0))) {
+        alert("This question is required.")
+        return
+    }
+
     const newAnswers = { ...answers, [currentQuestionId]: value }
     setAnswers(newAnswers)
 
     // Determine next question
-    const questions = getQuestions()
-    const currentQ = questions[currentQuestionId]
     let nextQId = currentQ.next
 
     // Check branches
@@ -88,6 +95,57 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
   const questions = getQuestions()
   const currentQ = currentQuestionId ? questions[currentQuestionId] : null
+
+  // Ranking Component Logic
+  const RankingQuestion = ({ options, onAnswer }: { options: string[], onAnswer: (val: string[]) => void }) => {
+    const [ranked, setRanked] = useState<string[]>([])
+    const [available, setAvailable] = useState<string[]>(options)
+
+    const handleSelect = (opt: string) => {
+        setAvailable(prev => prev.filter(o => o !== opt))
+        setRanked(prev => [...prev, opt])
+    }
+
+    const handleUnselect = (opt: string) => {
+        setRanked(prev => prev.filter(o => o !== opt))
+        setAvailable(prev => [...prev, opt])
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-500">Ranked (Top to Bottom)</label>
+                {ranked.map((opt, i) => (
+                    <div key={opt} onClick={() => handleUnselect(opt)} className="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 flex items-center gap-3 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 hover:border-red-200 transition-colors group">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                        <span className="flex-1 font-medium">{opt}</span>
+                    </div>
+                ))}
+                {ranked.length === 0 && <div className="text-sm text-zinc-400 italic p-2">Tap options below to rank them</div>}
+            </div>
+
+            {available.length > 0 && (
+                <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <label className="text-sm font-medium text-zinc-500">Options</label>
+                    {available.map((opt) => (
+                        <div key={opt} onClick={() => handleSelect(opt)} className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-500 cursor-pointer transition-all flex items-center gap-3">
+                            <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-600" />
+                            <span>{opt}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <Button 
+                className="w-full mt-4" 
+                disabled={available.length > 0} // Require ranking all
+                onClick={() => onAnswer(ranked)}
+            >
+                Confirm Ranking
+            </Button>
+        </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
@@ -165,9 +223,16 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                         ))}
                     </div>
                 )}
+
+                {currentQ.type === "ranking" && (
+                    <RankingQuestion 
+                        options={currentQ.options || []} 
+                        onAnswer={handleAnswer} 
+                    />
+                )}
                 
                 {/* Fallback for other types */}
-                {!["multiple_choice", "text", "short_text", "long_text", "rating"].includes(currentQ.type) && (
+                {!["multiple_choice", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
                     <div className="text-red-500">Unsupported question type: {currentQ.type}</div>
                 )}
               </div>

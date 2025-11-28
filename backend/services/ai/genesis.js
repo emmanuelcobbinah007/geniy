@@ -23,7 +23,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
         return JSON.parse(result);
     }
 
@@ -67,7 +67,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o", true);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1500);
         return JSON.parse(result);
     }
 
@@ -101,7 +101,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o", true);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
         return JSON.parse(result);
     }
 }

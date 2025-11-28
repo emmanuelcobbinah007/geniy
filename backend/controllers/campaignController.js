@@ -5,7 +5,7 @@ const crypto = require('crypto');
 // Create a new Campaign and Survey
 exports.createCampaign = async (req, res) => {
     try {
-        const { workspaceId, name, description, surveyTitle, questions } = req.body;
+        const { workspaceId, name, description, surveyTitle, questions, contextData } = req.body;
 
         if (!workspaceId || !name || !surveyTitle) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -35,6 +35,23 @@ exports.createCampaign = async (req, res) => {
                     isPublished: true, // Auto-publish for MVP as requested
                 },
             });
+
+            // 3. Update Workspace Context if provided
+            if (contextData && contextData.analysis) {
+                const { analysis, strategy } = contextData;
+                let contextString = `Company: ${analysis.companyName}\nIndustry: ${analysis.industry}\nTarget Audience: ${analysis.targetAudience.join(', ')}\n\n`;
+
+                if (strategy) {
+                    contextString += `Strategy Objectives:\n- ${strategy.objectives.join('\n- ')}\n`;
+                }
+
+                await prisma.workspace.update({
+                    where: { id: workspaceId },
+                    data: {
+                        businessContext: contextString
+                    }
+                });
+            }
 
             return { campaign, survey };
         });

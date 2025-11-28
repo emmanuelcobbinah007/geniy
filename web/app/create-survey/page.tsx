@@ -29,11 +29,22 @@ export default function CreateSurveyPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
 
+  const [contextData, setContextData] = useState<any>(null)
+
+  const [initialContext, setInitialContext] = useState<string>("")
+
   useEffect(() => {
     if (!isLoading && !user) {
       setShowAuthModal(true)
+    } else if (user && user.workspaces?.[0]?.id && token) {
+        // Fetch existing context
+        api.getContext(user.workspaces[0].id, token).then(data => {
+            if (data?.businessContext) {
+                setInitialContext(data.businessContext)
+            }
+        }).catch(err => console.error("Failed to fetch context:", err))
     }
-  }, [isLoading, user])
+  }, [isLoading, user, token])
 
   const getSurveyData = () => {
     return {
@@ -74,6 +85,7 @@ export default function CreateSurveyPage() {
         name: title,
         description: description,
         surveyTitle: title,
+        contextData: contextData, // Pass the AI context data
         questions: {
             title: title,
             version: "1.0",
@@ -159,7 +171,13 @@ export default function CreateSurveyPage() {
       <div className="flex-1 flex items-start">
         {/* Left Panel: Geniy Chat (30%) - Sticky */}
         <div className="w-[30%] min-w-[320px] max-w-[450px] sticky top-14 h-[calc(100vh-3.5rem)]">
-          <GeniyChat />
+          <GeniyChat 
+            setQuestions={setQuestions}
+            setTitle={setTitle}
+            setDescription={setDescription}
+            setContextData={setContextData}
+            initialContext={initialContext}
+          />
         </div>
 
         {/* Right Panel: Survey Editor (70%) - Natural Flow */}
