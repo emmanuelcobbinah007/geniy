@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(outfit.variable, poppins.variable, "font-sans antialiased bg-background text-foreground")}>
+      <body className={cn(outfit.variable, poppins.variable, "font-sans antialiased bg-background text-foreground")} suppressHydrationWarning>
         <Providers>
           <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
             <AuthProvider>

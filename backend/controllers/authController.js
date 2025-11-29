@@ -221,7 +221,10 @@ const googleAuth = async (req, res) => {
         });
     } catch (error) {
         console.error('Google Auth Error:', error.response?.data || error.message);
-        res.status(400).json({ message: 'Google authentication failed' });
+        res.status(400).json({
+            message: 'Google authentication failed',
+            details: error.response?.data || error.message
+        });
     }
 };
 

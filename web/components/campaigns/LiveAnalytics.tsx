@@ -41,32 +41,47 @@ export function LiveAnalytics({ totalResponses = 0 }: { totalResponses?: number 
           <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{liveCount}</div>
           <div className="text-xs text-green-600 dark:text-green-500 font-medium">Real-time</div>
         </Card>
-        <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
-          <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Avg. Time
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">2m 14s</div>
-          <div className="text-xs text-zinc-500 font-medium">-10s vs benchmark</div>
-        </Card>
-        <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
-          <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" /> Completion Rate
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">87%</div>
-          <div className="text-xs text-green-600 dark:text-green-500 font-medium">+2% this week</div>
-        </Card>
-        <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
-          <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
-            <MousePointerClick className="w-4 h-4" /> Drop-off
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Q4</div>
-          <div className="text-xs text-zinc-500 font-medium">Pricing Question</div>
-        </Card>
+        
+        {/* Fake Metrics Group */}
+        <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+            <div className="absolute inset-0 z-10 backdrop-blur-[1px] bg-white/50 dark:bg-black/50 flex items-center justify-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="bg-zinc-900 dark:bg-white text-white dark:text-black px-3 py-1 rounded-full font-bold text-xs shadow-xl">
+                    Coming Soon
+                </div>
+            </div>
+            <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 opacity-50">
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Avg. Time
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">--</div>
+            <div className="text-xs text-zinc-500 font-medium">Benchmark pending</div>
+            </Card>
+            <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 opacity-50">
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> Completion Rate
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">--</div>
+            <div className="text-xs text-zinc-500 font-medium">Calculating...</div>
+            </Card>
+            <Card className="p-4 space-y-1 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 opacity-50">
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-2">
+                <MousePointerClick className="w-4 h-4" /> Drop-off
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">--</div>
+            <div className="text-xs text-zinc-500 font-medium">Analyzing flow</div>
+            </Card>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+        <div className="absolute inset-0 z-10 backdrop-blur-[2px] bg-white/50 dark:bg-black/50 flex items-center justify-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+            <div className="bg-zinc-900 dark:bg-white text-white dark:text-black px-4 py-2 rounded-full font-bold text-sm shadow-xl">
+                Analytics Engine Coming Soon
+            </div>
+        </div>
+        
         {/* Response Trend */}
-        <Card className="p-6 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
+        <Card className="p-6 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 opacity-40">
           <h3 className="font-semibold mb-6 text-zinc-900 dark:text-zinc-100">Response Volume (Last 7 Days)</h3>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -107,7 +122,7 @@ export function LiveAnalytics({ totalResponses = 0 }: { totalResponses?: number 
         </Card>
 
         {/* Demographics */}
-        <Card className="p-6 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
+        <Card className="p-6 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 opacity-40">
           <h3 className="font-semibold mb-6 text-zinc-900 dark:text-zinc-100">Demographics (Age)</h3>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">

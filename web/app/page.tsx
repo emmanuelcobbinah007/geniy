@@ -13,7 +13,7 @@ export default function Home() {
       <Hero />
       <Features />
       <Comparison />
-      <Pricing />
+      {/* <Pricing /> - Hidden for MVP */}
       <Footer />
     </main>
   );

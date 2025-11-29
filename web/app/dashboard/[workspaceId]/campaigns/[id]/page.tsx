@@ -22,8 +22,8 @@ import { Input } from "@/components/ui/input"
 
 import { use } from "react"
 
-export default function CampaignInsightsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function CampaignInsightsPage({ params }: { params: Promise<{ workspaceId: string, id: string }> }) {
+  const { workspaceId, id } = use(params)
   const { user, token } = useAuth()
   const [showPreview, setShowPreview] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -94,7 +94,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ id:
       <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-            <Link href="/dashboard/campaigns" className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
+            <Link href={`/dashboard/${workspaceId}/campaigns`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" /> Campaigns
             </Link>
             <span>/</span>
@@ -144,7 +144,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ id:
             </PopoverContent>
           </Popover>
 
-          <Link href={`/dashboard/campaigns/${id}/responses`}>
+          <Link href={`/dashboard/${workspaceId}/campaigns/${id}/responses`}>
             <Button variant="outline" className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">
               View Responses
             </Button>

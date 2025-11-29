@@ -34,7 +34,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
               <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Features</Link></li>
               <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Integrations</Link></li>
-              <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Pricing</Link></li>
+              <li><Link href="mailto:feedback@geniy.ai" className="hover:text-violet-600 dark:hover:text-violet-400">Report a Bug</Link></li>
               <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Changelog</Link></li>
             </ul>
           </div>

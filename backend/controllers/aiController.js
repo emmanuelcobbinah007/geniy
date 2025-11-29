@@ -51,3 +51,18 @@ exports.generateSurvey = async (req, res) => {
         res.status(500).json({ error: "Failed to generate survey" });
     }
 };
+
+exports.chatWithContext = async (req, res) => {
+    try {
+        const { context, messages } = req.body;
+        if (!context || !messages) {
+            return res.status(400).json({ error: "Context and messages are required" });
+        }
+
+        const reply = await genesisAgent.chat(context, messages);
+        res.json({ reply });
+    } catch (error) {
+        console.error("Chat Error:", error);
+        res.status(500).json({ error: "Failed to chat" });
+    }
+};

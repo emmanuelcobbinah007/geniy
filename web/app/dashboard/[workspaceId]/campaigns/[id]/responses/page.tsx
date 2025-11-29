@@ -78,21 +78,37 @@ export default function CampaignResponsesPage({ params }: { params: Promise<{ id
                 <TableCell colSpan={3} className="h-24 text-center text-zinc-500">No responses yet.</TableCell>
               </TableRow>
             ) : (
-              responses.map((response) => (
+              responses.map((response) => {
+                // Parse schema to get question titles
+                const questions = response.survey?.jsonSchema?.questions || {};
+                const questionMap = Array.isArray(questions) 
+                    ? questions.reduce((acc: any, q: any, i: number) => ({ ...acc, [`Q${i+1}`]: q.question }), {})
+                    : Object.entries(questions).reduce((acc: any, [k, v]: [string, any]) => ({ ...acc, [k]: v.question }), {});
+
+                return (
                 <TableRow key={response.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium align-top">
                     {format(new Date(response.submittedAt), "MMM d, yyyy HH:mm")}
                   </TableCell>
                   <TableCell>
-                    <div className="max-w-2xl truncate text-zinc-600 dark:text-zinc-400">
-                      {Object.values(response.rawAnswers).join(", ")}
+                    <div className="space-y-2">
+                      {Object.entries(response.rawAnswers).map(([key, value]) => (
+                        <div key={key} className="text-sm">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-200 block">
+                            {questionMap[key] || key}:
+                          </span>
+                          <span className="text-zinc-600 dark:text-zinc-400">
+                            {String(value)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right align-top">
                     <Button variant="ghost" size="sm">View Details</Button>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>

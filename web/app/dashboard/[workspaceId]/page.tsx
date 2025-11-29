@@ -66,8 +66,13 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Knowledge Health Widget */}
-          <motion.div variants={item}>
-            <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10">
+          <motion.div variants={item} className="relative">
+            <div className="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-500">
+                    Coming Soon
+                </div>
+            </div>
+            <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 opacity-50 pointer-events-none">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <h3 className="font-semibold flex items-center gap-2">
@@ -157,8 +162,13 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         <div className="space-y-8">
           
           {/* Competitor Pulse */}
-          <motion.div variants={item}>
-            <Card className="p-0 overflow-hidden">
+          <motion.div variants={item} className="relative">
+            <div className="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-500">
+                    Coming Soon
+                </div>
+            </div>
+            <Card className="p-0 overflow-hidden opacity-50 pointer-events-none">
               <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Activity className="w-4 h-4 text-zinc-500" />

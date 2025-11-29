@@ -141,4 +141,8 @@ export const api = {
   async generateSurvey(contextSummary: any, strategy: any, token: string) {
     return this.post('/ai/generate-survey', { contextSummary, strategy }, token);
   },
+
+  async chatWithContext(context: string, messages: any[], token: string) {
+    return this.post('/ai/chat', { context, messages }, token);
+  },
 };

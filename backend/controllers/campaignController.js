@@ -14,47 +14,44 @@ exports.createCampaign = async (req, res) => {
         // Generate a simple public slug (8 chars)
         const publicSlug = crypto.randomUUID().split('-')[0] + Math.floor(Math.random() * 1000);
 
-        // Transaction to ensure both are created or neither
-        const result = await prisma.$transaction(async (prisma) => {
-            // 1. Create Campaign
-            const campaign = await prisma.campaign.create({
-                data: {
-                    workspaceId,
-                    name,
-                    description,
-                },
-            });
+        // 1. Create Campaign
+        const campaign = await prisma.campaign.create({
+            data: {
+                workspaceId,
+                name,
+                description,
+            },
+        });
 
-            // 2. Create Survey
-            const survey = await prisma.survey.create({
-                data: {
-                    campaignId: campaign.id,
-                    title: surveyTitle,
-                    jsonSchema: questions || {}, // Store the provided JSON
-                    publicSlug: publicSlug,
-                    isPublished: true, // Auto-publish for MVP as requested
-                },
-            });
+        // 2. Create Survey
+        const survey = await prisma.survey.create({
+            data: {
+                campaignId: campaign.id,
+                title: surveyTitle,
+                jsonSchema: questions || {}, // Store the provided JSON
+                publicSlug: publicSlug,
+                isPublished: true, // Auto-publish for MVP as requested
+            },
+        });
 
-            // 3. Update Workspace Context if provided
-            if (contextData && contextData.analysis) {
-                const { analysis, strategy } = contextData;
-                let contextString = `Company: ${analysis.companyName}\nIndustry: ${analysis.industry}\nTarget Audience: ${analysis.targetAudience.join(', ')}\n\n`;
+        // 3. Update Workspace Context if provided
+        if (contextData && contextData.analysis) {
+            const { analysis, strategy } = contextData;
+            let contextString = `Company: ${analysis.companyName}\nIndustry: ${analysis.industry}\nTarget Audience: ${analysis.targetAudience.join(', ')}\n\n`;
 
-                if (strategy) {
-                    contextString += `Strategy Objectives:\n- ${strategy.objectives.join('\n- ')}\n`;
-                }
-
-                await prisma.workspace.update({
-                    where: { id: workspaceId },
-                    data: {
-                        businessContext: contextString
-                    }
-                });
+            if (strategy) {
+                contextString += `Strategy Objectives:\n- ${strategy.objectives.join('\n- ')}\n`;
             }
 
-            return { campaign, survey };
-        });
+            await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: {
+                    businessContext: contextString
+                }
+            });
+        }
+
+        const result = { campaign, survey };
 
         res.status(201).json(result);
     } catch (error) {
@@ -191,7 +188,7 @@ exports.getCampaignResponses = async (req, res) => {
             },
             include: {
                 survey: {
-                    select: { title: true }
+                    select: { title: true, jsonSchema: true }
                 }
             },
             orderBy: { submittedAt: 'desc' }

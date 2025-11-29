@@ -121,6 +121,42 @@ class GenesisAgent {
         const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
         return JSON.parse(result);
     }
+
+    /**
+     * Step 5: Chat with Context
+     * Interactive chat with the business context.
+     */
+    async chat(context, messages) {
+        // Format messages for the prompt
+        // Assuming messages is an array of { role: "user"|"assistant", content: "..." }
+        const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+
+        const prompt = `
+      You are Geniy, an expert AI market research consultant.
+      You have access to the following Business Context for the user's project:
+      
+      === BUSINESS CONTEXT ===
+      ${context}
+      ========================
+
+      Your goal is to help the user refine their strategy, understand their competitors, or brainstorm survey questions.
+      
+      **Tone & Style Guidelines:**
+      - **Be Concise & Adaptive:** Keep answers brief and punchy. Only go deep if the topic is complex or explicitly asked.
+      - **Be Hyper-Specific:** Never give generic advice (e.g., "use social media"). Instead, use the specific **Target Audience** and **Industry** from the context to suggest exact channels (e.g., "Since you target software engineers, try Hacker News or r/programming" instead of "forums").
+      - **No Fluff:** Cut the preamble. Start with your best idea.
+      - **Conversational:** Write like a smart colleague, not a textbook.
+
+      Conversation History:
+      ${conversationHistory}
+
+      ASSISTANT:
+    `;
+
+        // Use a smart model for chat
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", false, 500);
+        return result;
+    }
 }
 
 module.exports = new GenesisAgent();

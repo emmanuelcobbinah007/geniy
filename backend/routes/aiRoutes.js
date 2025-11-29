@@ -9,5 +9,6 @@ router.use(protect);
 router.post('/analyze-context', aiController.analyzeContext);
 router.post('/generate-strategy', aiController.generateStrategy);
 router.post('/generate-survey', aiController.generateSurvey);
+router.post('/chat', aiController.chatWithContext);
 
 module.exports = router;
