@@ -201,4 +201,27 @@ exports.getCampaignResponses = async (req, res) => {
     }
 };
 
+// Delete a campaign
+exports.deleteCampaign = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Transaction to clear surveys and delete campaign
+        const deleteSurveys = prisma.survey.deleteMany({
+            where: { campaignId: id }
+        });
+
+        const deleteCampaign = prisma.campaign.delete({
+            where: { id }
+        });
+
+        await prisma.$transaction([deleteSurveys, deleteCampaign]);
+
+        res.json({ message: 'Campaign deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting campaign:', error);
+        res.status(500).json({ error: 'Failed to delete campaign' });
+    }
+};
+
 

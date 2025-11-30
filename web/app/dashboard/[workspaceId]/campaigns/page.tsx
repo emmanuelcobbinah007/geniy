@@ -102,6 +102,7 @@ export default function CampaignsPage() {
                 trend={undefined} 
                 insight={undefined}
                 workspaceId={workspaceId}
+                publicSlug={campaign.surveys?.[0]?.publicSlug}
             />
             ))
         )}

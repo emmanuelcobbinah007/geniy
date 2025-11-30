@@ -36,7 +36,7 @@ function TypingEffect({ text, onComplete }: { text: string, onComplete?: () => v
   return <div className="prose dark:prose-invert prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{displayedText}</ReactMarkdown></div>
 }
 
-export function BrainChat({ context }: { context: string }) {
+export function BrainChat({ context, workspaceId }: { context: string; workspaceId: string }) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -77,7 +77,7 @@ export function BrainChat({ context }: { context: string }) {
         const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
         history.push({ role: "user", content: userMessage.content });
 
-        const response = await api.chatWithContext(context, history, token);
+        const response = await api.chatWithContext(context, history, workspaceId, token);
         
         const aiMessageId = (Date.now() + 1).toString()
         const aiMessage: Message = {

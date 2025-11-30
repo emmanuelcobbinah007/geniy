@@ -130,6 +130,30 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
     }
   })
 
+  // Clear Context Mutation
+  const clearMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) return
+      return api.clearContext(workspaceId, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["context", workspaceId] })
+      setContext("")
+      setAnalysisResult(null)
+      setStrategy(null)
+      toast.success("Memory cleared successfully")
+    },
+    onError: () => {
+      toast.error("Failed to clear memory")
+    }
+  })
+
+  const handleClearMemory = () => {
+      if (confirm("Are you sure? This will wipe all context and documents for this workspace. This action cannot be undone.")) {
+          clearMutation.mutate()
+      }
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -143,6 +167,16 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Geniy's Brain</h2>
         <div className="flex gap-2">
+            <Button 
+                variant="destructive"
+                size="sm"
+                onClick={handleClearMemory}
+                disabled={clearMutation.isPending || (!context && documents.length === 0)}
+                className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
+            >
+                {clearMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Clear Memory
+            </Button>
             <Button 
                 onClick={() => analyzeMutation.mutate()} 
                 disabled={analyzeMutation.isPending || !context}

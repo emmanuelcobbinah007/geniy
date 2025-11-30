@@ -1,4 +1,6 @@
 const genesisAgent = require('../services/ai/genesis');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
     try {
@@ -54,12 +56,53 @@ exports.generateSurvey = async (req, res) => {
 
 exports.chatWithContext = async (req, res) => {
     try {
-        const { context, messages } = req.body;
+        const { context, messages, workspaceId } = req.body;
         if (!context || !messages) {
             return res.status(400).json({ error: "Context and messages are required" });
         }
 
-        const reply = await genesisAgent.chat(context, messages);
+        let enrichedContext = context;
+
+        if (workspaceId) {
+            // Fetch live campaign data
+            const campaigns = await prisma.campaign.findMany({
+                where: { workspaceId },
+                include: {
+                    surveys: {
+                        include: {
+                            responses: {
+                                orderBy: { submittedAt: 'desc' },
+                                take: 5 // Get 5 most recent responses per survey for context
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (campaigns.length > 0) {
+                let campaignSummary = "\n\n=== LIVE CAMPAIGN DATA ===\n";
+                campaigns.forEach(campaign => {
+                    campaignSummary += `Campaign: ${campaign.name}\n`;
+                    campaign.surveys.forEach(survey => {
+                        const responseCount = survey.responses.length; // Note: This is just the fetched count (max 5), ideally we'd get total count separately but this is a quick context injection
+                        // Actually, let's just say "Recent Responses"
+                        campaignSummary += `  - Survey: ${survey.title} (Public Slug: ${survey.publicSlug})\n`;
+                        if (survey.responses.length > 0) {
+                            campaignSummary += `    Recent Responses:\n`;
+                            survey.responses.forEach(r => {
+                                campaignSummary += `      - [${r.submittedAt.toISOString()}] ${JSON.stringify(r.rawAnswers).substring(0, 200)}...\n`;
+                            });
+                        } else {
+                            campaignSummary += `    No responses yet.\n`;
+                        }
+                    });
+                });
+                campaignSummary += "==========================\n";
+                enrichedContext += campaignSummary;
+            }
+        }
+
+        const reply = await genesisAgent.chat(enrichedContext, messages);
         res.json({ reply });
     } catch (error) {
         console.error("Chat Error:", error);

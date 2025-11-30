@@ -5,7 +5,8 @@ const { protect } = require('../middleware/authMiddleware');
 const {
     getContext,
     updateContext,
-    uploadDocument
+    uploadDocument,
+    clearContext
 } = require('../controllers/contextController');
 
 const cloudinary = require('cloudinary').v2;
@@ -35,5 +36,6 @@ const upload = multer({
 router.get('/', protect, getContext);
 router.put('/', protect, updateContext);
 router.post('/upload', protect, upload.single('file'), uploadDocument);
+router.delete('/', protect, clearContext);
 
 module.exports = router;

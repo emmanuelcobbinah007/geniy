@@ -54,7 +54,7 @@ export default function ContextPage() {
 
       {/* Right: Brain Chat */}
       <div className="h-full min-h-0">
-        <BrainChat context={data?.businessContext || ""} />
+        <BrainChat context={data?.businessContext || ""} workspaceId={workspaceId} />
       </div>
     </div>
   )

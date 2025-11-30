@@ -52,9 +52,9 @@ export function Footer() {
           <div>
             <h3 className="mb-4 text-sm font-semibold text-foreground">Legal</h3>
             <ul className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-              <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Privacy</Link></li>
-              <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Terms</Link></li>
-              <li><Link href="#" className="hover:text-violet-600 dark:hover:text-violet-400">Security</Link></li>
+              <li><Link href="/legal/privacy" className="hover:text-violet-600 dark:hover:text-violet-400">Privacy</Link></li>
+              <li><Link href="/legal/terms" className="hover:text-violet-600 dark:hover:text-violet-400">Terms</Link></li>
+              <li><Link href="/legal/security" className="hover:text-violet-600 dark:hover:text-violet-400">Security</Link></li>
             </ul>
           </div>
         </div>

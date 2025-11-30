@@ -11,6 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { api } from "@/lib/api"
+import { useAuth } from "@/context/auth-context"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 interface CampaignCardProps {
   id: string
@@ -20,10 +24,43 @@ interface CampaignCardProps {
   date: string
   trend?: number
   insight?: string
+  insight?: string
   workspaceId: string
+  publicSlug?: string
 }
 
-export function CampaignCard({ id, name, status, responses, date, trend, insight, workspaceId }: CampaignCardProps) {
+export function CampaignCard({ id, name, status, responses, date, trend, insight, workspaceId, publicSlug }: CampaignCardProps) {
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) return
+      return api.deleteCampaign(id, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaigns', workspaceId] })
+      toast.success("Campaign deleted successfully")
+    },
+    onError: () => {
+      toast.error("Failed to delete campaign")
+    }
+  })
+
+  const handleShare = () => {
+    if (!publicSlug) {
+      toast.error("Public link not available")
+      return
+    }
+    const url = `${window.location.origin}/s/${publicSlug}`
+    navigator.clipboard.writeText(url)
+    toast.success("Link copied to clipboard")
+  }
+
+  const handleEdit = () => {
+    toast.info("Editing surveys is coming soon!")
+  }
+
   return (
     <Card className="p-6 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group relative overflow-hidden bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
       {/* Status Badge */}
@@ -42,9 +79,18 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
-            <DropdownMenuItem className="focus:bg-zinc-100 dark:focus:bg-zinc-900 focus:text-zinc-900 dark:focus:text-zinc-200">Edit Survey</DropdownMenuItem>
-            <DropdownMenuItem className="focus:bg-zinc-100 dark:focus:bg-zinc-900 focus:text-zinc-900 dark:focus:text-zinc-200">Share Link</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600 dark:text-red-900 focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-700 dark:focus:text-red-500">Delete</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleEdit} className="focus:bg-zinc-100 dark:focus:bg-zinc-900 focus:text-zinc-900 dark:focus:text-zinc-200 cursor-pointer">Edit Survey</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleShare} className="focus:bg-zinc-100 dark:focus:bg-zinc-900 focus:text-zinc-900 dark:focus:text-zinc-200 cursor-pointer">Share Link</DropdownMenuItem>
+            <DropdownMenuItem 
+                onClick={() => {
+                    if (confirm("Are you sure you want to delete this campaign?")) {
+                        deleteMutation.mutate()
+                    }
+                }} 
+                className="text-red-600 dark:text-red-900 focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-700 dark:focus:text-red-500 cursor-pointer"
+            >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

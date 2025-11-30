@@ -20,4 +20,7 @@ router.get('/:id', campaignController.getCampaign);
 // GET /api/campaigns/:id/responses - Get all responses for a campaign
 router.get('/:id/responses', campaignController.getCampaignResponses);
 
+// DELETE /api/campaigns/:id - Delete a campaign
+router.delete('/:id', campaignController.deleteCampaign);
+
 module.exports = router;

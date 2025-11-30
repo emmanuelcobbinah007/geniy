@@ -4,7 +4,10 @@ export const api = {
   async handleResponse(response: Response) {
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Something went wrong');
+      const errorMessage = error.details 
+        ? `${error.message}: ${JSON.stringify(error.details)}` 
+        : (error.message || 'Something went wrong');
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -84,6 +87,17 @@ export const api = {
     return this.get(`/campaigns/${id}`, token);
   },
 
+  async deleteCampaign(id: string, token: string) {
+    const response = await fetch(`${API_URL}/campaigns/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return this.handleResponse(response);
+  },
+
   // Context
   async getContext(workspaceId: string, token: string) {
     return this.get(`/context?workspaceId=${workspaceId}`, token);
@@ -104,6 +118,18 @@ export const api = {
         Authorization: `Bearer ${token}`,
       },
       body: formData,
+    });
+    return this.handleResponse(response);
+  },
+
+  async clearContext(workspaceId: string, token: string) {
+    const response = await fetch(`${API_URL}/context`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ workspaceId })
     });
     return this.handleResponse(response);
   },
@@ -142,7 +168,7 @@ export const api = {
     return this.post('/ai/generate-survey', { contextSummary, strategy }, token);
   },
 
-  async chatWithContext(context: string, messages: any[], token: string) {
-    return this.post('/ai/chat', { context, messages }, token);
+  async chatWithContext(context: string, messages: any[], workspaceId: string, token: string) {
+    return this.post('/ai/chat', { context, messages, workspaceId }, token);
   },
 };

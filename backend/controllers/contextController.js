@@ -132,8 +132,46 @@ const uploadDocument = async (req, res) => {
     }
 };
 
+// @desc    Clear workspace context and documents
+// @route   DELETE /api/context
+// @access  Private
+const clearContext = async (req, res) => {
+    const { workspaceId } = req.body;
+
+    if (!workspaceId) {
+        return res.status(400).json({ message: 'Workspace ID required' });
+    }
+
+    try {
+        // Verify user belongs to this workspace
+        const isMember = req.user.workspaces.some(w => w.id === workspaceId) ||
+            req.user.sharedWorkspaces.some(w => w.id === workspaceId);
+
+        if (!isMember) {
+            return res.status(403).json({ message: 'Not authorized to access this workspace' });
+        }
+
+        // Transaction to clear context and delete documents
+        await prisma.$transaction([
+            prisma.workspace.update({
+                where: { id: workspaceId },
+                data: { businessContext: null }
+            }),
+            prisma.document.deleteMany({
+                where: { workspaceId }
+            })
+        ]);
+
+        res.json({ message: 'Context cleared successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getContext,
     updateContext,
-    uploadDocument
+    uploadDocument,
+    clearContext
 };
