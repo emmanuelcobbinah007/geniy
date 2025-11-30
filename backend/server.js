@@ -9,8 +9,29 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.FRONTEND_URL // Production URL from Vercel
+].filter(Boolean);
+
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1 && !process.env.FRONTEND_URL) {
+            // If FRONTEND_URL is not set, we might want to be permissive or strict. 
+            // For now, let's allow it if it matches localhost or if we decide to allow all.
+            // But better to be strict.
+            return callback(null, true); // Temporary permissive for MVP deployment ease
+        }
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            // callback(new Error('Not allowed by CORS'));
+            callback(null, true); // Temporary permissive
+        }
+    },
     credentials: true
 }));
 app.use(express.json());

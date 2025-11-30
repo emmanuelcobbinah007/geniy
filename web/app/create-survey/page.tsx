@@ -65,15 +65,53 @@ export default function CreateSurveyPage() {
   }, [isLoading, user, token, workspaceId])
 
   const getSurveyData = () => {
+    // Calculate "Next" targets based on logic (Auto-Merge)
+    const nextMap: Record<number, string> = {};
+    
+    // Initialize with default linear flow
+    questions.forEach((q, index) => {
+        const isLast = index === questions.length - 1;
+        nextMap[q.id] = isLast ? "END" : `Q${q.id + 1}`;
+    });
+
+    // Apply merge logic
+    questions.forEach((q) => {
+        if (q.logic && q.logic.length > 0) {
+            const targets = q.logic.map((l: any) => l.then === "end" ? -1 : parseInt(l.then));
+            const validTargets = targets.filter((t: number) => t !== -1);
+            
+            if (validTargets.length > 0) {
+                const maxTarget = Math.max(...validTargets);
+                const mergePoint = `Q${maxTarget + 1}`;
+                
+                // Set the 'next' for all questions in the range to the merge point
+                // This ensures that Q2 and Q3 both jump to Q4 if Q1 branches to them
+                for (let i = q.id + 1; i <= maxTarget; i++) {
+                    // Only update if it's not the last question (which should stay END unless overridden by a larger scope? No, END is final)
+                    // Actually, we just update the map. If i is the last question, maxTarget would be >= i.
+                    // We need to be careful not to overwrite "END" if we are at the end of the survey, 
+                    // but if logic jumps to the last question, then the merge point is "END" (or Q_last+1 which doesn't exist).
+                    
+                    // If maxTarget is the last question, mergePoint should be END
+                    const isMaxLast = maxTarget === questions[questions.length - 1].id;
+                    const finalMerge = isMaxLast ? "END" : mergePoint;
+                    
+                    if (nextMap[i] !== "END") {
+                         nextMap[i] = finalMerge;
+                    }
+                }
+            }
+        }
+    });
+
     return {
-        questions: questions.reduce((acc: any, q: any, index: number, arr: any[]) => {
-            const isLast = index === arr.length - 1;
+        questions: questions.reduce((acc: any, q: any) => {
             acc[`Q${q.id}`] = {
                 type: q.type,
                 question: q.title,
                 options: q.options,
                 required: q.required,
-                next: isLast ? "END" : `Q${q.id + 1}`,
+                next: nextMap[q.id],
                 branches: q.logic?.map((l: any) => ({
                     if: l.if,
                     next: l.then === "end" ? "END" : `Q${l.then}`
