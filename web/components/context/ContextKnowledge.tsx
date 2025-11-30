@@ -10,7 +10,7 @@ import { useAuth } from "@/context/auth-context"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-interface Document {
+interface ContextDocument {
   id: string
   name: string
   type: string
@@ -20,7 +20,7 @@ interface Document {
 
 interface ContextKnowledgeProps {
   initialContext: string
-  documents: Document[]
+  documents: ContextDocument[]
   workspaceId: string
 }
 
@@ -89,9 +89,11 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
       setContext(contextString);
       
       // Save to DB
-      api.updateContext(workspaceId, contextString, token!)
-        .then(() => queryClient.invalidateQueries({ queryKey: ["context", workspaceId] }))
-        .catch(err => console.error("Failed to save context", err));
+      if (token) {
+        api.updateContext(workspaceId, contextString, token)
+          .then(() => queryClient.invalidateQueries({ queryKey: ["context", workspaceId] }))
+          .catch(err => console.error("Failed to save context", err));
+      }
     },
     onError: () => {
       alert("Failed to analyze context")
@@ -149,7 +151,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
   })
 
   const handleClearMemory = () => {
-      if (confirm("Are you sure? This will wipe all context and documents for this workspace. This action cannot be undone.")) {
+      if (window.confirm("Are you sure? This will wipe all context and documents for this workspace. This action cannot be undone.")) {
           clearMutation.mutate()
       }
   }
@@ -222,7 +224,11 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
                     >
-                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                        {isUploading ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                            <Upload className="w-4 h-4 mr-2" />
+                        )}
                         Upload
                     </Button>
                 </div>
