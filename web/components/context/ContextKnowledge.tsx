@@ -18,6 +18,18 @@ interface ContextDocument {
   createdAt: string
 }
 
+interface AnalysisResult {
+  companyName: string
+  industry: string
+  targetAudience: string[]
+  competitors?: string[]
+}
+
+interface Strategy {
+  objectives: string[]
+  hypotheses: string[]
+}
+
 interface ContextKnowledgeProps {
   initialContext: string
   documents: ContextDocument[]
@@ -31,8 +43,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
-  const [strategy, setStrategy] = useState<any>(null)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [strategy, setStrategy] = useState<Strategy | null>(null)
 
   // Update Context Mutation
   const updateContextMutation = useMutation({
@@ -102,7 +114,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
 
   // Generate Strategy Mutation
   const strategyMutation = useMutation({
-    mutationFn: async (analysisData?: any) => {
+    mutationFn: async (analysisData?: AnalysisResult) => {
       const dataToUse = analysisData || analysisResult;
       if (!token || !dataToUse) return
       return api.generateStrategy(dataToUse, token)
