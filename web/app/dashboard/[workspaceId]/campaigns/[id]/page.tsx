@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
 import {
@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 
 import { use } from "react"
 
-import { ThemeEditor, Theme } from "@/components/survey/ThemeEditor"
+import { ThemeEditor, Theme, DEFAULT_THEME } from "@/components/survey/ThemeEditor"
 import { Palette, Save } from "lucide-react"
 import { toast } from "sonner"
 
@@ -32,14 +32,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
   const [showPreview, setShowPreview] = useState(false)
   const [showCustomize, setShowCustomize] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [theme, setTheme] = useState<Theme>({
-    primaryColor: "#7c3aed",
-    backgroundColor: "#ffffff",
-    textColor: "#18181b",
-    accentColor: "#f4f4f5",
-    fontFamily: "Inter",
-    borderRadius: "0.5rem"
-  })
+  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME)
 
   const { data: campaign, isLoading, refetch } = useQuery({
     queryKey: ['campaign', id],
@@ -53,17 +46,15 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
   })
 
   // Update theme when campaign loads
-  useState(() => {
+  useEffect(() => {
     if (campaign?.surveys?.[0]?.themeConfig) {
-        setTheme(campaign.surveys[0].themeConfig)
+        // Merge with default theme to ensure new properties (like mode) are present
+        setTheme(prev => ({
+            ...DEFAULT_THEME,
+            ...campaign.surveys[0].themeConfig
+        }))
     }
-  })
-  
-  // Also update when campaign data changes (e.g. after refetch)
-  if (campaign?.surveys?.[0]?.themeConfig && JSON.stringify(campaign.surveys[0].themeConfig) !== JSON.stringify(theme) && !showCustomize) {
-      // Only sync if not currently editing to avoid overwriting
-      // actually, let's just use useEffect
-  }
+  }, [campaign])
 
   const survey = campaign?.surveys?.[0]
   const shareUrl = survey ? `${window.location.origin}/s/${survey.publicSlug}` : ""
@@ -186,7 +177,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
             variant="outline" 
             className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
             onClick={() => {
-                if (survey?.themeConfig) setTheme(survey.themeConfig)
+                if (survey?.themeConfig) setTheme({ ...DEFAULT_THEME, ...survey.themeConfig })
                 setShowCustomize(true)
             }}
           >
