@@ -29,22 +29,32 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [history, setHistory] = useState<string[]>([])
 
   useEffect(() => {
     if (surveyData?.jsonSchema?.questions) {
       const questions = surveyData.jsonSchema.questions
       const firstKey = Object.keys(questions)[0]
       setCurrentQuestionId(firstKey)
+      setHistory([])
     } else if (surveyData?.questions) {
         // Handle direct questions object (from preview state)
         const questions = surveyData.questions
         const firstKey = Object.keys(questions)[0]
         setCurrentQuestionId(firstKey)
+        setHistory([])
     }
   }, [surveyData])
 
   const getQuestions = () => {
       return surveyData?.jsonSchema?.questions || surveyData?.questions || {}
+  }
+
+  const handleBack = () => {
+    if (history.length === 0) return
+    const prevQuestionId = history[history.length - 1]
+    setHistory(prev => prev.slice(0, -1))
+    setCurrentQuestionId(prevQuestionId)
   }
 
   const handleAnswer = (value: any) => {
@@ -78,6 +88,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     if (nextQId === "END" || !nextQId || !questions[nextQId]) {
       submitSurvey(newAnswers)
     } else {
+      setHistory(prev => [...prev, currentQuestionId])
       setCurrentQuestionId(nextQId)
     }
   }
@@ -168,7 +179,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
   return (
     <div 
-        className="flex flex-col h-full w-full transition-colors duration-300"
+        className="flex flex-col h-full w-full transition-colors duration-300 bg-zinc-50 dark:bg-zinc-950"
         style={{
             ...themeStyles,
             backgroundColor: theme ? 'var(--bg)' : undefined,
@@ -177,17 +188,28 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
         }}
     >
       {/* Progress Bar (Simple) */}
-      <div className="h-1 w-full shrink-0" style={{ backgroundColor: theme ? 'var(--accent)' : '#e4e4e7' }}>
+      <div className="h-1 w-full shrink-0 bg-zinc-200 dark:bg-zinc-800" style={{ backgroundColor: theme ? 'var(--accent)' : undefined }}>
         <div 
-            className="h-full transition-all duration-500"
+            className="h-full transition-all duration-500 bg-violet-600"
             style={{ 
-                width: `${isCompleted ? 100 : (Object.keys(answers).length / Object.keys(questions).length) * 100}%`,
-                backgroundColor: theme ? 'var(--primary)' : '#7c3aed'
+                width: `${isCompleted ? 100 : ((history.length) / Object.keys(questions).length) * 100}%`,
+                backgroundColor: theme ? 'var(--primary)' : undefined
             }}
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full overflow-y-auto relative">
+        {/* Back Button */}
+        {!isCompleted && history.length > 0 && (
+            <button 
+                onClick={handleBack}
+                className="absolute top-4 left-4 md:top-8 md:left-0 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors flex items-center gap-1"
+                style={{ color: theme ? 'var(--text)' : undefined, opacity: theme ? 0.6 : 1 }}
+            >
+                ← Back
+            </button>
+        )}
+
         <AnimatePresence mode="wait">
           {!isCompleted && currentQ && (
             <motion.div
@@ -197,8 +219,9 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
               exit={{ opacity: 0, x: -20 }}
               className="w-full space-y-8"
             >
+              {/* ... (rest of question rendering) */}
               <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-bold" style={{ color: theme ? 'var(--text)' : undefined }}>
+                <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100" style={{ color: theme ? 'var(--text)' : undefined }}>
                   {currentQ.question}
                 </h2>
                 {currentQ.required && <span className="text-xs text-red-500 uppercase tracking-wider font-medium">Required</span>}
@@ -211,19 +234,19 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                       <button
                         key={opt}
                         onClick={() => handleAnswer(opt)}
-                        className="w-full text-left p-4 border transition-all font-medium flex items-center justify-between group"
+                        className="w-full text-left p-4 border transition-all font-medium flex items-center justify-between group rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-zinc-700 dark:text-zinc-300"
                         style={{
-                            borderRadius: theme ? 'var(--radius)' : '0.75rem',
-                            borderColor: theme ? 'var(--accent)' : '#e4e4e7',
-                            backgroundColor: theme ? 'var(--bg)' : '#ffffff',
-                            color: theme ? 'var(--text)' : '#3f3f46'
+                            borderRadius: theme ? 'var(--radius)' : undefined,
+                            borderColor: theme ? 'var(--accent)' : undefined,
+                            backgroundColor: theme ? 'var(--bg)' : undefined,
+                            color: theme ? 'var(--text)' : undefined
                         }}
                         onMouseEnter={(e) => {
                             if (theme) {
                                 e.currentTarget.style.borderColor = 'var(--primary)'
                                 e.currentTarget.style.backgroundColor = 'var(--accent)'
                             } else {
-                                e.currentTarget.classList.add('border-violet-500', 'bg-violet-50')
+                                // Let Tailwind hover classes handle it
                             }
                         }}
                         onMouseLeave={(e) => {
@@ -231,14 +254,14 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                                 e.currentTarget.style.borderColor = 'var(--accent)'
                                 e.currentTarget.style.backgroundColor = 'var(--bg)'
                             } else {
-                                e.currentTarget.classList.remove('border-violet-500', 'bg-violet-50')
+                                // Let Tailwind hover classes handle it
                             }
                         }}
                       >
                         {opt}
                         <ArrowRight 
-                            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
-                            style={{ color: theme ? 'var(--primary)' : '#8b5cf6' }}
+                            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-violet-500" 
+                            style={{ color: theme ? 'var(--primary)' : undefined }}
                         />
                       </button>
                     ))}
@@ -248,9 +271,9 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                 {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text") && (
                   <div className="flex gap-2">
                     <Input 
-                      className="h-12 text-lg"
+                      className="h-12 text-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
                       style={{
-                          borderRadius: theme ? 'var(--radius)' : '0.5rem',
+                          borderRadius: theme ? 'var(--radius)' : undefined,
                           borderColor: theme ? 'var(--accent)' : undefined,
                           backgroundColor: theme ? 'var(--bg)' : undefined,
                           color: theme ? 'var(--text)' : undefined
@@ -282,11 +305,11 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                             <button
                                 key={rating}
                                 onClick={() => handleAnswer(rating)}
-                                className="w-12 h-12 border transition-all font-bold text-lg"
+                                className="w-12 h-12 border transition-all font-bold text-lg rounded-full border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-violet-600 hover:text-white hover:border-violet-600"
                                 style={{
-                                    borderRadius: theme ? '50%' : '9999px',
-                                    borderColor: theme ? 'var(--accent)' : '#e4e4e7',
-                                    backgroundColor: theme ? 'var(--bg)' : '#ffffff',
+                                    borderRadius: theme ? '50%' : undefined,
+                                    borderColor: theme ? 'var(--accent)' : undefined,
+                                    backgroundColor: theme ? 'var(--bg)' : undefined,
                                     color: theme ? 'var(--text)' : undefined
                                 }}
                                 onMouseEnter={(e) => {
@@ -295,7 +318,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                                         e.currentTarget.style.color = '#ffffff'
                                         e.currentTarget.style.borderColor = 'var(--primary)'
                                     } else {
-                                        e.currentTarget.classList.add('bg-violet-600', 'text-white', 'border-violet-600')
+                                        // Let Tailwind hover classes handle it
                                     }
                                 }}
                                 onMouseLeave={(e) => {
@@ -304,7 +327,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                                         e.currentTarget.style.color = 'var(--text)'
                                         e.currentTarget.style.borderColor = 'var(--accent)'
                                     } else {
-                                        e.currentTarget.classList.remove('bg-violet-600', 'text-white', 'border-violet-600')
+                                        // Let Tailwind hover classes handle it
                                     }
                                 }}
                             >
@@ -337,19 +360,19 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
               className="text-center space-y-6"
             >
               <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
-                style={{ backgroundColor: theme ? 'var(--accent)' : '#dcfce7' }}
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto bg-green-100 dark:bg-green-900/30"
+                style={{ backgroundColor: theme ? 'var(--accent)' : undefined }}
               >
                 <Check 
-                    className="w-10 h-10" 
-                    style={{ color: theme ? 'var(--primary)' : '#16a34a' }}
+                    className="w-10 h-10 text-green-600 dark:text-green-500" 
+                    style={{ color: theme ? 'var(--primary)' : undefined }}
                 />
               </div>
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold" style={{ color: theme ? 'var(--text)' : undefined }}>Thank you!</h1>
-                <p className="text-lg" style={{ color: theme ? 'var(--text)' : '#71717a', opacity: 0.8 }}>Your response has been recorded.</p>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100" style={{ color: theme ? 'var(--text)' : undefined }}>Thank you!</h1>
+                <p className="text-lg text-zinc-500" style={{ color: theme ? 'var(--text)' : undefined, opacity: theme ? 0.8 : 1 }}>Your response has been recorded.</p>
               </div>
-              <p className="max-w-md mx-auto leading-relaxed" style={{ color: theme ? 'var(--text)' : '#a1a1aa', opacity: 0.6 }}>
+              <p className="max-w-md mx-auto leading-relaxed text-zinc-400" style={{ color: theme ? 'var(--text)' : undefined, opacity: theme ? 0.6 : 1 }}>
                 Your feedback is incredibly valuable and will help us build a beautiful product tailored to your needs.
               </p>
               {isPreview && (
@@ -367,8 +390,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
         </AnimatePresence>
       </div>
       
-      <div className="p-4 text-center text-xs shrink-0" style={{ color: theme ? 'var(--text)' : '#a1a1aa', opacity: 0.5 }}>
-        Powered by <span className="font-bold" style={{ color: theme ? 'var(--text)' : '#52525b' }}>Geniy</span>
+      <div className="p-4 text-center text-xs shrink-0 text-zinc-400" style={{ color: theme ? 'var(--text)' : undefined, opacity: theme ? 0.5 : 1 }}>
+        Powered by <span className="font-bold text-zinc-600 dark:text-zinc-300" style={{ color: theme ? 'var(--text)' : undefined }}>Geniy</span>
       </div>
     </div>
   )

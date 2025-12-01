@@ -31,6 +31,15 @@ interface ThemeEditorProps {
   onThemeChange: (theme: Theme) => void
 }
 
+export const DEFAULT_THEME: Theme = {
+  primaryColor: "#7c3aed",
+  backgroundColor: "#ffffff",
+  textColor: "#18181b",
+  accentColor: "#f4f4f5",
+  fontFamily: "Inter",
+  borderRadius: "0.5rem"
+}
+
 export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
   const { token } = useAuth()
   const [prompt, setPrompt] = useState("")
@@ -38,6 +47,11 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
 
   const handleColorChange = (key: keyof Theme, value: string) => {
     onThemeChange({ ...theme, [key]: value })
+  }
+
+  const handleReset = () => {
+    onThemeChange(DEFAULT_THEME)
+    toast.success("Theme reset to default")
   }
 
   const handleGenerateTheme = async () => {
@@ -63,9 +77,14 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
 
   return (
     <div className="space-y-6 p-4 border rounded-lg bg-white dark:bg-zinc-900">
-      <div className="flex items-center gap-2 mb-4">
-        <Palette className="w-5 h-5 text-violet-600" />
-        <h3 className="font-semibold">Theme Editor</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-violet-600" />
+            <h3 className="font-semibold">Theme Editor</h3>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
+            Reset to Default
+        </Button>
       </div>
 
       {/* AI Generator */}
