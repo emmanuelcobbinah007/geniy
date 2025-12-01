@@ -160,7 +160,7 @@ function CreateSurveyContent() {
         questions: {
             title: title,
             version: "1.0",
-            version: "1.0",
+
             ...getSurveyData()
         },
         themeConfig: theme
