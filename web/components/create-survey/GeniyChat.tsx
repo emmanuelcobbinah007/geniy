@@ -6,12 +6,16 @@ import { Sparkles, Send, Upload, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
+import { CompetitorCard } from "./CompetitorCard"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 interface Message {
   id: string
   role: "user" | "assistant"
   content: string
   attachment?: string
+  competitorAnalysis?: any // Added for competitor card
 }
 
 interface GeniyChatProps {
@@ -233,8 +237,17 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     setIsProcessing(true)
 
     try {
-        // Call Chat API
-        const response = await api.chat(userText, chatContext, token)
+        // Prepare conversation history
+        const conversationHistory = messages.map(m => ({
+            role: m.role,
+            content: m.content
+        }));
+        
+        // Add current user message
+        conversationHistory.push({ role: "user", content: userText });
+
+        // Call Chat API with history
+        const response = await api.chat(conversationHistory, chatContext, token)
         
         // Update context
         if (response.updatedContext) {
@@ -248,7 +261,18 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
         // Handle Action
         if (response.action === "GENERATE") {
-            await generateSurveyFromContext(response.updatedContext || chatContext, userText)
+            // Use the AI's message (which likely contains the draft) as the instruction
+            // This ensures the generator knows exactly what was proposed/discussed
+            const instruction = `The user wants to generate a survey. Here is the draft/context we discussed:\n\n${response.message}\n\nUser's last input: ${userText}`;
+            await generateSurveyFromContext(response.updatedContext || chatContext, instruction)
+        } else if (response.action === "ANALYZE_COMPETITOR" && response.competitorAnalysis) {
+            // Add a special message with the analysis
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: "assistant",
+                content: `Here is my analysis of **${response.competitorName}**:`,
+                competitorAnalysis: response.competitorAnalysis
+            }])
         }
 
     } catch (error) {
@@ -294,12 +318,15 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-bl-none"
                 }`}
               >
-                {msg.content.split(/(\*\*.*?\*\*)/).map((part, i) => 
-                    part.startsWith('**') && part.endsWith('**') ? (
-                        <strong key={i}>{part.slice(2, -2)}</strong>
-                    ) : (
-                        <span key={i}>{part}</span>
-                    )
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                    </ReactMarkdown>
+                </div>
+                {msg.competitorAnalysis && (
+                    <div className="mt-3">
+                        <CompetitorCard name={msg.content.split('**')[1] || "Competitor"} analysis={msg.competitorAnalysis} />
+                    </div>
                 )}
               </div>
             </motion.div>

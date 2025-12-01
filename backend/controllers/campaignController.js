@@ -394,16 +394,36 @@ exports.getInsights = async (req, res) => {
 // Chat with Geniy (Conversational Agent)
 exports.chatWithGeniy = async (req, res) => {
     try {
-        const { message, context } = req.body;
+        const { message, messages, context } = req.body;
 
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+        // Support both single message (legacy/simple) and full history
+        let conversationHistory = messages;
+        if (!conversationHistory && message) {
+            conversationHistory = [{ role: 'user', content: message }];
         }
 
-        const response = await genesisAgent.chat(message, context);
+        if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+            return res.status(400).json({ error: 'Message or conversation history is required' });
+        }
+
+        const response = await genesisAgent.chatWithContext(context, conversationHistory);
+
+        // If action is ANALYZE_COMPETITOR, perform the analysis
+        if (response.action === 'ANALYZE_COMPETITOR' && response.competitorName) {
+            // Extract industry from context (simple regex or passed in)
+            const industryMatch = context.match(/Industry:\s*(.+?)(\n|$)/);
+            const industry = industryMatch ? industryMatch[1].trim() : "General";
+
+            const analysis = await genesisAgent.analyzeCompetitor(response.competitorName, industry);
+
+            // Attach analysis to response
+            response.competitorAnalysis = analysis;
+        }
+
         res.json(response);
     } catch (error) {
         console.error('Error in chat:', error);
         res.status(500).json({ error: 'Failed to process chat' });
     }
 };
+

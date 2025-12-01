@@ -34,7 +34,7 @@ export default function PublicSurveyPage() {
   if (error) return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       <SurveyRenderer 
         surveyData={survey} 
         slug={slug} 

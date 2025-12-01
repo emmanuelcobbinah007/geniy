@@ -160,8 +160,9 @@ export const api = {
     return this.post('/ai/analyze-context', { contextText }, token);
   },
 
-  async chat(message: string, context: string, token: string) {
-    return this.post('/campaigns/chat', { message, context }, token);
+  async chat(message: string | any[], context: string, token: string) {
+    const payload = Array.isArray(message) ? { messages: message, context } : { message, context };
+    return this.post('/campaigns/chat', payload, token);
   },
 
   async generateStrategy(contextSummary: any, token: string) {

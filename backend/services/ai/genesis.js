@@ -269,6 +269,19 @@ class GenesisAgent {
       - ** No Fluff:** Cut the preamble.Start with your best idea.
       - ** Conversational:** Write like a smart colleague, not a textbook.
 
+      ** Actions:**
+      - If the user asks to analyze a specific competitor (e.g., "Analyze Starbucks", "Check out Competitor X"), set "action" to "ANALYZE_COMPETITOR" and "competitorName" to the name.
+      - If the user provides enough info to build the survey, set "action" to "GENERATE".
+      - Otherwise, set "action" to "CHAT".
+
+      Output JSON Schema:
+      {
+        "message": "string",
+        "action": "CHAT" | "GENERATE" | "ANALYZE_COMPETITOR",
+        "updatedContext": "string",
+        "competitorName": "string" // Only if action is ANALYZE_COMPETITOR
+      }
+
       Conversation History:
       ${conversationHistory}
 
@@ -276,8 +289,8 @@ ASSISTANT:
 `;
 
         // Use a smart model for chat
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", false, 500);
-        return result;
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
+        return this.safeParse(result);
     }
 }
 
