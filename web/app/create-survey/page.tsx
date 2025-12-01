@@ -19,7 +19,9 @@ import { ShareModal } from "@/components/create-survey/ShareModal"
 import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSelectionModal"
 import { useSearchParams } from "next/navigation"
 
-export default function CreateSurveyPage() {
+import { Suspense } from "react"
+
+function CreateSurveyContent() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { user, isLoading, token } = useAuth()
   const router = useRouter()
@@ -265,5 +267,13 @@ export default function CreateSurveyPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function CreateSurveyPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <CreateSurveyContent />
+    </Suspense>
   )
 }
