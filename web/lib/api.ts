@@ -155,6 +155,10 @@ export const api = {
     return this.get(`/workspaces/${id}/members`, token);
   },
 
+  async addMember(workspaceId: string, email: string, token: string) {
+    return this.post(`/workspaces/${workspaceId}/members`, { email }, token);
+  },
+
   // AI Integration
   async analyzeContext(contextText: string, token: string) {
     return this.post('/ai/analyze-context', { contextText }, token);
