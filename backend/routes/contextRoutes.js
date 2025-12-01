@@ -21,10 +21,12 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'geniy/business_context_documents',
-        resource_type: 'auto', // Allow any file type (pdf, docx, etc)
-        allowed_formats: ['pdf', 'doc', 'docx', 'txt']
+    params: async (req, file) => {
+        return {
+            folder: 'geniy/business_context_documents',
+            resource_type: 'raw',
+            public_id: file.originalname.replace(/\.[^/.]+$/, "") + "-" + Date.now(),
+        };
     },
 });
 

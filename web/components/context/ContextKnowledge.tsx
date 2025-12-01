@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
@@ -45,6 +45,11 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
   
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [strategy, setStrategy] = useState<Strategy | null>(null)
+
+  // Sync local state when initialContext updates (e.g. after file upload)
+  useEffect(() => {
+    setContext(initialContext)
+  }, [initialContext])
 
   // Update Context Mutation
   const updateContextMutation = useMutation({
@@ -168,6 +173,29 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
       }
   }
 
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      
+      const file = e.dataTransfer.files?.[0]
+      if (file) {
+          setIsUploading(true)
+          uploadMutation.mutate(file)
+      }
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -219,7 +247,12 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
             </Card>
 
             {/* Documents */}
-            <Card className="p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card 
+                className={`p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
             <div className="flex items-center justify-between mb-4">
                 <label className="text-sm font-medium text-zinc-500">Documents</label>
                 <div className="relative">
@@ -250,7 +283,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                 {documents.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
                         <FileText className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-sm">No documents uploaded yet</p>
+                        <p className="text-sm">{isDragging ? "Drop file to upload" : "No documents uploaded yet"}</p>
                     </div>
                 ) : (
                     documents.map((doc) => (
@@ -268,6 +301,14 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                     ))
                 )}
             </div>
+            {isDragging && (
+                <div className="absolute inset-0 bg-violet-500/10 backdrop-blur-[1px] rounded-xl flex items-center justify-center border-2 border-violet-500 border-dashed z-50">
+                    <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-violet-600 font-medium flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Drop to upload
+                    </div>
+                </div>
+            )}
             </Card>
         </div>
       </div>

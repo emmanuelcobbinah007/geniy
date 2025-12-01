@@ -24,7 +24,7 @@ class GenesisAgent {
     `;
 
         const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
-        return JSON.parse(result);
+        return this.safeParse(result);
     }
 
     /**
@@ -68,6 +68,24 @@ class GenesisAgent {
      * Step 3: Generate Strategy
      * Creates the "Starter Docs" (Research Plan).
      */
+    /**
+     * Helper to clean and parse JSON
+     */
+    safeParse(text) {
+        try {
+            // Remove markdown code blocks if present
+            const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+            return JSON.parse(cleanText);
+        } catch (e) {
+            console.error("JSON Parse Failed. Raw text:", text);
+            throw e;
+        }
+    }
+
+    /**
+     * Step 3: Generate Strategy
+     * Creates the "Starter Docs" (Research Plan).
+     */
     async generateStrategy(contextSummary) {
         const prompt = `
       Based on the following business context, generate a research strategy for a survey campaign.
@@ -84,20 +102,35 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1500);
-        return JSON.parse(result);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
+        return this.safeParse(result);
     }
 
     /**
      * Step 4: Generate Survey
      * Creates the questions.json based on the strategy.
      */
-    async generateSurvey(contextSummary, strategy) {
+    async generateSurvey(contextSummary, strategy, userInstruction = "") {
         const prompt = `
       Create a branching survey based on the following context and strategy.
       
       Context: ${JSON.stringify(contextSummary)}
       Strategy: ${JSON.stringify(strategy)}
+      
+      ${userInstruction ? `**USER INSTRUCTION:** ${userInstruction}\n(You MUST prioritize this instruction, e.g., if it asks for a specific number of questions or a specific topic, follow it strictly.)` : ""}
+
+      **ANTI-PATTERNS TO AVOID (Based on User Feedback):**
+      1. **Too Long/Complex:** Keep questions short and simple. Avoid cognitive overload.
+      2. **Irrelevant Questions:** Ensure every question directly relates to the strategy and context. Don't ask for the sake of asking.
+      3. **Poor Design:** Use simple, engaging language. Avoid corporate jargon.
+      4. **Lack of Action:** Ensure questions lead to actionable insights.
+      5. **Too Frequent:** Make the survey feel high-value and respectful of the user's time (e.g., "We value your quick feedback").
+
+      **CRITICAL RULES FOR BRANCHING:**
+      1. Use "Q1", "Q2", etc. as keys and references.
+      2. **Merging Branches:** If Question 1 branches to Q2 and Q3, and you want them to merge back at Q4, you MUST set "next": "Q4" for BOTH Q2 and Q3 (or whichever is the last question in that branch).
+      3. **Skip Logic:** If a question should skip the next one (e.g. Q2 -> Q4), set "next": "Q4".
+      4. **Format:** "next" and "branches[].next" MUST be in the format "Q#" (e.g., "Q2", "Q5") or "END".
 
       Output must strictly follow this JSON schema:
       {
@@ -110,16 +143,16 @@ class GenesisAgent {
                   "question": "string",
                   "options": ["string"], // Required for multiple_choice/ranking
                   "branches": [
-                      { "if": "Option String", "next": "Q_Next" }
+                      { "if": "Option String", "next": "Q#" }
                   ],
-                  "next": "Q_Default_Next"
+                  "next": "Q#" // Default next question. Use this for merging branches!
               }
           }
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
-        return JSON.parse(result);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 3000);
+        return this.safeParse(result);
     }
 
     /**

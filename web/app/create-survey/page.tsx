@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Eye, Play } from "lucide-react"
+import { ArrowLeft, Eye, Play, Sparkles, X } from "lucide-react"
 import { useState, useEffect } from "react"
+import { cn } from "@/lib/utils"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useAuth } from "@/context/auth-context"
 import { GeniyChat } from "@/components/create-survey/GeniyChat"
@@ -45,6 +46,7 @@ function CreateSurveyContent() {
   const searchParams = useSearchParams()
   const workspaceId = searchParams.get("workspaceId")
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -193,48 +195,59 @@ function CreateSurveyContent() {
       </Dialog>
 
       {/* Header */}
-      <header className="sticky top-0 h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-4 shrink-0 z-50">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-3 md:px-4 shrink-0 z-50 gap-2">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-zinc-500 hover:text-foreground transition-colors"
+            className="text-zinc-500 hover:text-foreground transition-colors shrink-0"
             onClick={() => router.back()}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">New Survey</span>
-            <span className="text-zinc-400 text-sm">/</span>
+          <div className="hidden md:block h-6 w-px bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="hidden md:inline font-semibold text-sm shrink-0">New Survey</span>
+            <span className="hidden md:inline text-zinc-400 text-sm shrink-0">/</span>
             <Input 
-              className="h-8 w-48 bg-transparent border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 text-sm font-medium text-foreground placeholder:text-zinc-400 px-2 transition-all" 
+              className="h-8 w-full md:w-48 bg-transparent border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 text-sm font-medium text-foreground placeholder:text-zinc-400 px-2 transition-all min-w-[100px]" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant={isMobileChatOpen ? "secondary" : "ghost"}
+            size="sm"
+            className="md:hidden text-violet-600 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 dark:hover:bg-violet-900/30 px-2"
+            onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
+          >
+            {isMobileChatOpen ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+            <span className="ml-2 hidden sm:inline">{isMobileChatOpen ? "Close" : "AI"}</span>
+          </Button>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-zinc-500 hover:text-foreground"
+            className="text-zinc-500 hover:text-foreground px-2"
             onClick={() => setShowPreview(true)}
           >
-            <Eye className="w-4 h-4 mr-2" />
-            Preview
+            <Eye className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Preview</span>
           </Button>
           <Button 
             size="sm" 
-            className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium"
+            className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium px-3"
             onClick={handlePublish}
             disabled={isPublishing}
           >
-            {isPublishing ? "Publishing..." : (
+            {isPublishing ? (
+                <span className="text-xs">Saving...</span>
+            ) : (
                 <>
-                <Play className="w-3 h-3 mr-2" />
-                Publish
+                <Play className="w-3 h-3 md:mr-2" />
+                <span className="hidden md:inline">Publish</span>
                 </>
             )}
           </Button>
@@ -242,15 +255,22 @@ function CreateSurveyContent() {
       </header>
 
       {/* Split View Content */}
-      <div className="flex-1 flex items-start">
-        {/* Left Panel: Geniy Chat (30%) - Sticky */}
-        <div className="w-[30%] min-w-[320px] max-w-[450px] sticky top-14 h-[calc(100vh-3.5rem)]">
+      <div className="flex-1 flex items-start relative">
+        {/* Left Panel: Geniy Chat (30%) - Sticky on Desktop, Fixed Overlay on Mobile */}
+        <div className={cn(
+            "bg-background border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 ease-in-out",
+            // Desktop Styles
+            "md:block md:w-[30%] md:min-w-[320px] md:max-w-[450px] md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] md:z-0",
+            // Mobile Styles
+            isMobileChatOpen ? "fixed inset-0 top-14 z-40 w-full h-[calc(100vh-3.5rem)] block" : "hidden"
+        )}>
           <GeniyChat 
             setQuestions={setQuestions}
             setTitle={setTitle}
             setDescription={setDescription}
             setContextData={setContextData}
             initialContext={initialContext}
+            workspaceId={workspaceId || user?.workspaces?.[0]?.id}
           />
         </div>
 

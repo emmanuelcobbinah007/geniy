@@ -41,12 +41,12 @@ exports.generateStrategy = async (req, res) => {
 
 exports.generateSurvey = async (req, res) => {
     try {
-        const { contextSummary, strategy } = req.body;
+        const { contextSummary, strategy, userInstruction } = req.body;
         if (!contextSummary || !strategy) {
             return res.status(400).json({ error: "Context summary and strategy are required" });
         }
 
-        const survey = await genesisAgent.generateSurvey(contextSummary, strategy);
+        const survey = await genesisAgent.generateSurvey(contextSummary, strategy, userInstruction);
         res.json(survey);
     } catch (error) {
         console.error("Survey Generation Error:", error);

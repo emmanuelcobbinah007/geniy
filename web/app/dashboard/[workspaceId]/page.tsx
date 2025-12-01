@@ -7,13 +7,11 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 
-interface DashboardPageProps {
-  params: {
-    workspaceId: string
-  }
-}
+import { useParams } from "next/navigation"
 
-export default function DashboardPage({ params }: DashboardPageProps) {
+export default function DashboardPage() {
+  const params = useParams()
+  const workspaceId = params?.workspaceId as string
   const { user } = useAuth()
 
   const container = {
@@ -51,7 +49,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
             <FileText className="mr-2 h-4 w-4" />
             Upload Context
           </Button>
-          <Link href={`/create-survey?workspaceId=${params.workspaceId}`}>
+          <Link href={`/create-survey?workspaceId=${workspaceId}`}>
             <Button className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
               <Plus className="mr-2 h-4 w-4" />
               New Survey

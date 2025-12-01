@@ -20,9 +20,10 @@ interface GeniyChatProps {
     setDescription: (desc: string) => void
     setContextData: (data: any) => void
     initialContext?: string
+    workspaceId?: string
 }
 
-export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext }: GeniyChatProps) {
+export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext, workspaceId }: GeniyChatProps) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -61,28 +62,61 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     }])
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      
+      const file = e.dataTransfer.files?.[0]
+      if (file) {
+          processFile(file)
+      }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !token) return
+    if (file) {
+        processFile(file)
+    }
+  }
+
+  const processFile = async (file: File) => {
+    if (!token || !workspaceId) {
+        if (!workspaceId) alert("No workspace selected")
+        return
+    }
 
     setIsProcessing(true)
     addMessage("user", `Uploaded: ${file.name}`)
-    addMessage("assistant", "Analyzing your document... 🧠")
+    addMessage("assistant", "Uploading and analyzing your document... 🧠")
 
     try {
-        // Combine existing context with new file context
-        let contextText = `Context from file: ${file.name}. (Simulated content extraction)`;
-        if (initialContext) {
-            contextText = `Existing Business Context: ${initialContext}\n\nNew File Context: ${contextText}`;
-        }
-        
-        const analysis = await api.analyzeContext(contextText, token)
+        // 1. Upload Document
+        await api.uploadDocument(workspaceId, file, token)
+
+        // 2. Fetch Updated Context
+        const contextData = await api.getContext(workspaceId, token)
+        const fullContext = contextData.businessContext || ""
+
+        // 3. Analyze Context
+        const analysis = await api.analyzeContext(fullContext, token)
         addMessage("assistant", `I've analyzed ${analysis.companyName}. Generating a research strategy... 📝`)
 
         const strategy = await api.generateStrategy(analysis, token)
         addMessage("assistant", `Strategy created! Objectives: ${strategy.objectives.length}. Generating survey questions... ✍️`)
 
-        const surveySchema = await api.generateSurvey(analysis, strategy, token)
+        const surveySchema = await api.generateSurvey(analysis, strategy, "", token)
         
         // Update Parent State
         setTitle(surveySchema.title)
@@ -96,24 +130,37 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             : Object.values(questionsData);
 
         // Transform schema questions to our editor format
-        const editorQuestions = questionsArray.map((q: any, i: number) => ({
-            id: i + 1,
-            type: q.type,
-            title: q.question,
-            required: q.required !== false, // Default to true if undefined
-            options: q.options || [],
-            logic: q.branches ? q.branches.map((b: any) => ({
+        // Transform schema questions to our editor format
+        const editorQuestions = questionsArray.map((q: any, i: number) => {
+            const branches = q.branches ? q.branches.map((b: any) => ({
                 if: b.if,
                 then: b.next.replace(/^Q/, '')
             })) : []
-        }))
+
+            // Handle "next" (Default Jump / Merge)
+            const nextId = q.next ? q.next.replace(/^Q/, '') : null;
+            const currentId = i + 1;
+            
+            if (nextId && parseInt(nextId) !== currentId + 1 && q.type !== "multiple_choice") {
+                 branches.push({ if: true, then: nextId });
+            }
+
+            return {
+                id: currentId,
+                type: q.type,
+                title: q.question,
+                required: q.required !== false,
+                options: q.options || [],
+                logic: branches
+            }
+        })
         setQuestions(editorQuestions)
 
-        addMessage("assistant", "Done! I've generated the survey based on your context. Check it out on the right! 👉")
+        addMessage("assistant", "Done! I've generated the survey based on your new context. Check it out on the right! 👉")
 
     } catch (error) {
         console.error(error)
-        addMessage("assistant", "Sorry, I encountered an error while processing your request.")
+        addMessage("assistant", "Sorry, I encountered an error while processing your document.")
     } finally {
         setIsProcessing(false)
         if (fileInputRef.current) fileInputRef.current.value = ""
@@ -143,7 +190,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         const strategy = await api.generateStrategy(analysis, token)
         addMessage("assistant", "Drafting questions... ✍️")
 
-        const surveySchema = await api.generateSurvey(analysis, strategy, token)
+        const surveySchema = await api.generateSurvey(analysis, strategy, userText, token)
         
         setTitle(surveySchema.title)
         setDescription(surveySchema.description || "")
@@ -155,17 +202,33 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             ? questionsData 
             : Object.values(questionsData);
         
-        const editorQuestions = questionsArray.map((q: any, i: number) => ({
-            id: i + 1,
-            type: q.type,
-            title: q.question,
-            required: q.required !== false,
-            options: q.options || [],
-            logic: q.branches ? q.branches.map((b: any) => ({
+        // Transform schema questions to our editor format
+        const editorQuestions = questionsArray.map((q: any, i: number) => {
+            const branches = q.branches ? q.branches.map((b: any) => ({
                 if: b.if,
                 then: b.next.replace(/^Q/, '')
             })) : []
-        }))
+
+            // Handle "next" (Default Jump / Merge)
+            // If explicit "next" is set and it's a jump (not just the next sequential question), add it as logic
+            const nextId = q.next ? q.next.replace(/^Q/, '') : null;
+            const currentId = i + 1;
+            
+            // Only add default jump if it's not the standard flow (i.e. not currentId + 1)
+            // And only for non-MC questions (since MC uses branches for flow)
+            if (nextId && parseInt(nextId) !== currentId + 1 && q.type !== "multiple_choice") {
+                 branches.push({ if: true, then: nextId });
+            }
+
+            return {
+                id: currentId,
+                type: q.type,
+                title: q.question,
+                required: q.required !== false,
+                options: q.options || [],
+                logic: branches
+            }
+        })
         setQuestions(editorQuestions)
 
         addMessage("assistant", "I've updated the survey! Let me know if you want to change anything.")
@@ -179,7 +242,12 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800">
+    <div 
+        className={`flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-colors ${isDragging ? 'bg-violet-50 dark:bg-violet-900/10' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+    >
       {/* Header */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
         <div className="p-2 bg-violet-100 dark:bg-violet-500/20 rounded-lg">
@@ -192,8 +260,8 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1">
+        <div className="space-y-4 p-4">
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
@@ -266,6 +334,14 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
           </Button>
         </div>
       </div>
+      {isDragging && (
+        <div className="absolute inset-0 bg-violet-500/10 backdrop-blur-[1px] z-50 flex items-center justify-center border-2 border-violet-500 border-dashed m-4 rounded-xl pointer-events-none">
+            <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-violet-600 font-medium flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Drop to upload & analyze
+            </div>
+        </div>
+      )}
     </div>
   )
 }

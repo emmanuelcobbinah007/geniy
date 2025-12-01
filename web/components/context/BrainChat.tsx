@@ -111,8 +111,8 @@ export function BrainChat({ context, workspaceId }: { context: string; workspace
 
       <Card className="flex-1 flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4 pb-4">
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 p-4 pb-4">
             {messages.map((msg) => (
                 <div
                 key={msg.id}

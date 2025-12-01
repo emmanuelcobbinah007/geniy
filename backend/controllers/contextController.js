@@ -73,6 +73,9 @@ const updateContext = async (req, res) => {
     }
 };
 
+const pdf = require('pdf-parse');
+const axios = require('axios');
+
 // @desc    Upload document
 // @route   POST /api/context/upload
 // @access  Private
@@ -88,9 +91,7 @@ const uploadDocument = async (req, res) => {
     }
 
     try {
-        // Verify user belongs to this workspace (Note: req.user is populated by auth middleware)
-        // We need to fetch user again or rely on what's in req.user. 
-        // Assuming req.user has workspaces and sharedWorkspaces populated.
+        // Verify user belongs to this workspace
         const isMember = req.user.workspaces.some(w => w.id === workspaceId) ||
             req.user.sharedWorkspaces.some(w => w.id === workspaceId);
 
@@ -111,19 +112,41 @@ const uploadDocument = async (req, res) => {
             }
         });
 
-        // 2. Simulate text extraction (append filename to context for now)
-        // In a real app, use OCR/Text extraction service
-        await prisma.workspace.update({
-            where: { id: workspaceId },
-            data: {
-                businessContext: {
-                    // Append to existing context if not null, else set it
-                    // Note: Prisma doesn't support append easily for string, so we fetch first or just overwrite/concat in memory if needed.
-                    // For simplicity here, we won't auto-append text to avoid overwriting user edits blindly.
-                    // We'll just acknowledge the upload.
-                }
+        // 2. Extract Text (PDF Support)
+        let extractedText = "";
+
+        if (mimetype === 'application/pdf') {
+            try {
+                // Download file from Cloudinary
+                const response = await axios.get(path, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data);
+
+                // Parse PDF
+                const data = await pdf(buffer);
+                extractedText = `\n\n=== EXTRACTED FROM ${originalname} ===\n${data.text}\n====================================\n`;
+            } catch (parseError) {
+                console.error("PDF Parse Error:", parseError);
+                // Continue without text if parsing fails, but log it
             }
-        });
+        }
+
+        // 3. Update Workspace Context
+        if (extractedText) {
+            // Fetch current context first to append
+            const currentWorkspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { businessContext: true }
+            });
+
+            const newContext = (currentWorkspace.businessContext || "") + extractedText;
+
+            await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: {
+                    businessContext: newContext
+                }
+            });
+        }
 
         res.status(201).json(document);
     } catch (error) {

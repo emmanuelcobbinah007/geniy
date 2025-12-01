@@ -94,7 +94,7 @@ export function SurveyEditor({
   }
 
   return (
-    <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 p-8 min-h-full">
+    <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 p-4 md:p-8 min-h-full">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Survey Header Card */}
@@ -103,7 +103,7 @@ export function SurveyEditor({
           animate={{ opacity: 1, y: 0 }}
           className="group"
         >
-          <div className="p-6 md:p-8 rounded-2xl bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-transparent hover:border-zinc-300 dark:hover:border-zinc-800 transition-all shadow-sm dark:shadow-none">
+          <div className="p-4 md:p-8 rounded-2xl bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-transparent hover:border-zinc-300 dark:hover:border-zinc-800 transition-all shadow-sm dark:shadow-none">
             <Input 
               className="text-4xl md:text-5xl font-bold font-display bg-transparent border-none px-0 h-auto placeholder:text-zinc-400 focus-visible:ring-0 text-foreground" 
               placeholder="Survey Title"
@@ -138,7 +138,7 @@ export function SurveyEditor({
                     </div>
                     
                     <Card className={cn(
-                      "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-6 transition-all duration-200",
+                      "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-4 md:p-6 transition-all duration-200",
                       "hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20",
                       "focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/20"
                     )}>
