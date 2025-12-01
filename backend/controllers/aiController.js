@@ -109,3 +109,33 @@ exports.chatWithContext = async (req, res) => {
         res.status(500).json({ error: "Failed to chat" });
     }
 };
+
+exports.analyzeCompetitor = async (req, res) => {
+    try {
+        const { competitorName, industry } = req.body;
+        if (!competitorName || !industry) {
+            return res.status(400).json({ error: "Competitor name and industry are required" });
+        }
+
+        const analysis = await genesisAgent.analyzeCompetitor(competitorName, industry);
+        res.json(analysis);
+    } catch (error) {
+        console.error("Competitor Analysis Error:", error);
+        res.status(500).json({ error: "Failed to analyze competitor" });
+    }
+};
+
+exports.generateTheme = async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: "Prompt is required" });
+        }
+
+        const theme = await genesisAgent.generateTheme(prompt);
+        res.json(theme);
+    } catch (error) {
+        console.error("Theme Generation Error:", error);
+        res.status(500).json({ error: "Failed to generate theme" });
+    }
+};

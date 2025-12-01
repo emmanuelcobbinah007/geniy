@@ -10,5 +10,7 @@ router.post('/analyze-context', aiController.analyzeContext);
 router.post('/generate-strategy', aiController.generateStrategy);
 router.post('/generate-survey', aiController.generateSurvey);
 router.post('/chat', aiController.chatWithContext);
+router.post('/analyze-competitor', aiController.analyzeCompetitor);
+router.post('/generate-theme', aiController.generateTheme);
 
 module.exports = router;

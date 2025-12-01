@@ -79,6 +79,10 @@ export const api = {
     return this.get(`/campaigns/${id}/responses`, token);
   },
 
+  async getCampaignAnalytics(id: string, token: string) {
+    return this.get(`/campaigns/${id}/analytics`, token);
+  },
+
   async getCampaigns(workspaceId: string, token: string) {
     return this.get(`/campaigns?workspaceId=${workspaceId}`, token);
   },
@@ -170,5 +174,17 @@ export const api = {
 
   async chatWithContext(context: string, messages: any[], workspaceId: string, token: string) {
     return this.post('/ai/chat', { context, messages, workspaceId }, token);
+  },
+
+  async analyzeCompetitor(competitorName: string, industry: string, token: string) {
+    return this.post('/ai/analyze-competitor', { competitorName, industry }, token);
+  },
+
+  async generateTheme(prompt: string, token: string) {
+    return this.post('/ai/generate-theme', { prompt }, token);
+  },
+
+  async updateSurvey(campaignId: string, data: any, token: string) {
+    return this.put(`/campaigns/${campaignId}/survey`, data, token);
   },
 };

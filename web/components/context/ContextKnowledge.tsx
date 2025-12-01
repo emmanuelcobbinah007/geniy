@@ -9,6 +9,8 @@ import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CompetitorBattlecard } from "@/components/competitor/CompetitorBattlecard"
 
 interface ContextDocument {
   id: string
@@ -204,6 +206,30 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
     }
   }
 
+  const [activeTab, setActiveTab] = useState("context")
+  const [analyzingCompetitor, setAnalyzingCompetitor] = useState<string | null>(null)
+  const [competitorData, setCompetitorData] = useState<Record<string, any>>({})
+
+  const analyzeCompetitorMutation = useMutation({
+      mutationFn: async (competitorName: string) => {
+          if (!token || !analysisResult) return
+          return api.analyzeCompetitor(competitorName, analysisResult.industry, token)
+      },
+      onSuccess: (data, competitorName) => {
+          setCompetitorData(prev => ({ ...prev, [competitorName]: data }))
+          setAnalyzingCompetitor(null)
+      },
+      onError: () => {
+          setAnalyzingCompetitor(null)
+          alert("Failed to analyze competitor")
+      }
+  })
+
+  const handleAnalyzeCompetitor = (name: string) => {
+      setAnalyzingCompetitor(name)
+      analyzeCompetitorMutation.mutate(name)
+  }
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex items-center justify-between">
@@ -230,87 +256,140 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 flex-1 min-h-0">
-        <div className="flex flex-col gap-6 h-full">
-            {/* Text Context */}
-            <Card className="p-6 flex flex-col flex-1 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-medium text-zinc-500">Business Context</label>
-                {strategyMutation.isPending && <span className="text-xs text-violet-500 animate-pulse">Generating Strategy...</span>}
-            </div>
-            <Textarea 
-                value={context}
-                readOnly
-                className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-0 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed"
-                placeholder="Context will appear here after AI analysis or document upload..."
-            />
-            </Card>
+      <div className="flex-1 min-h-0 flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="w-full justify-start border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 h-auto rounded-none mb-4">
+                <TabsTrigger value="context" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+                    Context & Documents
+                </TabsTrigger>
+                <TabsTrigger value="competitors" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+                    Competitor Intel
+                </TabsTrigger>
+            </TabsList>
 
-            {/* Documents */}
-            <Card 
-                className={`p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-            <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-medium text-zinc-500">Documents</label>
-                <div className="relative">
-                    <input 
-                        type="file" 
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.txt"
-                    />
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                    >
-                        {isUploading ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                            <Upload className="w-4 h-4 mr-2" />
-                        )}
-                        Upload
-                    </Button>
+            <TabsContent value="context" className="flex-1 flex flex-col gap-6 min-h-0 data-[state=inactive]:hidden">
+                {/* Text Context */}
+                <Card className="p-6 flex flex-col flex-1 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <label className="text-sm font-medium text-zinc-500">Business Context</label>
+                    {strategyMutation.isPending && <span className="text-xs text-violet-500 animate-pulse">Generating Strategy...</span>}
                 </div>
-            </div>
+                <Textarea 
+                    value={context}
+                    readOnly
+                    className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-0 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed"
+                    placeholder="Context will appear here after AI analysis or document upload..."
+                />
+                </Card>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                {documents.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
-                        <FileText className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-sm">{isDragging ? "Drop file to upload" : "No documents uploaded yet"}</p>
+                {/* Documents */}
+                <Card 
+                    className={`p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                >
+                <div className="flex items-center justify-between mb-4">
+                    <label className="text-sm font-medium text-zinc-500">Documents</label>
+                    <div className="relative">
+                        <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.txt"
+                        />
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                        >
+                            {isUploading ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                                <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            Upload
+                        </Button>
                     </div>
-                ) : (
-                    documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors group">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-8 h-8 rounded bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 text-violet-600 dark:text-violet-400">
-                                    <FileText className="w-4 h-4" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100">{doc.name}</p>
-                                    <p className="text-xs text-zinc-500">{(doc.size / 1024).toFixed(1)} KB • {new Date(doc.createdAt).toLocaleDateString()}</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                    {documents.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
+                            <FileText className="w-8 h-8 mb-2 opacity-50" />
+                            <p className="text-sm">{isDragging ? "Drop file to upload" : "No documents uploaded yet"}</p>
+                        </div>
+                    ) : (
+                        documents.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors group">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="w-8 h-8 rounded bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 text-violet-600 dark:text-violet-400">
+                                        <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100">{doc.name}</p>
+                                        <p className="text-xs text-zinc-500">{(doc.size / 1024).toFixed(1)} KB • {new Date(doc.createdAt).toLocaleDateString()}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
-                )}
-            </div>
-            {isDragging && (
-                <div className="absolute inset-0 bg-violet-500/10 backdrop-blur-[1px] rounded-xl flex items-center justify-center border-2 border-violet-500 border-dashed z-50">
-                    <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-violet-600 font-medium flex items-center gap-2">
-                        <Upload className="w-4 h-4" />
-                        Drop to upload
-                    </div>
+                        ))
+                    )}
                 </div>
-            )}
-            </Card>
-        </div>
+                {isDragging && (
+                    <div className="absolute inset-0 bg-violet-500/10 backdrop-blur-[1px] rounded-xl flex items-center justify-center border-2 border-violet-500 border-dashed z-50">
+                        <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-violet-600 font-medium flex items-center gap-2">
+                            <Upload className="w-4 h-4" />
+                            Drop to upload
+                        </div>
+                    </div>
+                )}
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="competitors" className="flex-1 overflow-y-auto data-[state=inactive]:hidden">
+                <div className="space-y-6">
+                    {!analysisResult?.competitors || analysisResult.competitors.length === 0 ? (
+                        <div className="text-center py-12 text-zinc-500">
+                            <p>No competitors discovered yet.</p>
+                            <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
+                        </div>
+                    ) : (
+                        analysisResult.competitors.map((comp) => (
+                            <div key={comp} className="space-y-4">
+                                {competitorData[comp] ? (
+                                    <CompetitorBattlecard name={comp} analysis={competitorData[comp]} />
+                                ) : (
+                                    <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-semibold">{comp}</h3>
+                                            <p className="text-sm text-zinc-500">Competitor detected from context</p>
+                                        </div>
+                                        <Button 
+                                            onClick={() => handleAnalyzeCompetitor(comp)}
+                                            disabled={analyzingCompetitor === comp}
+                                        >
+                                            {analyzingCompetitor === comp ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    Researching...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="w-4 h-4 mr-2" />
+                                                    Analyze Deep Dive
+                                                </>
+                                            )}
+                                        </Button>
+                                    </Card>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -146,12 +146,72 @@ class GenesisAgent {
                       { "if": "Option String", "next": "Q#" }
                   ],
                   "next": "Q#" // Default next question. Use this for merging branches!
-              }
           }
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 3000);
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 4000);
+        return this.safeParse(result);
+    }
+
+    /**
+     * Step 6: Analyze Competitor (Deep Dive)
+     * Uses Manus to get detailed intel.
+     */
+    async analyzeCompetitor(competitorName, industry) {
+        const instruction = `
+            Analyze the company "${competitorName}" in the "${industry}" industry.
+            Provide a detailed report in JSON format with the following fields:
+        - pricingModel: string(e.g. "Freemium", "Enterprise", "Tiered: $10-$50")
+            - keyFeatures: array of strings
+                - targetAudience: string
+                    - strengths: array of strings(SWOT)
+                        - weaknesses: array of strings(SWOT)
+                            - uniqueSellingPoint: string
+            
+            Return ONLY valid JSON.
+        `;
+
+        try {
+            const agentOutput = await manus.runTask(instruction);
+            if (agentOutput) {
+                // Try to parse JSON from output
+                try {
+                    const jsonMatch = agentOutput.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        return JSON.parse(jsonMatch[0]);
+                    }
+                    return JSON.parse(agentOutput);
+                } catch (e) {
+                    console.warn("Failed to parse Manus output as JSON for competitor analysis", e);
+                    return { error: "Failed to parse analysis results", raw: agentOutput };
+                }
+            }
+        } catch (err) {
+            console.error("Manus analysis failed:", err);
+        }
+        return null;
+    }
+
+    /**
+     * Step 7: Generate Theme (AI Design)
+     * Creates a color palette and font selection based on a vibe/prompt.
+     */
+    async generateTheme(prompt) {
+        const instruction = `
+            Create a UI theme based on this description: "${prompt}".
+            Return a JSON object with:
+            - primaryColor: hex code (e.g. #6366f1)
+            - backgroundColor: hex code (e.g. #ffffff)
+            - textColor: hex code (e.g. #18181b)
+            - accentColor: hex code
+            - fontFamily: string (one of: "Inter", "Playfair Display", "Roboto Mono", "Comic Sans MS")
+            - borderRadius: string (e.g. "0.5rem", "1rem", "0px")
+            
+            Return ONLY valid JSON.
+        `;
+
+        const result = await openRouter.complete(instruction, "openai/gpt-4o-mini", true, 1000);
         return this.safeParse(result);
     }
 
@@ -162,29 +222,29 @@ class GenesisAgent {
     async chat(context, messages) {
         // Format messages for the prompt
         // Assuming messages is an array of { role: "user"|"assistant", content: "..." }
-        const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+        const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');
 
         const prompt = `
       You are Geniy, an expert AI market research consultant.
       You have access to the following Business Context for the user's project:
-      
-      === BUSINESS CONTEXT ===
-      ${context}
+
+    === BUSINESS CONTEXT ===
+        ${context}
       ========================
 
-      Your goal is to help the user refine their strategy, understand their competitors, or brainstorm survey questions.
+    Your goal is to help the user refine their strategy, understand their competitors, or brainstorm survey questions.
       
-      **Tone & Style Guidelines:**
-      - **Be Concise & Adaptive:** Keep answers brief and punchy. Only go deep if the topic is complex or explicitly asked.
-      - **Be Hyper-Specific:** Never give generic advice (e.g., "use social media"). Instead, use the specific **Target Audience** and **Industry** from the context to suggest exact channels (e.g., "Since you target software engineers, try Hacker News or r/programming" instead of "forums").
-      - **No Fluff:** Cut the preamble. Start with your best idea.
-      - **Conversational:** Write like a smart colleague, not a textbook.
+      ** Tone & Style Guidelines:**
+      - ** Be Concise & Adaptive:** Keep answers brief and punchy.Only go deep if the topic is complex or explicitly asked.
+      - ** Be Hyper - Specific:** Never give generic advice(e.g., "use social media").Instead, use the specific ** Target Audience ** and ** Industry ** from the context to suggest exact channels(e.g., "Since you target software engineers, try Hacker News or r/programming" instead of "forums").
+      - ** No Fluff:** Cut the preamble.Start with your best idea.
+      - ** Conversational:** Write like a smart colleague, not a textbook.
 
       Conversation History:
       ${conversationHistory}
 
-      ASSISTANT:
-    `;
+ASSISTANT:
+`;
 
         // Use a smart model for chat
         const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", false, 500);

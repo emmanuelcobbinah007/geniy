@@ -34,8 +34,12 @@ export default function PublicSurveyPage() {
   if (error) return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col">
-      <SurveyRenderer surveyData={survey} slug={slug} />
+    <div className="min-h-screen flex flex-col">
+      <SurveyRenderer 
+        surveyData={survey} 
+        slug={slug} 
+        theme={survey.themeConfig || undefined}
+      />
     </div>
   )
 }

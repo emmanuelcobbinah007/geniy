@@ -224,4 +224,126 @@ exports.deleteCampaign = async (req, res) => {
     }
 };
 
+// Get analytics for a campaign
+exports.getCampaignAnalytics = async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        // 1. Fetch Campaign with Surveys and Responses
+        const campaign = await prisma.campaign.findUnique({
+            where: { id },
+            include: {
+                surveys: {
+                    include: {
+                        responses: true
+                    }
+                }
+            }
+        });
+
+        if (!campaign) {
+            return res.status(404).json({ error: 'Campaign not found' });
+        }
+
+        // For MVP, we focus on the first survey
+        const survey = campaign.surveys[0];
+        if (!survey) {
+            return res.json({ totalResponses: 0, analytics: {} });
+        }
+
+        const responses = survey.responses;
+        const totalResponses = responses.length;
+        const questions = survey.jsonSchema.questions || {};
+
+        // 2. Aggregate Data
+        const analytics = {};
+
+        // Initialize buckets for each question
+        Object.entries(questions).forEach(([key, q]) => {
+            if (['multiple_choice', 'rating'].includes(q.type)) {
+                analytics[key] = {
+                    type: q.type,
+                    question: q.question,
+                    counts: {}
+                };
+            } else if (q.type === 'ranking') {
+                analytics[key] = {
+                    type: q.type,
+                    question: q.question,
+                    counts: {} // { "Option A": { 0: 5, 1: 2 } }
+                };
+            } else if (['text', 'short_text', 'long_text'].includes(q.type)) {
+                analytics[key] = {
+                    type: q.type,
+                    question: q.question,
+                    recentAnswers: []
+                };
+            }
+        });
+
+        // Process responses
+        responses.forEach(r => {
+            const answers = r.rawAnswers;
+            Object.entries(answers).forEach(([qId, value]) => {
+                if (!analytics[qId]) return;
+
+                if (analytics[qId].type === 'multiple_choice' || analytics[qId].type === 'rating') {
+                    const valStr = String(value);
+                    analytics[qId].counts[valStr] = (analytics[qId].counts[valStr] || 0) + 1;
+                } else if (analytics[qId].type === 'ranking') {
+                    if (Array.isArray(value)) {
+                        value.forEach((item, index) => {
+                            if (!analytics[qId].counts[item]) analytics[qId].counts[item] = {};
+                            analytics[qId].counts[item][index] = (analytics[qId].counts[item][index] || 0) + 1;
+                        });
+                    }
+                } else if (['text', 'short_text', 'long_text'].includes(analytics[qId].type)) {
+                    // Store last 50 answers for text analysis
+                    if (analytics[qId].recentAnswers.length < 50) {
+                        analytics[qId].recentAnswers.push(value);
+                    }
+                }
+            });
+        });
+
+        res.json({
+            surveyId: survey.id,
+            totalResponses,
+            analytics
+        });
+
+    } catch (error) {
+        console.error('Error generating analytics:', error);
+        res.status(500).json({ error: 'Failed to generate analytics' });
+    }
+};
+
+
+// Update a survey (e.g. theme)
+exports.updateSurvey = async (req, res) => {
+    try {
+        const { id } = req.params; // Campaign ID
+        const { themeConfig } = req.body;
+
+        // Find the survey associated with this campaign
+        const survey = await prisma.survey.findFirst({
+            where: { campaignId: id }
+        });
+
+        if (!survey) {
+            return res.status(404).json({ error: 'Survey not found for this campaign' });
+        }
+
+        const updatedSurvey = await prisma.survey.update({
+            where: { id: survey.id },
+            data: {
+                themeConfig: themeConfig || survey.themeConfig
+            }
+        });
+
+        res.json(updatedSurvey);
+    } catch (error) {
+        console.error('Error updating survey:', error);
+        res.status(500).json({ error: 'Failed to update survey' });
+    }
+};

@@ -20,7 +20,13 @@ router.get('/:id', campaignController.getCampaign);
 // GET /api/campaigns/:id/responses - Get all responses for a campaign
 router.get('/:id/responses', campaignController.getCampaignResponses);
 
+// GET /api/campaigns/:id/analytics - Get aggregated analytics for a campaign
+router.get('/:id/analytics', campaignController.getCampaignAnalytics);
+
 // DELETE /api/campaigns/:id - Delete a campaign
 router.delete('/:id', campaignController.deleteCampaign);
+
+// PUT /api/campaigns/:id/survey - Update survey (theme, etc)
+router.put('/:id/survey', campaignController.updateSurvey);
 
 module.exports = router;

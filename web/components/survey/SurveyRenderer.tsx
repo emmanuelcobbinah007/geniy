@@ -7,14 +7,24 @@ import { ArrowRight, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { api } from "@/lib/api"
 
+interface Theme {
+  primaryColor: string
+  backgroundColor: string
+  textColor: string
+  accentColor: string
+  fontFamily: string
+  borderRadius: string
+}
+
 interface SurveyRendererProps {
   surveyData: any;
   slug?: string; // Required for submission if not preview
   isPreview?: boolean;
   onComplete?: () => void;
+  theme?: Theme;
 }
 
-export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete }: SurveyRendererProps) {
+export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete, theme }: SurveyRendererProps) {
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -147,13 +157,33 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     )
   }
 
+  const themeStyles = theme ? {
+    "--primary": theme.primaryColor,
+    "--bg": theme.backgroundColor,
+    "--text": theme.textColor,
+    "--accent": theme.accentColor,
+    "--radius": theme.borderRadius,
+    "--font": theme.fontFamily,
+  } as React.CSSProperties : {}
+
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
+    <div 
+        className="flex flex-col h-full w-full transition-colors duration-300"
+        style={{
+            ...themeStyles,
+            backgroundColor: theme ? 'var(--bg)' : undefined,
+            color: theme ? 'var(--text)' : undefined,
+            fontFamily: theme ? 'var(--font)' : undefined,
+        }}
+    >
       {/* Progress Bar (Simple) */}
-      <div className="h-1 bg-zinc-200 dark:bg-zinc-800 w-full shrink-0">
+      <div className="h-1 w-full shrink-0" style={{ backgroundColor: theme ? 'var(--accent)' : '#e4e4e7' }}>
         <div 
-            className="h-full bg-violet-600 transition-all duration-500"
-            style={{ width: `${isCompleted ? 100 : (Object.keys(answers).length / Object.keys(questions).length) * 100}%` }}
+            className="h-full transition-all duration-500"
+            style={{ 
+                width: `${isCompleted ? 100 : (Object.keys(answers).length / Object.keys(questions).length) * 100}%`,
+                backgroundColor: theme ? 'var(--primary)' : '#7c3aed'
+            }}
         />
       </div>
 
@@ -168,7 +198,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
               className="w-full space-y-8"
             >
               <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+                <h2 className="text-2xl md:text-3xl font-bold" style={{ color: theme ? 'var(--text)' : undefined }}>
                   {currentQ.question}
                 </h2>
                 {currentQ.required && <span className="text-xs text-red-500 uppercase tracking-wider font-medium">Required</span>}
@@ -181,10 +211,35 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                       <button
                         key={opt}
                         onClick={() => handleAnswer(opt)}
-                        className="w-full text-left p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between group"
+                        className="w-full text-left p-4 border transition-all font-medium flex items-center justify-between group"
+                        style={{
+                            borderRadius: theme ? 'var(--radius)' : '0.75rem',
+                            borderColor: theme ? 'var(--accent)' : '#e4e4e7',
+                            backgroundColor: theme ? 'var(--bg)' : '#ffffff',
+                            color: theme ? 'var(--text)' : '#3f3f46'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (theme) {
+                                e.currentTarget.style.borderColor = 'var(--primary)'
+                                e.currentTarget.style.backgroundColor = 'var(--accent)'
+                            } else {
+                                e.currentTarget.classList.add('border-violet-500', 'bg-violet-50')
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (theme) {
+                                e.currentTarget.style.borderColor = 'var(--accent)'
+                                e.currentTarget.style.backgroundColor = 'var(--bg)'
+                            } else {
+                                e.currentTarget.classList.remove('border-violet-500', 'bg-violet-50')
+                            }
+                        }}
                       >
                         {opt}
-                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-violet-500" />
+                        <ArrowRight 
+                            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+                            style={{ color: theme ? 'var(--primary)' : '#8b5cf6' }}
+                        />
                       </button>
                     ))}
                   </div>
@@ -193,7 +248,13 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                 {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text") && (
                   <div className="flex gap-2">
                     <Input 
-                      className="h-12 text-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                      className="h-12 text-lg"
+                      style={{
+                          borderRadius: theme ? 'var(--radius)' : '0.5rem',
+                          borderColor: theme ? 'var(--accent)' : undefined,
+                          backgroundColor: theme ? 'var(--bg)' : undefined,
+                          color: theme ? 'var(--text)' : undefined
+                      }}
                       placeholder="Type your answer..."
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -201,10 +262,15 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                         }
                       }}
                     />
-                    <Button size="icon" className="h-12 w-12 shrink-0" onClick={(e) => {
-                        const input = e.currentTarget.previousElementSibling as HTMLInputElement
-                        handleAnswer(input.value)
-                    }}>
+                    <Button size="icon" className="h-12 w-12 shrink-0" 
+                        style={{ 
+                            backgroundColor: theme ? 'var(--primary)' : undefined,
+                            borderRadius: theme ? 'var(--radius)' : undefined
+                        }}
+                        onClick={(e) => {
+                            const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                            handleAnswer(input.value)
+                        }}>
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </div>
@@ -216,7 +282,31 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                             <button
                                 key={rating}
                                 onClick={() => handleAnswer(rating)}
-                                className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-all font-bold text-lg"
+                                className="w-12 h-12 border transition-all font-bold text-lg"
+                                style={{
+                                    borderRadius: theme ? '50%' : '9999px',
+                                    borderColor: theme ? 'var(--accent)' : '#e4e4e7',
+                                    backgroundColor: theme ? 'var(--bg)' : '#ffffff',
+                                    color: theme ? 'var(--text)' : undefined
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (theme) {
+                                        e.currentTarget.style.backgroundColor = 'var(--primary)'
+                                        e.currentTarget.style.color = '#ffffff'
+                                        e.currentTarget.style.borderColor = 'var(--primary)'
+                                    } else {
+                                        e.currentTarget.classList.add('bg-violet-600', 'text-white', 'border-violet-600')
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (theme) {
+                                        e.currentTarget.style.backgroundColor = 'var(--bg)'
+                                        e.currentTarget.style.color = 'var(--text)'
+                                        e.currentTarget.style.borderColor = 'var(--accent)'
+                                    } else {
+                                        e.currentTarget.classList.remove('bg-violet-600', 'text-white', 'border-violet-600')
+                                    }
+                                }}
                             >
                                 {rating}
                             </button>
@@ -246,14 +336,20 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
               animate={{ opacity: 1, x: 0 }}
               className="text-center space-y-6"
             >
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
-                <Check className="w-10 h-10 text-green-600 dark:text-green-500" />
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
+                style={{ backgroundColor: theme ? 'var(--accent)' : '#dcfce7' }}
+              >
+                <Check 
+                    className="w-10 h-10" 
+                    style={{ color: theme ? 'var(--primary)' : '#16a34a' }}
+                />
               </div>
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Thank you!</h1>
-                <p className="text-zinc-500 text-lg">Your response has been recorded.</p>
+                <h1 className="text-3xl font-bold" style={{ color: theme ? 'var(--text)' : undefined }}>Thank you!</h1>
+                <p className="text-lg" style={{ color: theme ? 'var(--text)' : '#71717a', opacity: 0.8 }}>Your response has been recorded.</p>
               </div>
-              <p className="text-zinc-400 max-w-md mx-auto leading-relaxed">
+              <p className="max-w-md mx-auto leading-relaxed" style={{ color: theme ? 'var(--text)' : '#a1a1aa', opacity: 0.6 }}>
                 Your feedback is incredibly valuable and will help us build a beautiful product tailored to your needs.
               </p>
               {isPreview && (
@@ -271,8 +367,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
         </AnimatePresence>
       </div>
       
-      <div className="p-4 text-center text-xs text-zinc-400 shrink-0">
-        Powered by <span className="font-bold text-zinc-600 dark:text-zinc-300">Geniy</span>
+      <div className="p-4 text-center text-xs shrink-0" style={{ color: theme ? 'var(--text)' : '#a1a1aa', opacity: 0.5 }}>
+        Powered by <span className="font-bold" style={{ color: theme ? 'var(--text)' : '#52525b' }}>Geniy</span>
       </div>
     </div>
   )
