@@ -21,6 +21,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>
   googleLogin: (token: string) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -73,8 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/")
   }
 
+  const refreshUser = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["user"] })
+  }
+
   return (
-    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

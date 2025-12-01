@@ -24,7 +24,6 @@ interface CampaignCardProps {
   date: string
   trend?: number
   insight?: string
-  insight?: string
   workspaceId: string
   publicSlug?: string
 }
