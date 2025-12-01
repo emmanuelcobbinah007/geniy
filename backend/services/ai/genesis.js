@@ -14,15 +14,16 @@ class GenesisAgent {
         User Message: "${message}"
 
         Instructions:
-        1. Analyze the user's request.
-        2. If the user provides enough information (e.g., "I want a survey for my coffee shop targeting students"), decide to GENERATE.
-        3. If the request is vague (e.g., "Hi", "I need a survey"), ask a clarifying question to gather more context (e.g., "What is your business?", "Who is your target audience?").
-        4. Be friendly, professional, and concise.
+        1. **Analyze the Request:** Does the user provide a clear **Business Goal** (what they do) and **Target Audience**?
+        2. **Decisive Action:** 
+           - If YES (e.g., "I have a coffee shop targeting students", "I'm building a no-code platform for creators"), set "action" to "GENERATE" IMMEDIATELY. Do NOT ask for confirmation. Do NOT list draft questions in the message. Just say "That sounds great! I'm generating a survey to [mention goal] for [mention audience] right now."
+           - If NO (vague request like "I need a survey"), ask *one* clarifying question (e.g., "What is your business?", "Who are you targeting?").
+        3. **No Fluff:** Be concise. Do not waste the user's time.
 
         Output JSON Schema:
         {
-            "message": "string", // Your response to the user
-            "action": "CHAT" | "GENERATE", // CHAT to keep talking, GENERATE to start building
+            "message": "string", // Brief confirmation or clarifying question
+            "action": "CHAT" | "GENERATE",
             "updatedContext": "string" // The accumulated context including new info
         }
         `;
@@ -156,10 +157,13 @@ class GenesisAgent {
       5. **Too Frequent:** Make the survey feel high-value and respectful of the user's time (e.g., "We value your quick feedback").
 
       **CRITICAL RULES FOR BRANCHING:**
-      1. Use "Q1", "Q2", etc. as keys and references.
-      2. **Merging Branches:** If Question 1 branches to Q2 and Q3, and you want them to merge back at Q4, you MUST set "next": "Q4" for BOTH Q2 and Q3 (or whichever is the last question in that branch).
-      3. **Skip Logic:** If a question should skip the next one (e.g. Q2 -> Q4), set "next": "Q4".
-      4. **Format:** "next" and "branches[].next" MUST be in the format "Q#" (e.g., "Q2", "Q5") or "END".
+      **CRITICAL RULES FOR BRANCHING:**
+      1. **MANDATORY DIVERGENCE:** You MUST include at least 2 questions where different options lead to DIFFERENT questions (e.g., "If Yes, go to Q3; If No, go to Q4"). 
+         - **FORBIDDEN:** Do NOT create "fake branching" where all options jump to the same next question (e.g., If A -> Q2, If B -> Q2). This is useless.
+      2. Use "Q1", "Q2", etc. as keys and references.
+      3. **Merging Branches:** If Question 1 branches to Q2 and Q3, and you want them to merge back at Q4, you MUST set "next": "Q4" for BOTH Q2 and Q3 (or whichever is the last question in that branch).
+      4. **Skip Logic:** If a question should skip the next one (e.g. Q2 -> Q4), set "next": "Q4".
+      5. **Format:** "next" and "branches[].next" MUST be in the format "Q#" (e.g., "Q2", "Q5") or "END".
 
       Output must strictly follow this JSON schema:
       {
@@ -245,6 +249,46 @@ class GenesisAgent {
     }
 
     /**
+     * Step 5a: Chat with Brain (Context Q&A)
+     * Dedicated method for the "Geniy's Brain" page.
+     * Prioritizes context retrieval over survey generation.
+     */
+    async chatWithBrain(context, messages) {
+        const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');
+
+        const prompt = `
+        You are Geniy's Brain, the central intelligence for this workspace.
+        You have access to the following KNOWLEDGE BASE (Business Context, Documents, Live Campaign Data):
+
+        === KNOWLEDGE BASE ===
+        ${context}
+        ======================
+
+        Your goal is to answer the user's questions based STRICTLY on the provided KNOWLEDGE BASE.
+        
+        Instructions:
+        1. **Be Context-Driven:** If the user asks "Who are our competitors?", list the EXACT competitors found in the context. Do NOT make up generic ones.
+        2. **Be Specific:** Use the specific data points, numbers, and names from the context.
+        3. **Live Data:** If the context contains "LIVE CAMPAIGN DATA", use it to answer questions about performance or responses.
+        4. **Fallback:** If the answer is NOT in the context, you may use your general knowledge, but explicitly state: "Based on general market knowledge (since it's not in your context)..."
+        5. **Tone:** Professional, analytical, and helpful.
+
+        Output JSON Schema:
+        {
+            "message": "string"
+        }
+
+        Conversation History:
+        ${conversationHistory}
+
+        ASSISTANT:
+        `;
+
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
+        return this.safeParse(result);
+    }
+
+    /**
      * Step 5: Chat with Context
      * Interactive chat with the business context.
      */
@@ -271,7 +315,8 @@ class GenesisAgent {
 
       ** Actions:**
       - If the user asks to analyze a specific competitor (e.g., "Analyze Starbucks", "Check out Competitor X"), set "action" to "ANALYZE_COMPETITOR" and "competitorName" to the name.
-      - If the user provides enough info to build the survey, set "action" to "GENERATE".
+      - **DECISIVE GENERATION:** If the user provides a clear **Business Goal** and **Target Audience** (e.g., "I have a coffee shop targeting students"), set "action" to "GENERATE" IMMEDIATELY. 
+        - **CRITICAL:** Do NOT ask for confirmation. Do NOT list draft questions. Just say: "That sounds great! I'm generating a survey to [goal] for [audience] right now."
       - Otherwise, set "action" to "CHAT".
 
       Output JSON Schema:

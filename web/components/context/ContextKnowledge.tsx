@@ -51,6 +51,40 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
   // Sync local state when initialContext updates (e.g. after file upload)
   useEffect(() => {
     setContext(initialContext)
+    
+    // Attempt to parse existing context for analysis data
+    if (initialContext) {
+        const companyMatch = initialContext.match(/Company:\s*(.+?)(\n|$)/);
+        const industryMatch = initialContext.match(/Industry:\s*(.+?)(\n|$)/);
+        const audienceMatch = initialContext.match(/Target Audience:\s*(.+?)(\n|$)/);
+        
+        // Extract competitors (looking for list after "Competitors:")
+        const competitorsSection = initialContext.split("Competitors:")[1];
+        let competitors: string[] = [];
+        if (competitorsSection) {
+            // Extract lines starting with "- " until double newline or end of section
+            const lines = competitorsSection.split('\n');
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('- ')) {
+                    competitors.push(trimmed.substring(2));
+                } else if (trimmed === '' && competitors.length > 0) {
+                    // Stop at empty line if we found competitors (end of list)
+                    // But be careful, sometimes there are extra newlines. 
+                    // Let's just grab all bullet points in the section.
+                }
+            }
+        }
+
+        if (companyMatch || competitors.length > 0) {
+            setAnalysisResult({
+                companyName: companyMatch ? companyMatch[1].trim() : "Unknown",
+                industry: industryMatch ? industryMatch[1].trim() : "General",
+                targetAudience: audienceMatch ? audienceMatch[1].split(',').map(s => s.trim()) : [],
+                competitors: competitors
+            })
+        }
+    }
   }, [initialContext])
 
   // Update Context Mutation

@@ -18,6 +18,7 @@ import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
 
 export interface Theme {
+  mode: 'system' | 'custom'
   primaryColor: string
   backgroundColor: string
   textColor: string
@@ -32,6 +33,7 @@ interface ThemeEditorProps {
 }
 
 export const DEFAULT_THEME: Theme = {
+  mode: 'system',
   primaryColor: "#7c3aed",
   backgroundColor: "#ffffff",
   textColor: "#18181b",
@@ -46,7 +48,7 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleColorChange = (key: keyof Theme, value: string) => {
-    onThemeChange({ ...theme, [key]: value })
+    onThemeChange({ ...theme, mode: 'custom', [key]: value })
   }
 
   const handleReset = () => {
@@ -63,7 +65,8 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
       if (newTheme) {
         onThemeChange({
             ...theme, // Keep defaults if missing
-            ...newTheme
+            ...newTheme,
+            mode: 'custom'
         })
         toast.success("Theme generated!")
       }

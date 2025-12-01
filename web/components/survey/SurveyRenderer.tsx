@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { api } from "@/lib/api"
 
 interface Theme {
+  mode?: 'system' | 'custom'
   primaryColor: string
   backgroundColor: string
   textColor: string
@@ -168,9 +169,13 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
             )}
 
             <Button 
-                className="w-full mt-4" 
+                className={`w-full mt-4 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
                 disabled={available.length > 0} // Require ranking all
                 onClick={() => onAnswer(ranked)}
+                style={{ 
+                    backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                    borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
+                }}
             >
                 Confirm Ranking
             </Button>
@@ -178,7 +183,9 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     )
   }
 
-  const themeStyles = theme ? {
+  const isSystem = theme?.mode === 'system' || !theme
+  
+  const themeStyles = (theme && !isSystem) ? {
     "--primary": theme.primaryColor,
     "--bg": theme.backgroundColor,
     "--text": theme.textColor,
@@ -189,21 +196,21 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
   return (
     <div 
-        className="flex flex-col h-full w-full transition-colors duration-300 bg-zinc-50 dark:bg-zinc-950"
+        className={`flex flex-col h-full w-full transition-colors duration-300 ${isSystem ? 'bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50' : ''}`}
         style={{
             ...themeStyles,
-            backgroundColor: theme ? 'var(--bg)' : undefined,
-            color: theme ? 'var(--text)' : undefined,
-            fontFamily: theme ? 'var(--font)' : undefined,
+            backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+            color: !isSystem && theme ? 'var(--text)' : undefined,
+            fontFamily: !isSystem && theme ? 'var(--font)' : undefined,
         }}
     >
       {/* Progress Bar (Simple) */}
-      <div className="h-1 w-full shrink-0 bg-zinc-200 dark:bg-zinc-800" style={{ backgroundColor: theme ? 'var(--accent)' : undefined }}>
+      <div className={`h-1 w-full shrink-0 ${isSystem ? 'bg-zinc-200 dark:bg-zinc-800' : ''}`} style={{ backgroundColor: !isSystem && theme ? 'var(--accent)' : undefined }}>
         <div 
-            className="h-full transition-all duration-500 bg-violet-600"
+            className={`h-full transition-all duration-500 ${isSystem ? 'bg-violet-600 dark:bg-violet-500' : ''}`}
             style={{ 
                 width: `${isCompleted ? 100 : ((history.length) / Object.keys(questions).length) * 100}%`,
-                backgroundColor: theme ? 'var(--primary)' : undefined
+                backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined
             }}
         />
       </div>
@@ -213,8 +220,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
         {!isCompleted && history.length > 0 && (
             <button 
                 onClick={handleBack}
-                className="absolute top-4 left-4 md:top-8 md:left-0 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors flex items-center gap-1"
-                style={{ color: theme ? 'var(--text)' : undefined, opacity: theme ? 0.6 : 1 }}
+                className={`absolute top-4 left-4 md:top-8 md:left-0 text-sm font-medium transition-colors flex items-center gap-1 ${isSystem ? 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100' : ''}`}
+                style={{ color: !isSystem && theme ? 'var(--text)' : undefined, opacity: !isSystem && theme ? 0.6 : 1 }}
             >
                 ← Back
             </button>
@@ -231,7 +238,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
             >
               {/* ... (rest of question rendering) */}
               <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100" style={{ color: theme ? 'var(--text)' : undefined }}>
+                <h2 className={`text-2xl md:text-3xl font-bold ${isSystem ? 'text-zinc-900 dark:text-zinc-100' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>
                   {currentQ.question}
                 </h2>
                 {currentQ.required && <span className="text-xs text-red-500 uppercase tracking-wider font-medium">Required</span>}
@@ -244,27 +251,23 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                       <button
                         key={opt}
                         onClick={() => handleAnswer(opt)}
-                        className="w-full text-left p-4 border transition-all font-medium flex items-center justify-between group rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-zinc-700 dark:text-zinc-300"
+                        className={`w-full text-left p-4 border transition-all font-medium flex items-center justify-between group rounded-xl ${isSystem ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-zinc-700 dark:text-zinc-300' : ''}`}
                         style={{
-                            borderRadius: theme ? 'var(--radius)' : undefined,
-                            borderColor: theme ? 'var(--accent)' : undefined,
-                            backgroundColor: theme ? 'var(--bg)' : undefined,
-                            color: theme ? 'var(--text)' : undefined
+                            borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                            borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                            backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+                            color: !isSystem && theme ? 'var(--text)' : undefined,
                         }}
                         onMouseEnter={(e) => {
-                            if (theme) {
+                            if (!isSystem && theme) {
                                 e.currentTarget.style.borderColor = 'var(--primary)'
                                 e.currentTarget.style.backgroundColor = 'var(--accent)'
-                            } else {
-                                // Let Tailwind hover classes handle it
                             }
                         }}
                         onMouseLeave={(e) => {
-                            if (theme) {
+                            if (!isSystem && theme) {
                                 e.currentTarget.style.borderColor = 'var(--accent)'
                                 e.currentTarget.style.backgroundColor = 'var(--bg)'
-                            } else {
-                                // Let Tailwind hover classes handle it
                             }
                         }}
                       >
@@ -281,12 +284,12 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                 {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text") && (
                   <div className="flex gap-2">
                     <Input 
-                      className="h-12 text-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                      className={`h-12 text-lg ${isSystem ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800' : ''}`}
                       style={{
-                          borderRadius: theme ? 'var(--radius)' : undefined,
-                          borderColor: theme ? 'var(--accent)' : undefined,
-                          backgroundColor: theme ? 'var(--bg)' : undefined,
-                          color: theme ? 'var(--text)' : undefined
+                          borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                          borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                          backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+                          color: !isSystem && theme ? 'var(--text)' : undefined
                       }}
                       placeholder="Type your answer..."
                       onKeyDown={(e) => {
@@ -295,10 +298,10 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                         }
                       }}
                     />
-                    <Button size="icon" className="h-12 w-12 shrink-0" 
+                    <Button size="icon" className={`h-12 w-12 shrink-0 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
                         style={{ 
-                            backgroundColor: theme ? 'var(--primary)' : undefined,
-                            borderRadius: theme ? 'var(--radius)' : undefined
+                            backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                            borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
                         }}
                         onClick={(e) => {
                             const input = e.currentTarget.previousElementSibling as HTMLInputElement
@@ -317,27 +320,23 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
                                 onClick={() => handleAnswer(rating)}
                                 className="w-12 h-12 border transition-all font-bold text-lg rounded-full border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-violet-600 hover:text-white hover:border-violet-600"
                                 style={{
-                                    borderRadius: theme ? '50%' : undefined,
-                                    borderColor: theme ? 'var(--accent)' : undefined,
-                                    backgroundColor: theme ? 'var(--bg)' : undefined,
-                                    color: theme ? 'var(--text)' : undefined
+                                    borderRadius: !isSystem && theme ? '50%' : undefined,
+                                    borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                                    backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+                                    color: !isSystem && theme ? 'var(--text)' : undefined
                                 }}
                                 onMouseEnter={(e) => {
-                                    if (theme) {
+                                    if (!isSystem && theme) {
                                         e.currentTarget.style.backgroundColor = 'var(--primary)'
                                         e.currentTarget.style.color = '#ffffff'
                                         e.currentTarget.style.borderColor = 'var(--primary)'
-                                    } else {
-                                        // Let Tailwind hover classes handle it
                                     }
                                 }}
                                 onMouseLeave={(e) => {
-                                    if (theme) {
+                                    if (!isSystem && theme) {
                                         e.currentTarget.style.backgroundColor = 'var(--bg)'
                                         e.currentTarget.style.color = 'var(--text)'
                                         e.currentTarget.style.borderColor = 'var(--accent)'
-                                    } else {
-                                        // Let Tailwind hover classes handle it
                                     }
                                 }}
                             >

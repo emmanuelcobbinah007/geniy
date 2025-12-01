@@ -102,8 +102,8 @@ exports.chatWithContext = async (req, res) => {
             }
         }
 
-        const reply = await genesisAgent.chat(enrichedContext, messages);
-        res.json({ reply });
+        const result = await genesisAgent.chatWithBrain(enrichedContext, messages);
+        res.json({ reply: result.message });
     } catch (error) {
         console.error("Chat Error:", error);
         res.status(500).json({ error: "Failed to chat" });

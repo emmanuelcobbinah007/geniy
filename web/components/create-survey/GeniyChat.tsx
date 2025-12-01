@@ -261,10 +261,58 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
         // Handle Action
         if (response.action === "GENERATE") {
-            // Use the AI's message (which likely contains the draft) as the instruction
-            // This ensures the generator knows exactly what was proposed/discussed
-            const instruction = `The user wants to generate a survey. Here is the draft/context we discussed:\n\n${response.message}\n\nUser's last input: ${userText}`;
-            await generateSurveyFromContext(response.updatedContext || chatContext, instruction)
+            // Trigger the full generation cycle (Analyze -> Strategy -> Survey)
+            // This mirrors the file upload workflow for better quality and UX
+            
+            // 1. Analyze
+            addMessage("assistant", "That's enough context! Analyzing your request... 🧠")
+            const analysis = await api.analyzeContext(response.updatedContext || chatContext, token)
+            
+            // 2. Strategy
+            addMessage("assistant", "Generating research strategy... 📝")
+            const strategy = await api.generateStrategy(analysis, token)
+            
+            // 3. Survey
+            addMessage("assistant", `Strategy created! Objectives: ${strategy.objectives.length}. Generating survey questions... ✍️`)
+            const surveySchema = await api.generateSurvey(analysis, strategy, response.message, token) // Use AI message as instruction
+            
+            setTitle(surveySchema.title)
+            setDescription(surveySchema.description || "")
+            setContextData({ analysis, strategy })
+            setChatContext(response.updatedContext || chatContext)
+
+            // Transform schema questions to our editor format
+            const questionsData = surveySchema.questions;
+            const questionsArray = Array.isArray(questionsData) 
+                ? questionsData 
+                : Object.values(questionsData);
+            
+            const editorQuestions = questionsArray.map((q: any, i: number) => {
+                const branches = q.branches ? q.branches.map((b: any) => ({
+                    if: b.if,
+                    then: b.next.replace(/^Q/, '')
+                })) : []
+
+                const nextId = q.next ? q.next.replace(/^Q/, '') : null;
+                const currentId = i + 1;
+                
+                if (nextId && parseInt(nextId) !== currentId + 1 && q.type !== "multiple_choice") {
+                        branches.push({ if: true, then: nextId });
+                }
+
+                return {
+                    id: currentId,
+                    type: q.type,
+                    title: q.question,
+                    required: q.required !== false,
+                    options: q.options || [],
+                    logic: branches
+                }
+            })
+            setQuestions(editorQuestions)
+            
+            addMessage("assistant", "Done! I've generated the survey based on your context. Check it out on the right! 👉")
+
         } else if (response.action === "ANALYZE_COMPETITOR" && response.competitorAnalysis) {
             // Add a special message with the analysis
             setMessages(prev => [...prev, {

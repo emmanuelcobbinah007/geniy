@@ -46,6 +46,7 @@ function CreateSurveyContent() {
   const [createdCampaignId, setCreatedCampaignId] = useState("")
   const [showCustomize, setShowCustomize] = useState(false)
   const [theme, setTheme] = useState<Theme>({
+    mode: 'system',
     primaryColor: "#7c3aed",
     backgroundColor: "#ffffff",
     textColor: "#18181b",
