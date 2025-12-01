@@ -236,13 +236,19 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content: Analytics (2/3) */}
-        <motion.div variants={item} className="lg:col-span-2 space-y-8">
-          <LiveAnalytics totalResponses={survey?._count?.responses || 0} />
+        <motion.div variants={item} className="lg:col-span-2 space-y-8 lg:sticky lg:top-6 self-start">
+          <LiveAnalytics 
+            totalResponses={survey?._count?.responses || 0} 
+            responses={survey?.responses || []}
+          />
         </motion.div>
 
         {/* Sidebar: Geniy Consultant (1/3) */}
         <motion.div variants={item} className="space-y-6">
-          <GeniyRecommendations />
+          <GeniyRecommendations 
+            campaignId={campaign.id} 
+            hasResponses={(survey?._count?.responses || 0) > 0}
+          />
         </motion.div>
       </div>
     </motion.div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowRight, Check } from "lucide-react"
@@ -93,6 +93,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     }
   }
 
+  const startTime = useRef<number>(Date.now())
+
   const submitSurvey = async (finalAnswers: any) => {
     if (isPreview) {
       setIsCompleted(true)
@@ -104,7 +106,15 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
     setIsSubmitting(true)
     try {
-      await api.submitResponse(slug, finalAnswers)
+      const timeTaken = Math.round((Date.now() - startTime.current) / 1000) // in seconds
+      const metadata = {
+        timeTaken,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language
+      }
+      
+      await api.submitResponse(slug, finalAnswers, metadata)
       setIsCompleted(true)
       if (onComplete) onComplete()
     } catch (err) {

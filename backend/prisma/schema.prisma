@@ -60,7 +60,9 @@ model Campaign {
   workspaceId  String
   name         String
   description  String?
+  isDeleted    Boolean       @default(false)
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   insights     AIInsight[]
   activityLogs ActivityLog[]
   workspace    Workspace     @relation(fields: [workspaceId], references: [id])

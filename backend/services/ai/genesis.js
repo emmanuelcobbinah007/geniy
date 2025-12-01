@@ -3,6 +3,35 @@ const manus = require('./manus');
 
 class GenesisAgent {
     /**
+     * Step 0: Chat & Intent Analysis
+     * Converses with the user to gather requirements or decides to generate.
+     */
+    async chat(message, currentContext = "") {
+        const prompt = `
+        You are Geniy, an expert AI Survey Consultant. Your goal is to help the user define the perfect survey campaign.
+        
+        Current Context: "${currentContext}"
+        User Message: "${message}"
+
+        Instructions:
+        1. Analyze the user's request.
+        2. If the user provides enough information (e.g., "I want a survey for my coffee shop targeting students"), decide to GENERATE.
+        3. If the request is vague (e.g., "Hi", "I need a survey"), ask a clarifying question to gather more context (e.g., "What is your business?", "Who is your target audience?").
+        4. Be friendly, professional, and concise.
+
+        Output JSON Schema:
+        {
+            "message": "string", // Your response to the user
+            "action": "CHAT" | "GENERATE", // CHAT to keep talking, GENERATE to start building
+            "updatedContext": "string" // The accumulated context including new info
+        }
+        `;
+
+        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
+        return this.safeParse(result);
+    }
+
+    /**
      * Step 1: Analyze Context
      * Extracts key entities from the raw BCD text.
      */
@@ -219,7 +248,7 @@ class GenesisAgent {
      * Step 5: Chat with Context
      * Interactive chat with the business context.
      */
-    async chat(context, messages) {
+    async chatWithContext(context, messages) {
         // Format messages for the prompt
         // Assuming messages is an array of { role: "user"|"assistant", content: "..." }
         const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');

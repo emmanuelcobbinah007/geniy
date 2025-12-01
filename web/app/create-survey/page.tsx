@@ -19,6 +19,8 @@ import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
 import { ShareModal } from "@/components/create-survey/ShareModal"
 import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSelectionModal"
 import { useSearchParams } from "next/navigation"
+import { ThemeEditor, Theme } from "@/components/survey/ThemeEditor"
+import { Palette } from "lucide-react"
 
 import { Suspense } from "react"
 
@@ -42,6 +44,15 @@ function CreateSurveyContent() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareUrl, setShareUrl] = useState("")
   const [createdCampaignId, setCreatedCampaignId] = useState("")
+  const [showCustomize, setShowCustomize] = useState(false)
+  const [theme, setTheme] = useState<Theme>({
+    primaryColor: "#7c3aed",
+    backgroundColor: "#ffffff",
+    textColor: "#18181b",
+    accentColor: "#f4f4f5",
+    fontFamily: "Inter",
+    borderRadius: "0.5rem"
+  })
 
   const searchParams = useSearchParams()
   const workspaceId = searchParams.get("workspaceId")
@@ -149,8 +160,10 @@ function CreateSurveyContent() {
         questions: {
             title: title,
             version: "1.0",
+            version: "1.0",
             ...getSurveyData()
-        }
+        },
+        themeConfig: theme
       }
 
       const result = await api.createCampaign(payload, token);
@@ -190,7 +203,30 @@ function CreateSurveyContent() {
             <SurveyRenderer 
                 surveyData={getSurveyData()} 
                 isPreview={true} 
+                theme={theme}
             />
+        </DialogContent>
+      </Dialog>
+
+      {/* Customize Modal */}
+      <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
+        <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex">
+            <div className="w-1/3 border-r border-zinc-200 dark:border-zinc-800 p-6 overflow-y-auto">
+                <div className="flex items-center gap-2 mb-6">
+                    <Palette className="w-5 h-5 text-violet-600" />
+                    <h2 className="font-semibold text-lg">Customize Theme</h2>
+                </div>
+                <ThemeEditor theme={theme} onThemeChange={setTheme} />
+            </div>
+            <div className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 p-8 overflow-y-auto flex items-center justify-center">
+                <div className="w-full max-w-md bg-white dark:bg-zinc-900 shadow-xl rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                    <SurveyRenderer 
+                        surveyData={getSurveyData()} 
+                        isPreview={true} 
+                        theme={theme}
+                    />
+                </div>
+            </div>
         </DialogContent>
       </Dialog>
 
@@ -226,6 +262,15 @@ function CreateSurveyContent() {
           >
             {isMobileChatOpen ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
             <span className="ml-2 hidden sm:inline">{isMobileChatOpen ? "Close" : "AI"}</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-zinc-500 hover:text-foreground px-2"
+            onClick={() => setShowCustomize(true)}
+          >
+            <Palette className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Customize</span>
           </Button>
           <Button 
             variant="ghost" 

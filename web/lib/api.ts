@@ -71,8 +71,8 @@ export const api = {
     return this.get(`/campaigns/public/${slug}`);
   },
 
-  async submitResponse(slug: string, answers: any) {
-    return this.post(`/campaigns/public/${slug}/response`, { answers });
+  async submitResponse(slug: string, answers: any, metadata?: any) {
+    return this.post(`/campaigns/public/${slug}/response`, { answers, metadata });
   },
 
   async getCampaignResponses(id: string, token: string) {
@@ -155,13 +155,13 @@ export const api = {
     return this.get(`/workspaces/${id}/members`, token);
   },
 
-  async addMember(workspaceId: string, email: string, token: string) {
-    return this.post(`/workspaces/${workspaceId}/members`, { email }, token);
-  },
-
   // AI Integration
   async analyzeContext(contextText: string, token: string) {
     return this.post('/ai/analyze-context', { contextText }, token);
+  },
+
+  async chat(message: string, context: string, token: string) {
+    return this.post('/campaigns/chat', { message, context }, token);
   },
 
   async generateStrategy(contextSummary: any, token: string) {
@@ -186,5 +186,13 @@ export const api = {
 
   async updateSurvey(campaignId: string, data: any, token: string) {
     return this.put(`/campaigns/${campaignId}/survey`, data, token);
+  },
+
+  async generateInsights(campaignId: string, token: string) {
+    return this.post(`/campaigns/${campaignId}/insights`, {}, token);
+  },
+
+  async getInsights(campaignId: string, token: string) {
+    return this.get(`/campaigns/${campaignId}/insights`, token);
   },
 };

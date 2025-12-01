@@ -61,6 +61,22 @@ export function Footer() {
         <div className="mt-12 border-t border-zinc-200 dark:border-zinc-900 pt-8 text-center text-sm text-zinc-500">
           © {new Date().getFullYear()} Geniy Inc. All rights reserved.
         </div>
+        <Link href="https://aurorasoftwarelabs.io/" className="flex items-center justify-center">
+              <div className="relative w-[120px] h-[120px]">
+                <Image 
+                  src="/AuroraLogoLight.png" 
+                  alt="Aurora Software Labs Logo" 
+                  fill
+                  className="object-contain dark:hidden" 
+                />
+                <Image 
+                  src="/AuroraLogoDark.png" 
+                  alt="Aurora Software Labs Logo" 
+                  fill
+                  className="object-contain hidden dark:block" 
+                />
+              </div>
+            </Link>
       </div>
     </footer>
   )

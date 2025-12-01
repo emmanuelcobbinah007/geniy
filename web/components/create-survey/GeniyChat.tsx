@@ -167,30 +167,19 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     }
   }
 
-  const handleSend = async () => {
-    if (!input.trim() || !token) return
+  const [chatContext, setChatContext] = useState(initialContext || "")
 
-    const userText = input
-    setInput("")
-    addMessage("user", userText)
-    setIsProcessing(true)
+  useEffect(() => {
+    if (initialContext) setChatContext(initialContext)
+  }, [initialContext])
 
+  const generateSurveyFromContext = async (contextText: string, userInstruction: string = "") => {
     try {
-        // Treat text input as context
-        addMessage("assistant", "Analyzing your request... 🧠")
-        
-        // Combine existing context with user input
-        let contextText = userText;
-        if (initialContext) {
-            contextText = `Existing Business Context: ${initialContext}\n\nUser Request: ${userText}`;
-        }
-
-        const analysis = await api.analyzeContext(contextText, token)
-        
-        const strategy = await api.generateStrategy(analysis, token)
         addMessage("assistant", "Drafting questions... ✍️")
-
-        const surveySchema = await api.generateSurvey(analysis, strategy, userText, token)
+        
+        const analysis = await api.analyzeContext(contextText, token!)
+        const strategy = await api.generateStrategy(analysis, token!)
+        const surveySchema = await api.generateSurvey(analysis, strategy, userInstruction, token!)
         
         setTitle(surveySchema.title)
         setDescription(surveySchema.description || "")
@@ -209,13 +198,9 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
                 then: b.next.replace(/^Q/, '')
             })) : []
 
-            // Handle "next" (Default Jump / Merge)
-            // If explicit "next" is set and it's a jump (not just the next sequential question), add it as logic
             const nextId = q.next ? q.next.replace(/^Q/, '') : null;
             const currentId = i + 1;
             
-            // Only add default jump if it's not the standard flow (i.e. not currentId + 1)
-            // And only for non-MC questions (since MC uses branches for flow)
             if (nextId && parseInt(nextId) !== currentId + 1 && q.type !== "multiple_choice") {
                  branches.push({ if: true, then: nextId });
             }
@@ -232,6 +217,39 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         setQuestions(editorQuestions)
 
         addMessage("assistant", "I've updated the survey! Let me know if you want to change anything.")
+
+    } catch (error) {
+        console.error(error)
+        addMessage("assistant", "Sorry, something went wrong while generating the survey.")
+    }
+  }
+
+  const handleSend = async () => {
+    if (!input.trim() || !token) return
+
+    const userText = input
+    setInput("")
+    addMessage("user", userText)
+    setIsProcessing(true)
+
+    try {
+        // Call Chat API
+        const response = await api.chat(userText, chatContext, token)
+        
+        // Update context
+        if (response.updatedContext) {
+            setChatContext(response.updatedContext)
+        }
+
+        // Display AI Message
+        if (response.message) {
+            addMessage("assistant", response.message)
+        }
+
+        // Handle Action
+        if (response.action === "GENERATE") {
+            await generateSurveyFromContext(response.updatedContext || chatContext, userText)
+        }
 
     } catch (error) {
         console.error(error)

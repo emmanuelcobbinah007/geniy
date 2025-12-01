@@ -1,11 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const crypto = require('crypto');
+const genesisAgent = require('../services/ai/genesis');
 
 // Create a new Campaign and Survey
 exports.createCampaign = async (req, res) => {
     try {
-        const { workspaceId, name, description, surveyTitle, questions, contextData } = req.body;
+        const { workspaceId, name, description, surveyTitle, questions, contextData, themeConfig } = req.body;
 
         if (!workspaceId || !name || !surveyTitle) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -31,6 +32,7 @@ exports.createCampaign = async (req, res) => {
                 jsonSchema: questions || {}, // Store the provided JSON
                 publicSlug: publicSlug,
                 isPublished: true, // Auto-publish for MVP as requested
+                themeConfig: themeConfig || undefined,
             },
         });
 
@@ -70,7 +72,10 @@ exports.getCampaigns = async (req, res) => {
         }
 
         const campaigns = await prisma.campaign.findMany({
-            where: { workspaceId },
+            where: {
+                workspaceId,
+                isDeleted: false
+            },
             include: {
                 surveys: true,
                 _count: {
@@ -99,13 +104,20 @@ exports.getCampaign = async (req, res) => {
                     include: {
                         _count: {
                             select: { responses: true }
+                        },
+                        responses: {
+                            select: {
+                                submittedAt: true,
+                                metadata: true,
+                                rawAnswers: true
+                            }
                         }
                     }
                 }
             }
         });
 
-        if (!campaign) {
+        if (!campaign || campaign.isDeleted) {
             return res.status(404).json({ error: 'Campaign not found' });
         }
 
@@ -115,6 +127,7 @@ exports.getCampaign = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch campaign' });
     }
 };
+
 // Get a survey by its public slug (for respondents)
 exports.getSurveyBySlug = async (req, res) => {
     try {
@@ -178,6 +191,16 @@ exports.getCampaignResponses = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Check if campaign exists and is not deleted
+        const campaign = await prisma.campaign.findUnique({
+            where: { id },
+            select: { isDeleted: true }
+        });
+
+        if (!campaign || campaign.isDeleted) {
+            return res.status(404).json({ error: 'Campaign not found' });
+        }
+
         // Verify campaign exists and belongs to user's workspace (optional security check)
         // For now, we just fetch responses linked to surveys in this campaign
         const responses = await prisma.response.findMany({
@@ -206,16 +229,11 @@ exports.deleteCampaign = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Transaction to clear surveys and delete campaign
-        const deleteSurveys = prisma.survey.deleteMany({
-            where: { campaignId: id }
+        // Soft delete: Update isDeleted flag instead of removing record
+        await prisma.campaign.update({
+            where: { id },
+            data: { isDeleted: true }
         });
-
-        const deleteCampaign = prisma.campaign.delete({
-            where: { id }
-        });
-
-        await prisma.$transaction([deleteSurveys, deleteCampaign]);
 
         res.json({ message: 'Campaign deleted successfully' });
     } catch (error) {
@@ -241,7 +259,7 @@ exports.getCampaignAnalytics = async (req, res) => {
             }
         });
 
-        if (!campaign) {
+        if (!campaign || campaign.isDeleted) {
             return res.status(404).json({ error: 'Campaign not found' });
         }
 
@@ -345,5 +363,47 @@ exports.updateSurvey = async (req, res) => {
     } catch (error) {
         console.error('Error updating survey:', error);
         res.status(500).json({ error: 'Failed to update survey' });
+    }
+};
+
+// Generate AI Insights
+const insightService = require('../services/ai/insightService');
+
+exports.generateInsights = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const insights = await insightService.generateInsights(id);
+        res.json(insights);
+    } catch (error) {
+        console.error("Insight Generation Error:", error);
+        res.status(500).json({ error: error.message || "Failed to generate insights" });
+    }
+};
+
+exports.getInsights = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const insights = await insightService.getInsights(id);
+        res.json(insights || null);
+    } catch (error) {
+        console.error("Fetch Insights Error:", error);
+        res.status(500).json({ error: "Failed to fetch insights" });
+    }
+};
+
+// Chat with Geniy (Conversational Agent)
+exports.chatWithGeniy = async (req, res) => {
+    try {
+        const { message, context } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+
+        const response = await genesisAgent.chat(message, context);
+        res.json(response);
+    } catch (error) {
+        console.error('Error in chat:', error);
+        res.status(500).json({ error: 'Failed to process chat' });
     }
 };

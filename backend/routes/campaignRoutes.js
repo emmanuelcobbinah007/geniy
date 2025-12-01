@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const campaignController = require('../controllers/campaignController');
+const { protect: authenticateToken } = require('../middleware/authMiddleware');
 
 // POST /api/campaigns - Create a new campaign and survey
 router.post('/', campaignController.createCampaign);
@@ -28,5 +29,14 @@ router.delete('/:id', campaignController.deleteCampaign);
 
 // PUT /api/campaigns/:id/survey - Update survey (theme, etc)
 router.put('/:id/survey', campaignController.updateSurvey);
+
+// POST /api/campaigns/:id/insights - Generate AI insights
+router.post('/:id/insights', campaignController.generateInsights);
+
+// GET /api/campaigns/:id/insights - Get existing insights
+router.get('/:id/insights', campaignController.getInsights);
+
+// Chat with Geniy
+router.post('/chat', authenticateToken, campaignController.chatWithGeniy);
 
 module.exports = router;
