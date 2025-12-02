@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { CompetitorCard } from "./CompetitorCard"
+import { ResearchStrategyCard } from "./ResearchStrategyCard"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -15,7 +16,8 @@ interface Message {
   role: "user" | "assistant"
   content: string
   attachment?: string
-  competitorAnalysis?: any // Added for competitor card
+  competitorAnalysis?: any
+  strategy?: any // Added for strategy card
 }
 
 interface GeniyChatProps {
@@ -58,11 +60,12 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     }
   }, [initialContext])
 
-  const addMessage = (role: "user" | "assistant", content: string) => {
+  const addMessage = (role: "user" | "assistant", content: string, extras?: Partial<Message>) => {
     setMessages(prev => [...prev, {
       id: Date.now().toString() + Math.random().toString(36).substring(7),
       role,
-      content
+      content,
+      ...extras
     }])
   }
 
@@ -118,7 +121,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         addMessage("assistant", `I've analyzed ${analysis.companyName}. Generating a research strategy... 📝`)
 
         const strategy = await api.generateStrategy(analysis, token)
-        addMessage("assistant", `Strategy created! Objectives: ${strategy.objectives.length}. Generating survey questions... ✍️`)
+        addMessage("assistant", `Strategy created! I've outlined the core objectives and hypotheses below. Generating survey questions... ✍️`, { strategy })
 
         const surveySchema = await api.generateSurvey(analysis, strategy, "", token)
         
@@ -273,7 +276,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             const strategy = await api.generateStrategy(analysis, token)
             
             // 3. Survey
-            addMessage("assistant", `Strategy created! Objectives: ${strategy.objectives.length}. Generating survey questions... ✍️`)
+            addMessage("assistant", `Strategy created! I've outlined the core objectives and hypotheses below. Generating survey questions... ✍️`, { strategy })
             const surveySchema = await api.generateSurvey(analysis, strategy, response.message, token) // Use AI message as instruction
             
             setTitle(surveySchema.title)
@@ -371,6 +374,11 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
                         {msg.content}
                     </ReactMarkdown>
                 </div>
+                {msg.strategy && (
+                    <div className="mt-4">
+                        <ResearchStrategyCard strategy={msg.strategy} />
+                    </div>
+                )}
                 {msg.competitorAnalysis && (
                     <div className="mt-3">
                         <CompetitorCard name={msg.content.split('**')[1] || "Competitor"} analysis={msg.competitorAnalysis} />

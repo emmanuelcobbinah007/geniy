@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Share2, MoreHorizontal, Eye, Copy, Check } from "lucide-react"
+import { ArrowLeft, Share2, MoreHorizontal, Eye, Copy, Check, Download, Palette, Save } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { LiveAnalytics } from "@/components/campaigns/LiveAnalytics"
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
 import {
@@ -19,11 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
-
-import { use } from "react"
-
 import { ThemeEditor, Theme, DEFAULT_THEME } from "@/components/survey/ThemeEditor"
-import { Palette, Save } from "lucide-react"
 import { toast } from "sonner"
 
 export default function CampaignInsightsPage({ params }: { params: Promise<{ workspaceId: string, id: string }> }) {
@@ -74,6 +70,33 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
         refetch()
     } catch (error) {
         toast.error("Failed to save theme")
+    }
+  }
+
+  const handleExport = async () => {
+    if (!token || !id) return
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/campaigns/${id}/export`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        
+        if (!response.ok) throw new Error('Export failed')
+        
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `campaign-${id}-responses.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        
+        toast.success("Export downloaded")
+    } catch (error) {
+        toast.error("Failed to export responses")
     }
   }
 
@@ -192,6 +215,15 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
           >
             <Eye className="mr-2 h-4 w-4" />
             Preview
+          </Button>
+
+          <Button 
+            variant="outline" 
+            className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+            onClick={handleExport}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
           
           <Popover>

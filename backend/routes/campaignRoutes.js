@@ -24,6 +24,9 @@ router.get('/:id/responses', campaignController.getCampaignResponses);
 // GET /api/campaigns/:id/analytics - Get aggregated analytics for a campaign
 router.get('/:id/analytics', campaignController.getCampaignAnalytics);
 
+// GET /api/campaigns/:id/export - Export responses as CSV
+router.get('/:id/export', campaignController.exportCampaignResponses);
+
 // DELETE /api/campaigns/:id - Delete a campaign
 router.delete('/:id', campaignController.deleteCampaign);
 

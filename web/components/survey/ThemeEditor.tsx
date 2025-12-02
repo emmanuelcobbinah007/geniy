@@ -42,6 +42,37 @@ export const DEFAULT_THEME: Theme = {
   borderRadius: "0.5rem"
 }
 
+const THEME_PRESETS: Record<string, Theme> = {
+    "Default": DEFAULT_THEME,
+    "Midnight": {
+        mode: 'custom',
+        primaryColor: "#6366f1",
+        backgroundColor: "#09090b",
+        textColor: "#f4f4f5",
+        accentColor: "#27272a",
+        fontFamily: "Inter",
+        borderRadius: "0.75rem"
+    },
+    "Swiss": {
+        mode: 'custom',
+        primaryColor: "#ef4444",
+        backgroundColor: "#ffffff",
+        textColor: "#000000",
+        accentColor: "#f4f4f5",
+        fontFamily: "Playfair Display",
+        borderRadius: "0px"
+    },
+    "Neon": {
+        mode: 'custom',
+        primaryColor: "#d946ef",
+        backgroundColor: "#2e1065",
+        textColor: "#e9d5ff",
+        accentColor: "#4c1d95",
+        fontFamily: "Roboto Mono",
+        borderRadius: "1rem"
+    }
+}
+
 export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
   const { token } = useAuth()
   const [prompt, setPrompt] = useState("")
@@ -88,6 +119,27 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
         <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
             Reset to Default
         </Button>
+      </div>
+
+      {/* Presets */}
+      <div className="grid grid-cols-4 gap-2">
+        {Object.entries(THEME_PRESETS).map(([name, preset]) => (
+            <button
+                key={name}
+                onClick={() => onThemeChange(preset)}
+                className="group relative flex flex-col items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-500 transition-all"
+            >
+                <div 
+                    className="w-full aspect-square rounded-md shadow-sm border border-zinc-100 dark:border-zinc-800"
+                    style={{ backgroundColor: preset.backgroundColor }}
+                >
+                    <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.primaryColor }} />
+                    </div>
+                </div>
+                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-violet-600">{name}</span>
+            </button>
+        ))}
       </div>
 
       {/* AI Generator */}

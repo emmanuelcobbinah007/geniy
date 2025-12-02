@@ -9,10 +9,22 @@ import { useAuth } from "@/context/auth-context"
 
 import { useParams } from "next/navigation"
 
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
+
 export default function DashboardPage() {
   const params = useParams()
   const workspaceId = params?.workspaceId as string
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+
+  const { data: dashboard, isLoading } = useQuery({
+    queryKey: ['dashboard', workspaceId],
+    queryFn: async () => {
+        if (!token || !workspaceId) return null
+        return api.getDashboardStats(workspaceId, token)
+    },
+    enabled: !!token && !!workspaceId,
+  })
 
   const container = {
     hidden: { opacity: 0 },
@@ -28,6 +40,14 @@ export default function DashboardPage() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
   }
+
+  if (isLoading) {
+      return <div className="p-8 flex items-center justify-center min-h-screen">Loading dashboard...</div>
+  }
+
+  const stats = dashboard?.stats || { totalResponses: 0, conversionRate: 0, healthScore: 0, campaignCount: 0 }
+  const feed = dashboard?.strategyFeed || []
+  const activity = dashboard?.recentActivity || []
 
   return (
     <motion.div 
@@ -65,12 +85,7 @@ export default function DashboardPage() {
           
           {/* Knowledge Health Widget */}
           <motion.div variants={item} className="relative">
-            <div className="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-                <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-500">
-                    Coming Soon
-                </div>
-            </div>
-            <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 opacity-50 pointer-events-none">
+            <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <h3 className="font-semibold flex items-center gap-2">
@@ -79,9 +94,9 @@ export default function DashboardPage() {
                   </h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">Geniy's understanding of your business.</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${stats.healthScore > 50 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Good Standing
+                  {stats.healthScore > 50 ? 'Good Standing' : 'Needs Attention'}
                 </div>
               </div>
               
@@ -89,24 +104,26 @@ export default function DashboardPage() {
                 <div className="flex-1 w-full space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-zinc-600 dark:text-zinc-300">Context Completeness</span>
-                    <span className="font-medium">75%</span>
+                    <span className="font-medium">{stats.healthScore}%</span>
                   </div>
                   <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-violet-500 w-[75%] rounded-full" />
+                    <div className="h-full bg-violet-500 rounded-full transition-all duration-1000" style={{ width: `${stats.healthScore}%` }} />
                   </div>
                 </div>
-                <div className="w-full md:w-auto p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
-                      <AlertCircle className="w-4 h-4" />
+                {stats.healthScore < 80 && (
+                    <div className="w-full md:w-auto p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
+                        <AlertCircle className="w-4 h-4" />
+                        </div>
+                        <div>
+                        <p className="text-sm font-medium">Missing: Business Context</p>
+                        <p className="text-xs text-zinc-500 mt-1">Upload to get better feature suggestions.</p>
+                        <Button variant="link" className="h-auto p-0 text-xs text-violet-600 mt-2">Upload now &rarr;</Button>
+                        </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">Missing: Product Roadmap</p>
-                      <p className="text-xs text-zinc-500 mt-1">Upload to get better feature suggestions.</p>
-                      <Button variant="link" className="h-auto p-0 text-xs text-violet-600 mt-2">Upload now &rarr;</Button>
                     </div>
-                  </div>
-                </div>
+                )}
               </div>
             </Card>
           </motion.div>
@@ -117,41 +134,30 @@ export default function DashboardPage() {
               <Lightbulb className="w-5 h-5 text-amber-500" />
               Strategy Feed
             </h3>
-            <div className="grid gap-4">
-              {[
-                {
-                  title: "Churn Risk Detected",
-                  desc: "Response rate for 'Product Fit' is low (12%) among Enterprise users.",
-                  action: "Launch Churn Analysis",
-                  color: "red"
-                },
-                {
-                  title: "Opportunity: Gen Z Market",
-                  desc: "Competitor 'Acme' just raised prices. Good time to capture their dissatisfied users.",
-                  action: "Create Campaign",
-                  color: "green"
-                },
-                {
-                  title: "Follow-up Required",
-                  desc: "Your 'Feature Request' survey has 50 new qualitative responses.",
-                  action: "View Insights",
-                  color: "blue"
-                }
-              ].map((feed, i) => (
-                <Card key={i} className="p-5 hover:shadow-md transition-shadow cursor-pointer group">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-1.5 h-12 rounded-full bg-${feed.color}-500 shrink-0`} />
-                    <div className="flex-1">
-                      <h4 className="font-medium group-hover:text-violet-600 transition-colors">{feed.title}</h4>
-                      <p className="text-sm text-zinc-500 mt-1">{feed.desc}</p>
+            {feed.length === 0 ? (
+                <div className="p-8 text-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-900/50">
+                    <p className="text-zinc-500">No insights yet. Create a survey to get started!</p>
+                </div>
+            ) : (
+                <div className="grid gap-4">
+                {feed.map((item: any, i: number) => (
+                    <Card key={i} className="p-5 hover-lift cursor-pointer group border-zinc-200 dark:border-zinc-800">
+                    <div className="flex items-start gap-4">
+                        <div className={`w-1.5 h-12 rounded-full bg-${item.color}-500 shrink-0`} />
+                        <div className="flex-1">
+                        <h4 className="font-medium group-hover:text-violet-600 transition-colors">{item.title}</h4>
+                        <p className="text-sm text-zinc-500 mt-1">{item.desc}</p>
+                        </div>
+                        <Link href={item.link || '#'}>
+                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            {item.action} <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        </Link>
                     </div>
-                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      {feed.action} <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </Card>
+                ))}
+                </div>
+            )}
           </motion.div>
 
         </div>
@@ -161,12 +167,7 @@ export default function DashboardPage() {
           
           {/* Competitor Pulse */}
           <motion.div variants={item} className="relative">
-            <div className="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-[2px] flex items-center justify-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-                <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-500">
-                    Coming Soon
-                </div>
-            </div>
-            <Card className="p-0 overflow-hidden opacity-50 pointer-events-none">
+            <Card className="p-0 overflow-hidden">
               <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Activity className="w-4 h-4 text-zinc-500" />
@@ -174,18 +175,23 @@ export default function DashboardPage() {
                 </h3>
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {[
-                  { name: "Acme Corp", action: "updated pricing", time: "2h ago" },
-                  { name: "Globex", action: "launched new feature", time: "1d ago" },
-                  { name: "Soylent", action: "posted 3 jobs", time: "2d ago" },
-                ].map((comp, i) => (
-                  <div key={i} className="p-4 flex items-center justify-between text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                    <div>
-                      <span className="font-medium">{comp.name}</span> <span className="text-zinc-500">{comp.action}</span>
+                {(!dashboard?.competitors || dashboard.competitors.length === 0) ? (
+                    <div className="p-4 text-center text-sm text-zinc-500">
+                        No competitors tracked yet.
                     </div>
-                    <span className="text-xs text-zinc-400">{comp.time}</span>
-                  </div>
-                ))}
+                ) : (
+                    dashboard.competitors.slice(0, 5).map((comp: any, i: number) => {
+                        const name = typeof comp === 'string' ? comp : comp.name;
+                        return (
+                            <div key={i} className="p-4 flex items-center justify-between text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                <div>
+                                <span className="font-medium">{name}</span>
+                                </div>
+                                <span className="text-xs text-zinc-400">Tracking</span>
+                            </div>
+                        )
+                    })
+                )}
               </div>
               <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 text-center">
                 <Button variant="link" size="sm" className="text-xs text-zinc-500">View all competitors</Button>
@@ -193,20 +199,49 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
 
+          {/* Recent Activity */}
+          <motion.div variants={item} className="relative">
+            <Card className="p-0 overflow-hidden">
+              <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-zinc-500" />
+                  Recent Activity
+                </h3>
+              </div>
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {activity.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-zinc-500">No recent activity</div>
+                ) : (
+                    activity.map((act: any, i: number) => (
+                    <div key={i} className="p-4 flex items-center justify-between text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                        <div>
+                        <span className="font-medium">New Response</span> <span className="text-zinc-500">on {act.surveyTitle}</span>
+                        </div>
+                        <span className="text-xs text-zinc-400">{act.timeAgo}</span>
+                    </div>
+                    ))
+                )}
+              </div>
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 text-center">
+                <Button variant="link" size="sm" className="text-xs text-zinc-500">View all activity</Button>
+              </div>
+            </Card>
+          </motion.div>
+
           {/* Quick Metrics */}
           <motion.div variants={item} className="grid grid-cols-2 gap-4">
-            <Card className="p-4 flex flex-col items-center justify-center text-center space-y-2 hover:border-violet-200 dark:hover:border-violet-800 transition-colors">
+            <Card className="p-4 flex flex-col items-center justify-center text-center space-y-2 hover-lift border-zinc-200 dark:border-zinc-800">
               <Users className="w-6 h-6 text-zinc-400" />
               <div>
-                <div className="text-2xl font-bold">1,234</div>
+                <div className="text-2xl font-bold">{stats.totalResponses}</div>
                 <div className="text-xs text-zinc-500">Total Responses</div>
               </div>
             </Card>
-            <Card className="p-4 flex flex-col items-center justify-center text-center space-y-2 hover:border-violet-200 dark:hover:border-violet-800 transition-colors">
+            <Card className="p-4 flex flex-col items-center justify-center text-center space-y-2 hover-lift border-zinc-200 dark:border-zinc-800">
               <TrendingUp className="w-6 h-6 text-zinc-400" />
               <div>
-                <div className="text-2xl font-bold">12%</div>
-                <div className="text-xs text-zinc-500">Conv. Rate</div>
+                <div className="text-2xl font-bold">{stats.campaignCount}</div>
+                <div className="text-xs text-zinc-500">Active Campaigns</div>
               </div>
             </Card>
           </motion.div>

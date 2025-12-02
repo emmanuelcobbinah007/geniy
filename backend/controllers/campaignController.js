@@ -48,7 +48,8 @@ exports.createCampaign = async (req, res) => {
             await prisma.workspace.update({
                 where: { id: workspaceId },
                 data: {
-                    businessContext: contextString
+                    businessContext: contextString,
+                    competitors: analysis.competitors || []
                 }
             });
         }
@@ -424,6 +425,68 @@ exports.chatWithGeniy = async (req, res) => {
     } catch (error) {
         console.error('Error in chat:', error);
         res.status(500).json({ error: 'Failed to process chat' });
+    }
+};
+
+// Export responses as CSV
+exports.exportCampaignResponses = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const campaign = await prisma.campaign.findUnique({
+            where: { id },
+            include: {
+                surveys: {
+                    include: {
+                        responses: true
+                    }
+                }
+            }
+        });
+
+        if (!campaign || campaign.isDeleted) {
+            return res.status(404).json({ error: 'Campaign not found' });
+        }
+
+        const survey = campaign.surveys[0];
+        if (!survey) {
+            return res.status(400).json({ error: 'No survey found for this campaign' });
+        }
+
+        const questions = survey.jsonSchema.questions || {};
+        const responses = survey.responses;
+
+        // 1. Prepare Headers
+        const headers = ['Response ID', 'Submitted At'];
+        const questionKeys = Object.keys(questions);
+        questionKeys.forEach(key => {
+            headers.push(questions[key].question);
+        });
+
+        // 2. Prepare Rows
+        let csvContent = headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+
+        responses.forEach(r => {
+            const row = [r.id, new Date(r.submittedAt).toISOString()];
+
+            questionKeys.forEach(key => {
+                let answer = r.rawAnswers[key];
+                if (Array.isArray(answer)) answer = answer.join('; ');
+                if (answer === undefined || answer === null) answer = '';
+                row.push(`"${String(answer).replace(/"/g, '""')}"`);
+            });
+
+            csvContent += row.join(',') + '\n';
+        });
+
+        // 3. Send CSV
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="campaign-${id}-responses.csv"`);
+        res.status(200).send(csvContent);
+
+    } catch (error) {
+        console.error('Error exporting responses:', error);
+        res.status(500).json({ error: 'Failed to export responses' });
     }
 };
 

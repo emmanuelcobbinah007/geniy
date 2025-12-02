@@ -15,7 +15,7 @@ const outfit = Outfit({
 });
 
 const poppins = Poppins({ 
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-poppins",
 });
@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(outfit.variable, poppins.variable, "font-sans antialiased bg-background text-foreground")} suppressHydrationWarning>
+      <body className={cn(outfit.variable, poppins.variable, poppins.className, "font-sans antialiased bg-background text-foreground")} suppressHydrationWarning>
         <Providers>
           <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
             <AuthProvider>

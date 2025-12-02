@@ -28,8 +28,7 @@ class GenesisAgent {
         }
         `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
     }
 
     /**
@@ -53,8 +52,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
     }
 
     /**
@@ -101,6 +99,9 @@ class GenesisAgent {
     /**
      * Helper to clean and parse JSON
      */
+    /**
+     * Helper to clean and parse JSON
+     */
     safeParse(text) {
         try {
             // Remove markdown code blocks if present
@@ -108,7 +109,26 @@ class GenesisAgent {
             return JSON.parse(cleanText);
         } catch (e) {
             console.error("JSON Parse Failed. Raw text:", text);
-            throw e;
+            throw new Error("Invalid JSON response from AI");
+        }
+    }
+
+    /**
+     * Helper to execute AI call with retry logic on JSON parse failure
+     */
+    async completeWithRetry(prompt, model, jsonMode, maxTokens, retries = 1) {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const result = await openRouter.complete(prompt, model, jsonMode, maxTokens);
+                return this.safeParse(result);
+            } catch (error) {
+                console.warn(`AI Attempt ${i + 1} failed:`, error.message);
+                if (i === retries) {
+                    throw error; // Throw on final attempt
+                }
+                // Optional: Add a small delay or modify prompt for retry
+                await new Promise(r => setTimeout(r, 1000));
+            }
         }
     }
 
@@ -132,8 +152,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2500);
     }
 
     /**
@@ -183,8 +202,7 @@ class GenesisAgent {
       }
     `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 4000);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 4000);
     }
 
     /**
@@ -244,8 +262,7 @@ class GenesisAgent {
             Return ONLY valid JSON.
         `;
 
-        const result = await openRouter.complete(instruction, "openai/gpt-4o-mini", true, 1000);
-        return this.safeParse(result);
+        return this.completeWithRetry(instruction, "openai/gpt-4o-mini", true, 1000);
     }
 
     /**
@@ -284,8 +301,7 @@ class GenesisAgent {
         ASSISTANT:
         `;
 
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 1000);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
     }
 
     /**
@@ -334,8 +350,7 @@ ASSISTANT:
 `;
 
         // Use a smart model for chat
-        const result = await openRouter.complete(prompt, "openai/gpt-4o-mini", true, 2500);
-        return this.safeParse(result);
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2500);
     }
 }
 

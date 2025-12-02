@@ -24,6 +24,7 @@ model Workspace {
   ownerId         String
   name            String
   businessContext String?
+  competitors     Json?
   planTier        PlanTier          @default(FREE)
   createdAt       DateTime          @default(now())
   activityLogs    ActivityLog[]
