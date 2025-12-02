@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { useAuth } from "@/context/auth-context"
@@ -8,9 +8,14 @@ import { api } from "@/lib/api"
 
 export function CampaignTour() {
     const { user, token, updateUser } = useAuth()
+    const tourStarted = useRef(false)
 
     useEffect(() => {
-        if (user && !user.onboardingStatus?.campaigns) {
+        const localSeen = localStorage.getItem("geniy_tour_campaigns") === "true"
+
+        if (user && !user.onboardingStatus?.campaigns && !localSeen && !tourStarted.current) {
+            tourStarted.current = true
+            
             const driverObj = driver({
                 showProgress: true,
                 animate: true,
@@ -35,11 +40,10 @@ export function CampaignTour() {
                     }
                 ],
                 onDestroyStarted: () => {
-                    if (token) {
-                        api.updateUser({ onboardingStatus: { campaigns: true } }, token)
-                            .then(() => {
-                                if (updateUser) updateUser({ ...user, onboardingStatus: { ...user.onboardingStatus, campaigns: true } })
-                            })
+                    localStorage.setItem("geniy_tour_campaigns", "true")
+
+                    if (updateUser) {
+                        updateUser({ onboardingStatus: { campaigns: true } })
                             .catch(err => console.error("Failed to update onboarding status", err))
                     }
                     driverObj.destroy()

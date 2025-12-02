@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { useAuth } from "@/context/auth-context"
@@ -8,9 +8,14 @@ import { api } from "@/lib/api"
 
 export function ContextTour() {
     const { user, token, updateUser } = useAuth()
+    const tourStarted = useRef(false)
 
     useEffect(() => {
-        if (user && !user.onboardingStatus?.context) {
+        const localSeen = localStorage.getItem("geniy_tour_context") === "true"
+
+        if (user && !user.onboardingStatus?.context && !localSeen && !tourStarted.current) {
+            tourStarted.current = true
+            
             const driverObj = driver({
                 showProgress: true,
                 animate: true,
@@ -44,11 +49,10 @@ export function ContextTour() {
                     }
                 ],
                 onDestroyStarted: () => {
-                    if (token) {
-                        api.updateUser({ onboardingStatus: { context: true } }, token)
-                            .then(() => {
-                                if (updateUser) updateUser({ ...user, onboardingStatus: { ...user.onboardingStatus, context: true } })
-                            })
+                    localStorage.setItem("geniy_tour_context", "true")
+
+                    if (updateUser) {
+                        updateUser({ onboardingStatus: { context: true } })
                             .catch(err => console.error("Failed to update onboarding status", err))
                     }
                     driverObj.destroy()

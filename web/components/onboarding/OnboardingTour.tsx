@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { useAuth } from "@/context/auth-context"
@@ -8,10 +8,16 @@ import { api } from "@/lib/api"
 
 export function OnboardingTour() {
     const { user, token, updateUser } = useAuth()
+    const tourStarted = useRef(false)
 
     useEffect(() => {
+        // Check local storage first to avoid flash/loop
+        const localSeen = localStorage.getItem("geniy_tour_dashboard") === "true"
+
         // If user hasn't seen dashboard onboarding, start the tour
-        if (user && !user.onboardingStatus?.dashboard) {
+        if (user && !user.onboardingStatus?.dashboard && !localSeen && !tourStarted.current) {
+            tourStarted.current = true
+            
             const driverObj = driver({
                 showProgress: true,
                 animate: true,
@@ -45,13 +51,12 @@ export function OnboardingTour() {
                     }
                 ],
                 onDestroyStarted: () => {
-                    // Mark dashboard tour as seen
-                    if (token) {
-                        api.updateUser({ onboardingStatus: { dashboard: true } }, token)
-                            .then(() => {
-                                // Update local user state
-                                if (updateUser) updateUser({ ...user, onboardingStatus: { ...user.onboardingStatus, dashboard: true } })
-                            })
+                    // Mark dashboard tour as seen locally immediately
+                    localStorage.setItem("geniy_tour_dashboard", "true")
+
+                    // Mark dashboard tour as seen on backend
+                    if (updateUser) {
+                        updateUser({ onboardingStatus: { dashboard: true } })
                             .catch(err => console.error("Failed to update onboarding status", err))
                     }
                     driverObj.destroy()
