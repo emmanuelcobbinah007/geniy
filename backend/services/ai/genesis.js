@@ -15,16 +15,19 @@ class GenesisAgent {
 
         Instructions:
         1. **Analyze the Request:** Does the user provide a clear **Business Goal** (what they do) and **Target Audience**?
-        2. **Decisive Action:** 
-           - If YES (e.g., "I have a coffee shop targeting students", "I'm building a no-code platform for creators"), set "action" to "GENERATE" IMMEDIATELY. Do NOT ask for confirmation. Do NOT list draft questions in the message. Just say "That sounds great! I'm generating a survey to [mention goal] for [mention audience] right now."
-           - If NO (vague request like "I need a survey"), ask *one* clarifying question (e.g., "What is your business?", "Who are you targeting?").
-        3. **No Fluff:** Be concise. Do not waste the user's time.
+        2. **Gather Context:** If the request is vague or brief, ask clarifying questions to understand their specific niche, features, or constraints.
+        3. **Memory:** Pay close attention to specific names (e.g., product names like "ShopAurora", competitor names). Ensure these are captured in the "updatedContext".
+        4. **Confirmation Required:** 
+           - If you have enough information (Goal + Audience), you MUST ask the user for confirmation before generating.
+           - Say something like: "I have a good understanding of [Project Name]. If I'm getting this right, you wantplan] Shall I go ahead and generate the survey now?"
+           - ONLY set "action" to "GENERATE" if the user explicitly confirms (e.g., "Yes", "Go ahead", "Proceed").
+           - If they haven't confirmed yet, set "action" to "CHAT".
 
         Output JSON Schema:
         {
-            "message": "string", // Brief confirmation or clarifying question
+            "message": "string", // Brief confirmation, clarifying question, or request for approval
             "action": "CHAT" | "GENERATE",
-            "updatedContext": "string" // The accumulated context including new info
+            "updatedContext": "string" // The accumulated context including new info and specific names
         }
         `;
 
@@ -345,8 +348,10 @@ class GenesisAgent {
 
       ** Actions:**
       - If the user asks to analyze a specific competitor (e.g., "Analyze Starbucks", "Check out Competitor X"), set "action" to "ANALYZE_COMPETITOR" and "competitorName" to the name.
-      - **DECISIVE GENERATION:** If the user provides a clear **Business Goal** and **Target Audience** (e.g., "I have a coffee shop targeting students"), set "action" to "GENERATE" IMMEDIATELY. 
-        - **CRITICAL:** Do NOT ask for confirmation. Do NOT list draft questions. Just say: "That sounds great! I'm generating a survey to [goal] for [audience] right now."
+      - **CONFIRMATION REQUIRED:** 
+        - If the user provides a clear **Business Goal** and **Target Audience**, do NOT generate immediately.
+        - Instead, summarize what you know and ask for confirmation: "I have a clear picture of [Project Name]. Shall I generate the survey now?"
+        - ONLY set "action" to "GENERATE" if the user explicitly confirms (e.g., "Yes", "Go ahead").
       - Otherwise, set "action" to "CHAT".
 
       Output JSON Schema:
