@@ -47,6 +47,7 @@ function CreateSurveyContent() {
   const [showCustomize, setShowCustomize] = useState(false)
   const [theme, setTheme] = useState<Theme>({
     mode: 'system',
+    layout: 'focus',
     primaryColor: "#7c3aed",
     backgroundColor: "#ffffff",
     textColor: "#18181b",
@@ -211,21 +212,23 @@ function CreateSurveyContent() {
 
       {/* Customize Modal */}
       <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
-        <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex">
-            <div className="w-1/3 border-r border-zinc-200 dark:border-zinc-800 p-6 overflow-y-auto">
-                <div className="flex items-center gap-2 mb-6">
+        <DialogContent className="max-w-6xl h-[90vh] md:h-[80vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row">
+            <div className="w-full md:w-1/3 h-[40%] md:h-full border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 p-4 md:p-6 overflow-y-auto bg-white dark:bg-zinc-950">
+                <div className="flex items-center gap-2 mb-4 md:mb-6 sticky top-0 bg-white dark:bg-zinc-950 z-10 py-2">
                     <Palette className="w-5 h-5 text-violet-600" />
                     <h2 className="font-semibold text-lg">Customize Theme</h2>
                 </div>
                 <ThemeEditor theme={theme} onThemeChange={setTheme} />
             </div>
-            <div className="flex-1 bg-zinc-100 dark:bg-zinc-900/50 p-8 overflow-y-auto flex items-center justify-center">
-                <div className="w-full max-w-md bg-white dark:bg-zinc-900 shadow-xl rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                    <SurveyRenderer 
-                        surveyData={getSurveyData()} 
-                        isPreview={true} 
-                        theme={theme}
-                    />
+            <div className="w-full md:flex-1 h-[60%] md:h-full bg-zinc-100 dark:bg-zinc-900/50 p-4 md:p-8 overflow-y-auto flex items-center justify-center relative">
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                    <div className="w-full max-w-md h-full max-h-[600px] bg-white dark:bg-zinc-900 shadow-xl rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 scale-90 md:scale-100 transition-transform origin-center flex flex-col">
+                        <SurveyRenderer 
+                            surveyData={getSurveyData()} 
+                            isPreview={true} 
+                            theme={theme}
+                        />
+                    </div>
                 </div>
             </div>
         </DialogContent>

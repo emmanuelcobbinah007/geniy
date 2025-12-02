@@ -19,6 +19,7 @@ import { toast } from "sonner"
 
 export interface Theme {
   mode: 'system' | 'custom'
+  layout: 'focus' | 'book' | 'deck' | 'terminal'
   primaryColor: string
   backgroundColor: string
   textColor: string
@@ -34,6 +35,7 @@ interface ThemeEditorProps {
 
 export const DEFAULT_THEME: Theme = {
   mode: 'system',
+  layout: 'focus',
   primaryColor: "#7c3aed",
   backgroundColor: "#ffffff",
   textColor: "#18181b",
@@ -46,6 +48,7 @@ const THEME_PRESETS: Record<string, Theme> = {
     "Default": DEFAULT_THEME,
     "Midnight": {
         mode: 'custom',
+        layout: 'focus',
         primaryColor: "#6366f1",
         backgroundColor: "#09090b",
         textColor: "#f4f4f5",
@@ -55,6 +58,7 @@ const THEME_PRESETS: Record<string, Theme> = {
     },
     "Swiss": {
         mode: 'custom',
+        layout: 'focus',
         primaryColor: "#ef4444",
         backgroundColor: "#ffffff",
         textColor: "#000000",
@@ -64,12 +68,23 @@ const THEME_PRESETS: Record<string, Theme> = {
     },
     "Neon": {
         mode: 'custom',
+        layout: 'focus',
         primaryColor: "#d946ef",
         backgroundColor: "#2e1065",
         textColor: "#e9d5ff",
         accentColor: "#4c1d95",
         fontFamily: "Roboto Mono",
         borderRadius: "1rem"
+    },
+    "Storybook": {
+        mode: 'custom',
+        layout: 'book',
+        primaryColor: "#8b5cf6",
+        backgroundColor: "#fdfbf7", // Warm paper-like
+        textColor: "#4a4a4a",
+        accentColor: "#e5e5e5",
+        fontFamily: "Playfair Display",
+        borderRadius: "2px"
     }
 }
 
@@ -127,17 +142,17 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
             <button
                 key={name}
                 onClick={() => onThemeChange(preset)}
-                className="group relative flex flex-col items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-500 transition-all"
+                className="group relative flex flex-col items-center gap-1.5 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-500 transition-all"
             >
                 <div 
                     className="w-full aspect-square rounded-md shadow-sm border border-zinc-100 dark:border-zinc-800"
                     style={{ backgroundColor: preset.backgroundColor }}
                 >
                     <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.primaryColor }} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: preset.primaryColor }} />
                     </div>
                 </div>
-                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-violet-600">{name}</span>
+                <span className="text-[10px] md:text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-violet-600 truncate w-full text-center">{name}</span>
             </button>
         ))}
       </div>
@@ -162,6 +177,31 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
             >
                 {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
             </Button>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Label>Layout Style</Label>
+        <div className="grid grid-cols-2 gap-2">
+            {[
+                { id: 'focus', name: 'Focus', icon: '🎯' },
+                { id: 'book', name: 'Storybook', icon: '📖' },
+                { id: 'deck', name: 'Deck', icon: '🃏' },
+                { id: 'terminal', name: 'Terminal', icon: '💻' }
+            ].map((layout) => (
+                <button
+                    key={layout.id}
+                    onClick={() => handleColorChange("layout", layout.id)}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                        theme.layout === layout.id 
+                        ? 'border-violet-600 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' 
+                        : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                    }`}
+                >
+                    <span className="text-xl">{layout.icon}</span>
+                    <span className="text-sm font-medium">{layout.name}</span>
+                </button>
+            ))}
         </div>
       </div>
 
