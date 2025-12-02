@@ -11,6 +11,7 @@ import { useParams } from "next/navigation"
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { KnowledgeHealthWidget } from "@/components/dashboard/KnowledgeHealthWidget"
 
 export default function DashboardPage() {
   const params = useParams()
@@ -79,53 +80,12 @@ export default function DashboardPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         {/* Left Column: Strategy & Health (2/3 width) */}
         <div className="lg:col-span-2 space-y-8">
           
           {/* Knowledge Health Widget */}
           <motion.div variants={item} className="relative">
-            <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-violet-500 fill-violet-500" />
-                    Knowledge Health
-                  </h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Geniy's understanding of your business.</p>
-                </div>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${stats.healthScore > 50 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {stats.healthScore > 50 ? 'Good Standing' : 'Needs Attention'}
-                </div>
-              </div>
-              
-              <div className="mt-6 flex flex-col md:flex-row gap-6 items-center">
-                <div className="flex-1 w-full space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-600 dark:text-zinc-300">Context Completeness</span>
-                    <span className="font-medium">{stats.healthScore}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-violet-500 rounded-full transition-all duration-1000" style={{ width: `${stats.healthScore}%` }} />
-                  </div>
-                </div>
-                {stats.healthScore < 80 && (
-                    <div className="w-full md:w-auto p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                    <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
-                        <AlertCircle className="w-4 h-4" />
-                        </div>
-                        <div>
-                        <p className="text-sm font-medium">Missing: Business Context</p>
-                        <p className="text-xs text-zinc-500 mt-1">Upload to get better feature suggestions.</p>
-                        <Button variant="link" className="h-auto p-0 text-xs text-violet-600 mt-2">Upload now &rarr;</Button>
-                        </div>
-                    </div>
-                    </div>
-                )}
-              </div>
-            </Card>
+            <KnowledgeHealthWidget workspaceId={workspaceId} />
           </motion.div>
 
           {/* Strategy Feed */}
@@ -181,13 +141,22 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     dashboard.competitors.slice(0, 5).map((comp: any, i: number) => {
-                        const name = typeof comp === 'string' ? comp : comp.name;
+                        const isObject = typeof comp !== 'string';
+                        const name = isObject ? comp.name : comp;
+                        const details = isObject ? comp : null;
+
                         return (
-                            <div key={i} className="p-4 flex items-center justify-between text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                <div>
-                                <span className="font-medium">{name}</span>
+                            <div key={i} className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">{name}</span>
+                                    <span className="text-xs text-zinc-400">Tracking</span>
                                 </div>
-                                <span className="text-xs text-zinc-400">Tracking</span>
+                                {details && (
+                                    <div className="mt-2 text-xs text-zinc-500 space-y-1 pl-2 border-l-2 border-zinc-100 dark:border-zinc-800 hidden group-hover:block transition-all">
+                                        {details.pricingModel && <div><span className="font-semibold">Pricing:</span> {details.pricingModel}</div>}
+                                        {details.strengths && details.strengths.length > 0 && <div><span className="font-semibold">Strength:</span> {details.strengths[0]}</div>}
+                                    </div>
+                                )}
                             </div>
                         )
                     })

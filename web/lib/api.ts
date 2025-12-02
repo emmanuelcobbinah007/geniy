@@ -163,6 +163,10 @@ export const api = {
     return this.get(`/workspaces/dashboard?workspaceId=${workspaceId}`, token);
   },
 
+  async getWorkspaceHealth(workspaceId: string, token: string) {
+    return this.get(`/workspaces/${workspaceId}/health`, token);
+  },
+
   // AI Integration
   async analyzeContext(contextText: string, token: string) {
     return this.post('/ai/analyze-context', { contextText }, token);

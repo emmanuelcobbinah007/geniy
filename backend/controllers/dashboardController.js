@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const gapAgent = require('../services/ai/gapAgent');
+
 exports.getDashboardStats = async (req, res) => {
     try {
         const { workspaceId } = req.query;
@@ -23,7 +25,7 @@ exports.getDashboardStats = async (req, res) => {
             return res.status(404).json({ error: "Workspace not found" });
         }
 
-        // Calculate Context Health Score
+        // Calculate Context Health Score (Static for fast load)
         let healthScore = 0;
         if (workspace.businessContext && workspace.businessContext.length > 50) healthScore += 50;
         if (workspace._count.documents > 0) healthScore += 25;
@@ -102,6 +104,29 @@ exports.getDashboardStats = async (req, res) => {
     } catch (error) {
         console.error("Dashboard Stats Error:", error);
         res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+};
+
+exports.getWorkspaceHealth = async (req, res) => {
+    try {
+        const { id: workspaceId } = req.params;
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId },
+            include: { documents: true }
+        });
+
+        if (!workspace) return res.status(404).json({ error: "Workspace not found" });
+
+        // Call Gap Agent
+        const analysis = await gapAgent.analyze(
+            workspace.businessContext || "",
+            workspace.documents.map(d => d.filename)
+        );
+
+        res.json(analysis);
+    } catch (error) {
+        console.error("Health Analysis Error:", error);
+        res.status(500).json({ error: "Failed to analyze health" });
     }
 };
 

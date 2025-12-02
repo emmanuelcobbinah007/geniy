@@ -64,7 +64,16 @@ class GenesisAgent {
             return contextSummary.competitors;
         }
 
-        const instruction = `Find top 5 direct competitors for ${contextSummary.companyName} in the ${contextSummary.industry} industry. Return ONLY a JSON array of strings, e.g. ["Comp1", "Comp2"].`;
+        const instruction = `
+            Research task: Identify top 5 direct competitors for "${contextSummary.companyName}" in the "${contextSummary.industry}" industry.
+            Context: ${contextSummary.valueProposition || "Unknown value prop"}
+            
+            Criteria:
+            - Must offer similar core features.
+            - Must target a similar audience (${contextSummary.targetAudience?.join(', ') || "General"}).
+            
+            Return ONLY a JSON array of strings, e.g. ["Comp1", "Comp2"].
+        `;
 
         // Trigger Manus Agent
         try {
@@ -211,14 +220,19 @@ class GenesisAgent {
      */
     async analyzeCompetitor(competitorName, industry) {
         const instruction = `
-            Analyze the company "${competitorName}" in the "${industry}" industry.
-            Provide a detailed report in JSON format with the following fields:
-        - pricingModel: string(e.g. "Freemium", "Enterprise", "Tiered: $10-$50")
-            - keyFeatures: array of strings
-                - targetAudience: string
-                    - strengths: array of strings(SWOT)
-                        - weaknesses: array of strings(SWOT)
-                            - uniqueSellingPoint: string
+            Perform a deep-dive market analysis on "${competitorName}" in the "${industry}" sector.
+            
+            I need a structured report focusing on actionable intelligence.
+            
+            Return a JSON object with the following fields:
+            - pricingModel: string (Detailed pricing strategy, e.g., "Freemium with aggressive upsell to Enterprise at $500/mo")
+            - keyFeatures: array of strings (Top 3-5 distinct features)
+            - targetAudience: string (Who are they really selling to?)
+            - marketingChannels: array of strings (Where are they most active? e.g., "LinkedIn Ads", "SEO", "TikTok")
+            - customerSentiment: string (What do users hate/love? e.g., "Users love the UI but hate the support")
+            - strengths: array of strings (SWOT)
+            - weaknesses: array of strings (SWOT)
+            - uniqueSellingPoint: string (What is their "moat"?)
             
             Return ONLY valid JSON.
         `;

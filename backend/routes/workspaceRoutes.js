@@ -7,12 +7,13 @@ const {
     createWorkspace,
     addMember
 } = require('../controllers/workspaceController');
-const { getDashboardStats } = require('../controllers/dashboardController');
+const { getDashboardStats, getWorkspaceHealth } = require('../controllers/dashboardController');
 
 router.put('/:id', protect, updateWorkspace);
 router.post('/', protect, createWorkspace);
 router.get('/:id/members', protect, getWorkspaceMembers);
 router.post('/:id/members', protect, addMember);
 router.get('/dashboard', protect, getDashboardStats);
+router.get('/:id/health', protect, getWorkspaceHealth);
 
 module.exports = router;
