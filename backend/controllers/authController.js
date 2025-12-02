@@ -256,12 +256,19 @@ const updateUser = async (req, res) => {
             user.passwordHash = await bcrypt.hash(req.body.password, salt);
         }
 
+        if (req.body.onboardingStatus) {
+            // Merge existing status with new status
+            const currentStatus = user.onboardingStatus || {};
+            user.onboardingStatus = { ...currentStatus, ...req.body.onboardingStatus };
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: req.user.id },
             data: {
                 name: user.name,
                 email: user.email,
-                passwordHash: user.passwordHash
+                passwordHash: user.passwordHash,
+                onboardingStatus: user.onboardingStatus
             }
         });
 

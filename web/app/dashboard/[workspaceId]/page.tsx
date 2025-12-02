@@ -12,6 +12,7 @@ import { useParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { KnowledgeHealthWidget } from "@/components/dashboard/KnowledgeHealthWidget"
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour"
 
 export default function DashboardPage() {
   const params = useParams()
@@ -57,6 +58,7 @@ export default function DashboardPage() {
       animate="show"
       className="p-8 space-y-8 max-w-7xl mx-auto"
     >
+      <OnboardingTour />
       {/* Header Section */}
       <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -71,7 +73,7 @@ export default function DashboardPage() {
             Upload Context
           </Button>
           <Link href={`/create-survey?workspaceId=${workspaceId}`}>
-            <Button className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
+            <Button id="create-survey-btn" className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
               <Plus className="mr-2 h-4 w-4" />
               New Survey
             </Button>
@@ -84,12 +86,12 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Knowledge Health Widget */}
-          <motion.div variants={item} className="relative">
+          <motion.div variants={item} className="relative" id="knowledge-health-widget">
             <KnowledgeHealthWidget workspaceId={workspaceId} />
           </motion.div>
 
           {/* Strategy Feed */}
-          <motion.div variants={item} className="space-y-4">
+          <motion.div variants={item} className="space-y-4" id="strategy-feed">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-amber-500" />
               Strategy Feed

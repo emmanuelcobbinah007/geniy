@@ -11,6 +11,11 @@ interface User {
   email: string
   workspaces?: any[]
   sharedWorkspaces?: any[]
+  onboardingStatus?: {
+    dashboard?: boolean
+    context?: boolean
+    campaigns?: boolean
+  }
 }
 
 interface AuthContextType {
@@ -22,6 +27,7 @@ interface AuthContextType {
   googleLogin: (token: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
+  updateUser: (data: any) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -78,8 +84,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
+  const updateUser = async (data: any) => {
+    if (!token) return
+    await api.updateUser(data, token)
+    await queryClient.invalidateQueries({ queryKey: ["user"] })
+  }
+
   return (
-    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

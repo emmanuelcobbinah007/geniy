@@ -309,6 +309,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                     {strategyMutation.isPending && <span className="text-xs text-violet-500 animate-pulse">Generating Strategy...</span>}
                 </div>
                 <Textarea 
+                    id="business-context-input"
                     value={context}
                     readOnly
                     className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-0 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed"
@@ -318,6 +319,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
 
                 {/* Documents */}
                 <Card 
+                    id="upload-documents-section"
                     className={`p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}

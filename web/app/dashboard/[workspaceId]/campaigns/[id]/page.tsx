@@ -6,6 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { LiveAnalytics } from "@/components/campaigns/LiveAnalytics"
 import { GeniyRecommendations } from "@/components/campaigns/GeniyRecommendations"
+import { CampaignTour } from "@/components/onboarding/CampaignTour"
 import { Badge } from "@/components/ui/badge"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
@@ -130,6 +131,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
       animate="show"
       className="p-8 space-y-8 max-w-7xl mx-auto"
     >
+      <CampaignTour />
       {/* Customize Modal */}
       <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
         <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex flex-col">
@@ -175,7 +177,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
       </Dialog>
 
       {/* Header */}
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4" id="campaign-header">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
             <Link href={`/dashboard/${workspaceId}/campaigns`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
@@ -259,7 +261,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content: Analytics (2/3) */}
-        <motion.div variants={item} className="lg:col-span-2 space-y-8 lg:sticky lg:top-6 self-start">
+        <motion.div variants={item} className="lg:col-span-2 space-y-8 lg:sticky lg:top-6 self-start" id="analytics-tab">
           <LiveAnalytics 
             totalResponses={survey?._count?.responses || 0} 
             responses={survey?.responses || []}

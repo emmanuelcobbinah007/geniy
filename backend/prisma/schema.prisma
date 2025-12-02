@@ -13,8 +13,9 @@ model User {
   email        String            @unique
   passwordHash String
   createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  activityLogs ActivityLog[]
+  updatedAt        DateTime          @updatedAt
+  onboardingStatus Json?             // Stores { dashboard: boolean, context: boolean, campaigns: boolean }
+  activityLogs     ActivityLog[]
   workspaces   Workspace[]       @relation("UserWorkspaces")
   memberships  WorkspaceMember[]
 }

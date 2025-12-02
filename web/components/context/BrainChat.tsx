@@ -104,7 +104,7 @@ export function BrainChat({ context, workspaceId }: { context: string; workspace
   }
 
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="h-full flex flex-col space-y-4" id="chat-with-geniy">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Chat with Geniy</h2>
       </div>

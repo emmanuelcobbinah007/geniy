@@ -1,6 +1,7 @@
 "use client"
 
 import { ContextKnowledge } from "@/components/context/ContextKnowledge"
+import { ContextTour } from "@/components/onboarding/ContextTour"
 import { BrainChat } from "@/components/context/BrainChat"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
@@ -43,6 +44,7 @@ export default function ContextPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] p-6 gap-6 grid grid-cols-1 lg:grid-cols-3">
+      <ContextTour />
       {/* Left: Knowledge Base */}
       <div className="h-full min-h-0 lg:col-span-2">
         <ContextKnowledge 
