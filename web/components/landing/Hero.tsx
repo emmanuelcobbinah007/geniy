@@ -30,17 +30,24 @@ export function Hero() {
   }
 
   return (
-    <section className="mt-12 relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-background pt-20 transition-colors duration-300">
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-background pt-32 md:pt-40 transition-colors duration-300">
       <AuthModal 
         open={showAuthModal} 
         onOpenChange={setShowAuthModal} 
         onSuccess={handleAuthSuccess}
       />
 
-      {/* Background Gradients */}
+      {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] dark:opacity-100 opacity-50" />
-        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-violet-500/20 blur-[100px]" />
+        <div className="absolute inset-0 bg-black/40 z-10" /> {/* Overlay for readability */}
+        <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+            style={{ 
+                backgroundImage: `url('/hero_concept_visionary_1764767464824.png')`,
+                backgroundPosition: 'center 20%' // Adjust focus to the person/cliff
+            }} 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent z-10" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4 md:px-6">
@@ -66,9 +73,9 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="max-w-5xl"
           >
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold font-display tracking-tight text-foreground mb-6">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold font-display tracking-tight text-white mb-6 drop-shadow-2xl">
               Market research in <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 animate-gradient-x">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 animate-gradient-x">
                 minutes, not months.
               </span>
             </h1>
@@ -81,7 +88,7 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="max-w-2xl"
           >
-            <p className="text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-xl text-zinc-200 leading-relaxed drop-shadow-md">
               Upload your business context. Geniy’s AI builds dynamic surveys, analyzes competitors, and delivers actionable strategic insights—automatically.
             </p>
           </motion.div>
