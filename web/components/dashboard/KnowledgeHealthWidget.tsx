@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Zap, CheckCircle2, AlertTriangle, Upload, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 interface KnowledgeHealthWidgetProps {
   workspaceId: string
@@ -29,15 +30,8 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
   
   if (isLoading) {
     return (
-      <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10">
-        <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-4 h-4 text-violet-500" />
-            <h3 className="font-semibold">Analyzing Knowledge Health...</h3>
-        </div>
-        <div className="space-y-2">
-            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded w-full animate-pulse" />
-            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded w-2/3 animate-pulse" />
-        </div>
+      <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 flex items-center justify-center min-h-[180px]">
+        <GenStateIllustration state="loading" label="Analyzing health..." width={120} height={120} />
       </Card>
     )
   }

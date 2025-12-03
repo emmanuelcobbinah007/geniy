@@ -168,8 +168,8 @@ export const api = {
   },
 
   // AI Integration
-  async analyzeContext(contextText: string, token: string) {
-    return this.post('/ai/analyze-context', { contextText }, token);
+  async analyzeContext(contextText: string, token: string, workspaceId?: string) {
+    return this.post('/ai/analyze-context', { contextText, workspaceId }, token);
   },
 
   async chat(message: string | any[], context: string, token: string) {

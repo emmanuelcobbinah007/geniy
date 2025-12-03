@@ -55,15 +55,15 @@ export function Sidebar() {
       <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800">
         <Link href="/" onClick={() => isMobile && setMobileOpen(false)}>
           <div className={cn("flex items-center gap-2 transition-all", collapsed && !isMobile ? "justify-center w-full" : "justify-start")}>
-          <div className="relative w-8 h-8 shrink-0">
+          <div className="relative w-12 h-12 shrink-0">
              <Image 
-               src="/geniy_logo_light.png" 
+               src="/gen_logo.png" 
                alt="Geniy" 
                fill
                className="object-contain dark:hidden"
              />
              <Image 
-               src="/geniy_logo_dark.png" 
+               src="/gen_logo.png" 
                alt="Geniy" 
                fill
                className="object-contain hidden dark:block"
@@ -219,8 +219,8 @@ export function Sidebar() {
         <div className="md:hidden h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-4 sticky top-0 z-40">
             <div className="flex items-center gap-2">
                 <div className="relative w-8 h-8 shrink-0">
-                    <Image src="/geniy_logo_light.png" alt="Geniy" fill className="object-contain dark:hidden" />
-                    <Image src="/geniy_logo_dark.png" alt="Geniy" fill className="object-contain hidden dark:block" />
+                    <Image src="/gen_logo.png" alt="Geniy" fill className="object-contain dark:hidden" />
+                    <Image src="/gen_logo.png" alt="Geniy" fill className="object-contain hidden dark:block" />
                 </div>
                 <span className="font-bold text-xl tracking-tight text-foreground">Geniy</span>
             </div>

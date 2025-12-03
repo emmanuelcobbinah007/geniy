@@ -8,15 +8,15 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="relative w-[50px] h-[50px]">
+              <div className="relative w-[60px] h-[60px]">
                 <Image 
-                  src="/geniy_logo_light.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain dark:hidden" 
                 />
                 <Image 
-                  src="/geniy_logo_dark.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain hidden dark:block" 

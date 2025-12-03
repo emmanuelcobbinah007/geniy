@@ -9,6 +9,7 @@ import { motion } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 import { useParams } from "next/navigation"
 
@@ -58,7 +59,7 @@ export default function CampaignsPage() {
             Manage your research projects and view insights.
           </p>
         </div>
-        <Link href="/create-survey">
+        <Link href={`/create-survey?workspaceId=${workspaceId}`}>
           <Button className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
             <Plus className="mr-2 h-4 w-4" />
             New Survey
@@ -81,13 +82,25 @@ export default function CampaignsPage() {
       {/* Grid */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-            // Loading Skeletons
-            [1, 2, 3].map((i) => (
-                <div key={i} className="h-[250px] rounded-xl bg-zinc-100 dark:bg-zinc-900 animate-pulse" />
-            ))
+            <div className="col-span-full flex items-center justify-center min-h-[400px]">
+                <GenStateIllustration state="loading" label="Loading campaigns..." />
+            </div>
         ) : campaigns?.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-zinc-500">
-                No campaigns found. Create your first survey!
+            <div className="col-span-full py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
+                <GenStateIllustration 
+                    state="empty" 
+                    label="No campaigns found" 
+                    className="mb-6"
+                />
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto text-center">
+                    Create your first campaign to start gathering insights from your users.
+                </p>
+                <Link href={`/create-survey?workspaceId=${workspaceId}`}>
+                    <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Campaign
+                    </Button>
+                </Link>
             </div>
         ) : (
             campaigns?.map((campaign: any) => (

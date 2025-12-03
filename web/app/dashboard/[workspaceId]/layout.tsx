@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 export default function DashboardLayout({
   children,
@@ -23,7 +23,7 @@ export default function DashboardLayout({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <GenStateIllustration state="loading" label="Loading workspace..." />
       </div>
     )
   }

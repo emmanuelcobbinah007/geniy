@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { KnowledgeHealthWidget } from "@/components/dashboard/KnowledgeHealthWidget"
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 export default function DashboardPage() {
   const params = useParams()
@@ -44,7 +45,11 @@ export default function DashboardPage() {
   }
 
   if (isLoading) {
-      return <div className="p-8 flex items-center justify-center min-h-screen">Loading dashboard...</div>
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <GenStateIllustration state="loading" label="Loading dashboard..." />
+        </div>
+      )
   }
 
   const stats = dashboard?.stats || { totalResponses: 0, conversionRate: 0, healthScore: 0, campaignCount: 0 }

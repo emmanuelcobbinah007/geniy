@@ -6,7 +6,7 @@ import { BrainChat } from "@/components/context/BrainChat"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
-import { Skeleton } from "@/components/ui/skeleton"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 import { useParams } from "next/navigation"
 
@@ -28,16 +28,8 @@ export default function ContextPage() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] p-6 gap-6 grid grid-cols-1 lg:grid-cols-3">
-        {/* Left: Knowledge Base Skeleton */}
-        <div className="h-full min-h-0 lg:col-span-2">
-          <Skeleton className="h-full w-full rounded-xl" />
-        </div>
-
-        {/* Right: Brain Chat Skeleton */}
-        <div className="h-full min-h-0">
-          <Skeleton className="h-full w-full rounded-xl" />
-        </div>
+      <div className="h-[calc(100vh-4rem)] p-6 flex items-center justify-center">
+        <GenStateIllustration state="loading" label="Loading context..." />
       </div>
     )
   }

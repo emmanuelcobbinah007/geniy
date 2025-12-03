@@ -21,6 +21,7 @@ import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSel
 import { useSearchParams } from "next/navigation"
 import { ThemeEditor, Theme } from "@/components/survey/ThemeEditor"
 import { Palette } from "lucide-react"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 import { Suspense } from "react"
 
@@ -341,7 +342,11 @@ function CreateSurveyContent() {
 
 export default function CreateSurveyPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <GenStateIllustration state="loading" label="Loading editor..." />
+      </div>
+    }>
       <CreateSurveyContent />
     </Suspense>
   )

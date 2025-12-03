@@ -97,15 +97,15 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
         {!isModal && (
           <div className="flex justify-center mb-4">
             <Link href="/">
-              <div className="relative w-[50px] h-[50px]">
+              <div className="relative w-[80px] h-[80px]">
                 <Image 
-                  src="/geniy_logo_light.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain dark:hidden" 
                 />
                 <Image 
-                  src="/geniy_logo_dark.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain hidden dark:block" 

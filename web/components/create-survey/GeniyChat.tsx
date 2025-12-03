@@ -10,6 +10,8 @@ import { CompetitorCard } from "./CompetitorCard"
 import { ResearchStrategyCard } from "./ResearchStrategyCard"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import Image from "next/image"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 interface Message {
   id: string
@@ -117,7 +119,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         const fullContext = contextData.businessContext || ""
 
         // 3. Analyze Context
-        const analysis = await api.analyzeContext(fullContext, token)
+        const analysis = await api.analyzeContext(fullContext, token, workspaceId)
         addMessage("assistant", `I've analyzed ${analysis.companyName}. Generating a research strategy... 📝`)
 
         const strategy = await api.generateStrategy(analysis, token)
@@ -184,7 +186,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     try {
         addMessage("assistant", "Drafting questions... ✍️")
         
-        const analysis = await api.analyzeContext(contextText, token!)
+        const analysis = await api.analyzeContext(contextText, token!, workspaceId)
         const strategy = await api.generateStrategy(analysis, token!)
         const surveySchema = await api.generateSurvey(analysis, strategy, userInstruction, token!)
         
@@ -269,7 +271,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             
             // 1. Analyze
             addMessage("assistant", "That's enough context! Analyzing your request... 🧠")
-            const analysis = await api.analyzeContext(response.updatedContext || chatContext, token)
+            const analysis = await api.analyzeContext(response.updatedContext || chatContext, token, workspaceId)
             
             // 2. Strategy
             addMessage("assistant", "Generating research strategy... 📝")
@@ -343,10 +345,8 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     >
       {/* Header */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
-        <div className="p-2 bg-violet-100 dark:bg-violet-500/20 rounded-lg">
-          <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-        </div>
-        <div>
+          <Image src="/gen_logo.png" alt="Gen Thinking" width={50} height={50}/>
+       <div>
           <h2 className="font-semibold text-sm">Geniy Assistant</h2>
           <p className="text-xs text-zinc-500">AI Research Partner</p>
         </div>
@@ -390,7 +390,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
           {isProcessing && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                 <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl rounded-bl-none px-4 py-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
+                    <GenStateIllustration state="thinking" width={80} height={80} label={null} />
                 </div>
             </motion.div>
           )}

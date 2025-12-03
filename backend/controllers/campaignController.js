@@ -418,10 +418,60 @@ exports.chatWithGeniy = async (req, res) => {
             const analysis = await genesisAgent.analyzeCompetitor(response.competitorName, industry);
 
             // Attach analysis to response
-            response.competitorAnalysis = analysis;
+            if (analysis && !analysis.error) {
+                response.competitorAnalysis = analysis;
+
+                // PERSISTENCE: Save to Workspace DB
+                if (req.body.workspaceId) {
+                    try {
+                        const workspace = await prisma.workspace.findUnique({
+                            where: { id: req.body.workspaceId }
+                        });
+
+                        if (workspace) {
+                            let competitors = workspace.competitors || [];
+                            // Check if already exists to avoid duplicates
+                            const existingIndex = competitors.findIndex(c => c.name === response.competitorName);
+
+                            const newEntry = {
+                                name: response.competitorName,
+                                analysis: analysis,
+                                analyzedAt: new Date().toISOString()
+                            };
+
+                            if (existingIndex >= 0) {
+                                competitors[existingIndex] = newEntry;
+                            } else {
+                                competitors.push(newEntry);
+                            }
+
+                            await prisma.workspace.update({
+                                where: { id: req.body.workspaceId },
+                                data: { competitors }
+                            });
+                        }
+                    } catch (dbError) {
+                        console.error("Failed to persist competitor analysis:", dbError);
+                    }
+                }
+
+                // MEMORY: Inject into context for follow-up questions
+                const analysisSummary = `
+                [Analyzed Competitor: ${response.competitorName}]
+                - Pricing: ${analysis.pricingModel || 'N/A'}
+                - Strengths: ${analysis.strengths?.join(', ') || 'N/A'}
+                - Weaknesses: ${analysis.weaknesses?.join(', ') || 'N/A'}
+                `;
+                response.updatedContext = (response.updatedContext || context) + "\n" + analysisSummary;
+            } else {
+                // Handle failure gracefully
+                response.message = `I tried to analyze ${response.competitorName}, but I couldn't find enough specific data right now. You might want to try again later or check if the name is correct.`;
+            }
         }
 
         res.json(response);
+
+
     } catch (error) {
         console.error('Error in chat:', error);
         res.status(500).json({ error: 'Failed to process chat' });

@@ -40,15 +40,15 @@ export function Navbar() {
         <nav className="w-full max-w-6xl rounded-full py-3 border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-sm shadow-sm transition-all duration-300">
           <div className="flex h-14 items-center justify-between px-4 md:px-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="relative w-[50px] h-[50px]">
+              <div className="relative w-[60px] h-[60px]">
                 <Image 
-                  src="/geniy_logo_light.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain dark:hidden" 
                 />
                 <Image 
-                  src="/geniy_logo_dark.png" 
+                  src="/gen_logo.png" 
                   alt="Geniy Logo" 
                   fill
                   className="object-contain hidden dark:block" 

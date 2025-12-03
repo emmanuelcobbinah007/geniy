@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
     try {
-        const { contextText } = req.body;
+        const { contextText, workspaceId } = req.body;
         if (!contextText) {
             return res.status(400).json({ error: "Context text is required" });
         }
@@ -16,6 +16,40 @@ exports.analyzeContext = async (req, res) => {
         const competitors = await genesisAgent.discoverCompetitors(contextSummary);
         console.log("Manus Agent Competitors:", competitors); // Log for debugging
         contextSummary.competitors = competitors;
+
+        // Step 3: Persist to Workspace (if workspaceId provided)
+        if (workspaceId && competitors.length > 0) {
+            try {
+                const workspace = await prisma.workspace.findUnique({
+                    where: { id: workspaceId }
+                });
+
+                if (workspace) {
+                    let existingCompetitors = workspace.competitors || [];
+
+                    // Merge new competitors (avoid duplicates)
+                    const newCompetitors = competitors.filter(c =>
+                        !existingCompetitors.some(ec => ec.name.toLowerCase() === c.toLowerCase())
+                    ).map(c => ({
+                        name: c,
+                        analysis: null, // Initial discovery has no deep analysis yet
+                        discoveredAt: new Date().toISOString()
+                    }));
+
+                    if (newCompetitors.length > 0) {
+                        await prisma.workspace.update({
+                            where: { id: workspaceId },
+                            data: {
+                                competitors: [...existingCompetitors, ...newCompetitors]
+                            }
+                        });
+                    }
+                }
+            } catch (dbError) {
+                console.error("Failed to persist discovered competitors:", dbError);
+                // Don't fail the request if persistence fails
+            }
+        }
 
         res.json(contextSummary);
     } catch (error) {

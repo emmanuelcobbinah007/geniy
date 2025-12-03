@@ -13,6 +13,7 @@ class ManusService {
         }
 
         try {
+            console.log("Creating Manus Task with prompt:", instruction.substring(0, 50) + "...");
             const response = await axios.post(`${this.baseUrl}/tasks`, {
                 prompt: instruction, // Changed from instruction to prompt
                 mode: "agent"
@@ -22,6 +23,7 @@ class ManusService {
                     'Content-Type': 'application/json'
                 }
             });
+            console.log("Manus Task Created:", response.data);
             return response.data;
         } catch (error) {
             console.error("Manus API Error:", error);
@@ -45,23 +47,27 @@ class ManusService {
     }
     async runTask(instruction) {
         const task = await this.createTask(instruction);
-        if (!task || !task.id) return null;
+        if (!task || !task.task_id) return null;
 
         // Poll for result
         let attempts = 0;
-        const maxAttempts = 30; // 30 * 2s = 60s timeout
+        const maxAttempts = 60; // 60 * 2s = 120s timeout
 
         while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const result = await this.getTaskResult(task.id);
+            // Wait longer for the first attempt to allow task propagation
+            const delay = attempts === 0 ? 5000 : 2000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            const result = await this.getTaskResult(task.task_id);
 
             if (result && result.status === 'completed') {
+                console.log("Manus Task Completed. Output:", result.output ? result.output.substring(0, 100) + "..." : "No output");
                 return result.output; // Assuming output contains the data
             }
             if (result && result.status === 'failed') {
                 console.error("Manus Task Failed:", result.error);
                 return null;
             }
+            if (attempts % 5 === 0) console.log(`Manus Polling Attempt ${attempts}/${maxAttempts}... Status: ${result ? result.status : 'Unknown'}`);
             attempts++;
         }
         return null; // Timeout

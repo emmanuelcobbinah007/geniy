@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { ThemeEditor, Theme, DEFAULT_THEME } from "@/components/survey/ThemeEditor"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 import { toast } from "sonner"
 
 export default function CampaignInsightsPage({ params }: { params: Promise<{ workspaceId: string, id: string }> }) {
@@ -117,11 +118,19 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
   }
 
   if (isLoading) {
-    return <div className="p-8 flex items-center justify-center min-h-screen">Loading campaign...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <GenStateIllustration state="loading" label="Loading campaign..." />
+      </div>
+    )
   }
 
   if (!campaign) {
-    return <div className="p-8 flex items-center justify-center min-h-screen">Campaign not found</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <GenStateIllustration state="404" label="Campaign not found" />
+      </div>
+    )
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
-import { Loader2 } from "lucide-react"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 export default function DashboardRedirect() {
   const { user, isLoading } = useAuth()
@@ -23,7 +23,7 @@ export default function DashboardRedirect() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+      <GenStateIllustration state="loading" label="Loading dashboard..." />
     </div>
   )
 }

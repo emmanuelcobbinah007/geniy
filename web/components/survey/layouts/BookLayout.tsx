@@ -189,6 +189,10 @@ export function BookLayout({
                                     <h2 className="text-3xl font-serif italic text-zinc-900" style={{ color: theme ? 'var(--text)' : undefined }}>
                                         {title || "Welcome"}
                                     </h2>
+                                    {/* Company Name / Subtitle */}
+                                    <p className="text-sm font-serif uppercase tracking-widest text-zinc-500" style={{ color: theme ? 'var(--text)' : undefined, opacity: 0.6 }}>
+                                        Powered by Geniy
+                                    </p>
                                     <div className="w-16 h-0.5 bg-zinc-300 mx-auto" style={{ backgroundColor: theme ? 'var(--accent)' : undefined }} />
                                     <p className="font-serif text-zinc-600 leading-relaxed" style={{ color: theme ? 'var(--text)' : undefined, opacity: 0.8 }}>
                                         {description}

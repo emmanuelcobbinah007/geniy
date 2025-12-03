@@ -158,6 +158,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
           onStart={() => setHasStarted(true)}
           title={title}
           description={description}
+          // Pass company name if available in surveyData
+          companyName={surveyData?.companyName || "Geniy"} 
       />
   )
 }

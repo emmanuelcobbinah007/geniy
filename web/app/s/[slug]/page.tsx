@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { api } from "@/lib/api"
 import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 export default function PublicSurveyPage() {
   const params = useParams()
@@ -30,8 +31,16 @@ export default function PublicSurveyPage() {
     }
   }
 
-  if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>
-  if (error) return <div className="h-screen flex items-center justify-center text-red-500">{error}</div>
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center">
+      <GenStateIllustration state="loading" label="Loading survey..." />
+    </div>
+  )
+  if (error) return (
+    <div className="h-screen flex items-center justify-center">
+      <GenStateIllustration state="error" label={error} />
+    </div>
+  )
 
   return (
     <div className="h-screen flex flex-col">

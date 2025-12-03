@@ -7,6 +7,7 @@ import { Sparkles, ArrowRight, ThumbsUp, ThumbsDown, MessageSquare, Share2, Tren
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
+import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 interface GeniyRecommendationsProps {
     campaignId?: string
@@ -87,10 +88,8 @@ export function GeniyRecommendations({ campaignId, hasResponses = false }: Geniy
       </div>
 
       {isLoading ? (
-          <div className="space-y-4 animate-pulse">
-              <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
-              <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
-              <div className="h-32 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+          <div className="flex items-center justify-center min-h-[200px]">
+              <GenStateIllustration state="loading" label="Analyzing insights..." width={150} height={150} />
           </div>
       ) : !insights ? (
         <Card className="p-8 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 flex flex-col items-center justify-center text-center space-y-4">
