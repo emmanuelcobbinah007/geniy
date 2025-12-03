@@ -37,10 +37,20 @@ export function Navbar() {
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4">
-        <nav className="w-full max-w-6xl rounded-full py-3 border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-sm shadow-sm transition-all duration-300">
+        <motion.nav 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="w-full max-w-6xl rounded-full py-3 border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-sm shadow-sm transition-all duration-300"
+        >
           <div className="flex h-14 items-center justify-between px-4 md:px-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="relative w-[60px] h-[60px]">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="relative w-[60px] h-[60px]"
+              >
                 <Image 
                   src="/gen_logo.png" 
                   alt="Geniy Logo" 
@@ -53,23 +63,43 @@ export function Navbar() {
                   fill
                   className="object-contain hidden dark:block" 
                 />
-              </div>
-              <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white ml-[-15px]">Geniy</span>
+              </motion.div>
+              <motion.span 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white ml-[-15px]"
+              >
+                Geniy
+              </motion.span>
             </Link>
 
             <div className="hidden items-center gap-8 md:flex">
-              <button onClick={() => scrollToSection('features')} className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors cursor-pointer">
-                Features
-              </button>
-              <button onClick={() => scrollToSection('comparison')} className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors cursor-pointer">
-                Why Geniy
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors cursor-pointer">
-                Pricing
-              </button>
-              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+              {['features', 'comparison', 'pricing'].map((item, i) => (
+                <motion.button 
+                  key={item}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + (i * 0.1), duration: 0.5 }}
+                  onClick={() => scrollToSection(item)} 
+                  className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors cursor-pointer capitalize"
+                >
+                  {item === 'why geniy' ? 'Why Geniy' : item}
+                </motion.button>
+              ))}
+              <motion.div 
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ opacity: 1, scaleY: 1 }}
+                transition={{ delay: 0.9, duration: 0.5 }}
+                className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" 
+              />
               
               {user ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.0, duration: 0.5 }}
+                >
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -110,18 +140,31 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </motion.div>
               ) : (
                 <>
+                  <motion.div
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.0, duration: 0.5 }}
+                  >
                   <Link href="/auth">
                     <Button variant="ghost" className="text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 hover:bg-transparent">
                       Login
                     </Button>
                   </Link>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1.1, duration: 0.5 }}
+                  >
                   <Link href="/auth">
                     <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6 h-9 text-sm">
                       Get Started
                     </Button>
                   </Link>
+                  </motion.div>
                 </>
               )}
             </div>
@@ -132,7 +175,7 @@ export function Navbar() {
               </button>
             </div>
           </div>
-        </nav>
+        </motion.nav>
       </div>
 
       <AnimatePresence>
