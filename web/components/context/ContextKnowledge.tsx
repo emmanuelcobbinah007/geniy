@@ -266,15 +266,15 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">Geniy's Brain</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <Button 
                 variant="destructive"
                 size="sm"
                 onClick={handleClearMemory}
                 disabled={clearMutation.isPending || (!context && documents.length === 0)}
-                className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
+                className="flex-1 md:flex-none bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
             >
                 {clearMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                 Clear Memory
@@ -282,7 +282,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
             <Button 
                 onClick={() => analyzeMutation.mutate()} 
                 disabled={analyzeMutation.isPending || !context}
-                className="bg-violet-600 hover:bg-violet-700 text-white"
+                className="flex-1 md:flex-none bg-violet-600 hover:bg-violet-700 text-white"
             >
             {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
             {analyzeMutation.isPending ? "Analyzing..." : "Analyze Context"}

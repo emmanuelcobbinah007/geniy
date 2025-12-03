@@ -61,7 +61,7 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
   }
 
   return (
-    <Card className="p-6 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group relative overflow-hidden bg-white dark:bg-black border-zinc-200 dark:border-zinc-800">
+    <Card className="p-6 group relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:shadow-xl hover:shadow-violet-500/5 hover:border-violet-500/50 transition-all duration-300">
       {/* Status Badge */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <Badge variant="outline" className={
@@ -96,8 +96,8 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
 
       <div className="space-y-6">
         <div>
-          <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-white transition-colors pr-24 truncate">
-            <Link href={`/dashboard/${workspaceId}/campaigns/${id}`}>{name}</Link>
+          <h3 className="font-bold text-xl text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors pr-24 truncate">
+            <Link href={`/dashboard/${workspaceId}/campaigns/${id}`} className="before:absolute before:inset-0">{name}</Link>
           </h3>
           <p className="text-sm text-zinc-500 mt-1">{date}</p>
         </div>

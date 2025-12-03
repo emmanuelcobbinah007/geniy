@@ -41,17 +41,17 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
 
   return (
     <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 hover-lift transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div className="space-y-1">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Zap className="w-4 h-4 text-violet-500 fill-violet-500" />
+          <h3 className="font-semibold flex items-center gap-2 text-lg">
+            <Zap className="w-5 h-5 text-violet-500 fill-violet-500" />
             Knowledge Health 2.0
           </h3>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 max-w-md">
             {health?.summary || "Geniy's understanding of your business."}
           </p>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isGood ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium self-start sm:self-auto shrink-0 ${isGood ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
           {isGood ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
           {score}% Complete
         </div>

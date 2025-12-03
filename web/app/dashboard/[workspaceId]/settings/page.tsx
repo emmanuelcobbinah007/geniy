@@ -145,7 +145,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold font-display tracking-tight">Settings</h1>
         <p className="text-zinc-500 dark:text-zinc-400 mt-1">
@@ -301,17 +301,17 @@ export default function SettingsPage() {
                 <CardContent>
                   <div className="space-y-4">
                     {members?.map((member: any) => (
-                        <div key={member.id} className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-medium">
+                        <div key={member.id} className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-medium shrink-0">
                                     {member.user.name[0]}
                                 </div>
-                                <div>
-                                    <div className="font-medium">{member.user.name}</div>
-                                    <div className="text-sm text-zinc-500">{member.user.email}</div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="font-medium truncate">{member.user.name}</div>
+                                    <div className="text-sm text-zinc-500 truncate">{member.user.email}</div>
                                 </div>
                             </div>
-                            <div className="text-sm text-zinc-500 capitalize px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div className="text-sm text-zinc-500 capitalize px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 shrink-0">
                                 {member.role.toLowerCase()}
                             </div>
                         </div>
@@ -332,7 +332,7 @@ export default function SettingsPage() {
                   <CardDescription>Customize the look and feel of the application.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 gap-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800">
                             {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                     <Button 
                         variant="outline" 
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="border-zinc-200 dark:border-zinc-700"
+                        className="border-zinc-200 dark:border-zinc-700 w-full md:w-auto"
                     >
                         {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
                     </Button>
@@ -359,7 +359,7 @@ export default function SettingsPage() {
 
       {/* Pricing Modal */}
       <Dialog open={isPricingOpen} onOpenChange={setIsPricingOpen}>
-        <DialogContent className="max-w-5xl bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 w-[95vw] md:w-full p-4 md:p-6">
             <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-center">Simple pricing, power for insights.</DialogTitle>
                 <DialogDescription className="text-center text-lg text-zinc-500 dark:text-zinc-400">Start for free. Upgrade when you need deeper intelligence.</DialogDescription>
@@ -400,6 +400,12 @@ export default function SettingsPage() {
                         </CardFooter>
                     </Card>
                 ))}
+            </div>
+
+            <div className="flex justify-center md:hidden mt-4">
+                <Button variant="outline" onClick={() => setIsPricingOpen(false)} className="w-full">
+                    Close
+                </Button>
             </div>
         </DialogContent>
       </Dialog>

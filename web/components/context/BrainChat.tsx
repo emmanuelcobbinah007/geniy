@@ -38,7 +38,7 @@ function TypingEffect({ text, onComplete }: { text: string, onComplete?: () => v
   return <div className="prose dark:prose-invert prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{displayedText}</ReactMarkdown></div>
 }
 
-export function BrainChat({ context, workspaceId }: { context: string; workspaceId: string }) {
+export function BrainChat({ context, workspaceId, hideHeader = false }: { context: string; workspaceId: string; hideHeader?: boolean }) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -107,9 +107,11 @@ export function BrainChat({ context, workspaceId }: { context: string; workspace
 
   return (
     <div className="h-full flex flex-col space-y-4" id="chat-with-geniy">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Chat with Geniy</h2>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Chat with Geniy</h2>
+        </div>
+      )}
 
       <Card className="flex-1 flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         {/* Messages Area */}

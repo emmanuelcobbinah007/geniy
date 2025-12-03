@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Share2, MoreHorizontal, Eye, Copy, Check, Download, Palette, Save } from "lucide-react"
+import { ArrowLeft, Share2, MoreHorizontal, Eye, Copy, Check, Download } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { LiveAnalytics } from "@/components/campaigns/LiveAnalytics"
@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
-import { ThemeEditor, Theme, DEFAULT_THEME } from "@/components/survey/ThemeEditor"
+
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 import { toast } from "sonner"
 
@@ -28,9 +28,9 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
   const { workspaceId, id } = use(params)
   const { user, token } = useAuth()
   const [showPreview, setShowPreview] = useState(false)
-  const [showCustomize, setShowCustomize] = useState(false)
+
   const [copied, setCopied] = useState(false)
-  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME)
+
 
   const { data: campaign, isLoading, refetch } = useQuery({
     queryKey: ['campaign', id],
@@ -43,16 +43,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
     gcTime: 1000 * 60 * 30, // 30 minutes
   })
 
-  // Update theme when campaign loads
-  useEffect(() => {
-    if (campaign?.surveys?.[0]?.themeConfig) {
-        // Merge with default theme to ensure new properties (like mode) are present
-        setTheme(prev => ({
-            ...DEFAULT_THEME,
-            ...campaign.surveys[0].themeConfig
-        }))
-    }
-  }, [campaign])
+
 
   const survey = campaign?.surveys?.[0]
   const shareUrl = survey ? `${window.location.origin}/s/${survey.publicSlug}` : ""
@@ -63,17 +54,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleSaveTheme = async () => {
-    if (!token || !id) return
-    try {
-        await api.updateSurvey(id, { themeConfig: theme }, token)
-        toast.success("Theme saved successfully!")
-        setShowCustomize(false)
-        refetch()
-    } catch (error) {
-        toast.error("Failed to save theme")
-    }
-  }
+
 
   const handleExport = async () => {
     if (!token || !id) return
@@ -138,39 +119,10 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
       variants={container}
       initial="hidden"
       animate="show"
-      className="p-8 space-y-8 max-w-7xl mx-auto"
+      className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto"
     >
       <CampaignTour />
-      {/* Customize Modal */}
-      <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
-        <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex flex-col">
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900">
-                <h2 className="font-semibold text-lg">Customize Theme</h2>
-                <Button onClick={handleSaveTheme} className="gap-2">
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                </Button>
-            </div>
-            <div className="flex-1 flex min-h-0">
-                {/* Editor Sidebar */}
-                <div className="w-80 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-y-auto p-4">
-                    <ThemeEditor theme={theme} onThemeChange={setTheme} />
-                </div>
-                {/* Preview Area */}
-                <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 p-8 overflow-y-auto flex items-center justify-center">
-                    <div className="w-full max-w-md aspect-[9/16] md:aspect-auto md:h-[600px] bg-white dark:bg-zinc-900 rounded-xl shadow-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                        {survey && (
-                            <SurveyRenderer 
-                                surveyData={survey.jsonSchema} 
-                                isPreview={true} 
-                                theme={theme}
-                            />
-                        )}
-                    </div>
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
@@ -186,42 +138,34 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
       </Dialog>
 
       {/* Header */}
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4" id="campaign-header">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-            <Link href={`/dashboard/${workspaceId}/campaigns`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
+      <motion.div variants={item} className="flex flex-col gap-6" id="campaign-header">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2 overflow-hidden">
+            <Link href={`/dashboard/${workspaceId}/campaigns`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1 shrink-0">
               <ArrowLeft className="w-4 h-4" /> Campaigns
             </Link>
-            <span>/</span>
-            <span>{campaign.name}</span>
+            <span className="shrink-0">/</span>
+            <span className="truncate">{campaign.name}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">{campaign.name}</h1>
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-zinc-900 dark:text-white break-words">{campaign.name}</h1>
             <Badge variant="outline" className={
                 survey?.isPublished 
-                ? "border-green-200 text-green-700 bg-green-50 dark:border-green-900 dark:text-green-500 dark:bg-green-950/20"
-                : "border-zinc-200 text-zinc-700 bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
+                ? "w-fit border-green-200 text-green-700 bg-green-50 dark:border-green-900 dark:text-green-500 dark:bg-green-950/20"
+                : "w-fit border-zinc-200 text-zinc-700 bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
             }>
                 {survey?.isPublished ? "Active" : "Draft"}
             </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
-            onClick={() => {
-                if (survey?.themeConfig) setTheme({ ...DEFAULT_THEME, ...survey.themeConfig })
-                setShowCustomize(true)
-            }}
-          >
-            <Palette className="mr-2 h-4 w-4" />
-            Customize
-          </Button>
+        
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+
 
           <Button 
             variant="outline" 
-            className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+            size="sm"
+            className="flex-1 md:flex-none border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
             onClick={() => setShowPreview(true)}
           >
             <Eye className="mr-2 h-4 w-4" />
@@ -230,7 +174,8 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
 
           <Button 
             variant="outline" 
-            className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+            size="sm"
+            className="flex-1 md:flex-none border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
             onClick={handleExport}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -239,7 +184,7 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
           
           <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline" className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">
+                <Button variant="outline" size="sm" className="flex-1 md:flex-none border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">
                     <Share2 className="mr-2 h-4 w-4" />
                     Share
                 </Button>
@@ -260,8 +205,8 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
             </PopoverContent>
           </Popover>
 
-          <Link href={`/dashboard/${workspaceId}/campaigns/${id}/responses`}>
-            <Button className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+          <Link href={`/dashboard/${workspaceId}/campaigns/${id}/responses`} className="flex-1 md:flex-none">
+            <Button size="sm" className="w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
               View Responses
             </Button>
           </Link>

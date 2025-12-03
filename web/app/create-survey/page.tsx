@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Eye, Play, Sparkles, X } from "lucide-react"
-import { useState, useEffect } from "react"
+import { ArrowLeft, Eye, Play, Sparkles, X, ChevronLeft, ChevronRight, GripVertical } from "lucide-react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useAuth } from "@/context/auth-context"
@@ -19,8 +20,7 @@ import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
 import { ShareModal } from "@/components/create-survey/ShareModal"
 import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSelectionModal"
 import { useSearchParams } from "next/navigation"
-import { ThemeEditor, Theme } from "@/components/survey/ThemeEditor"
-import { Palette } from "lucide-react"
+
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
 import { Suspense } from "react"
@@ -45,22 +45,58 @@ function CreateSurveyContent() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareUrl, setShareUrl] = useState("")
   const [createdCampaignId, setCreatedCampaignId] = useState("")
-  const [showCustomize, setShowCustomize] = useState(false)
-  const [theme, setTheme] = useState<Theme>({
-    mode: 'system',
-    layout: 'focus',
-    primaryColor: "#7c3aed",
-    backgroundColor: "#ffffff",
-    textColor: "#18181b",
-    accentColor: "#f4f4f5",
-    fontFamily: "Inter",
-    borderRadius: "0.5rem"
-  })
+
 
   const searchParams = useSearchParams()
   const workspaceId = searchParams.get("workspaceId")
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Resizable Sidebar State
+  const [sidebarWidth, setSidebarWidth] = useState(400)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = mouseMoveEvent.clientX
+        if (newWidth > 280 && newWidth < 800) {
+            setSidebarWidth(newWidth)
+        }
+      }
+    },
+    [isResizing]
+  )
+
+  useEffect(() => {
+    if (isResizing) {
+        window.addEventListener("mousemove", resize)
+        window.addEventListener("mouseup", stopResizing)
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize)
+      window.removeEventListener("mouseup", stopResizing)
+    }
+  }, [isResizing, resize, stopResizing])
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -166,7 +202,7 @@ function CreateSurveyContent() {
 
             ...getSurveyData()
         },
-        themeConfig: theme
+
       }
 
       const result = await api.createCampaign(payload, token);
@@ -206,34 +242,12 @@ function CreateSurveyContent() {
             <SurveyRenderer 
                 surveyData={getSurveyData()} 
                 isPreview={true} 
-                theme={theme}
+                theme={undefined}
             />
         </DialogContent>
       </Dialog>
 
-      {/* Customize Modal */}
-      <Dialog open={showCustomize} onOpenChange={setShowCustomize}>
-        <DialogContent className="max-w-6xl h-[90vh] md:h-[80vh] p-0 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row">
-            <div className="w-full md:w-1/3 h-[40%] md:h-full border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 p-4 md:p-6 overflow-y-auto bg-white dark:bg-zinc-950">
-                <div className="flex items-center gap-2 mb-4 md:mb-6 sticky top-0 bg-white dark:bg-zinc-950 z-10 py-2">
-                    <Palette className="w-5 h-5 text-violet-600" />
-                    <h2 className="font-semibold text-lg">Customize Theme</h2>
-                </div>
-                <ThemeEditor theme={theme} onThemeChange={setTheme} />
-            </div>
-            <div className="w-full md:flex-1 h-[60%] md:h-full bg-zinc-100 dark:bg-zinc-900/50 p-4 md:p-8 overflow-y-auto flex items-center justify-center relative">
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                    <div className="w-full max-w-md h-full max-h-[600px] bg-white dark:bg-zinc-900 shadow-xl rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 scale-90 md:scale-100 transition-transform origin-center flex flex-col">
-                        <SurveyRenderer 
-                            surveyData={getSurveyData()} 
-                            isPreview={true} 
-                            theme={theme}
-                        />
-                    </div>
-                </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Header */}
       <header className="sticky top-0 h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-3 md:px-4 shrink-0 z-50 gap-2">
@@ -259,24 +273,8 @@ function CreateSurveyContent() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant={isMobileChatOpen ? "secondary" : "ghost"}
-            size="sm"
-            className="md:hidden text-violet-600 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 dark:hover:bg-violet-900/30 px-2"
-            onClick={() => setIsMobileChatOpen(!isMobileChatOpen)}
-          >
-            {isMobileChatOpen ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-            <span className="ml-2 hidden sm:inline">{isMobileChatOpen ? "Close" : "AI"}</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-zinc-500 hover:text-foreground px-2"
-            onClick={() => setShowCustomize(true)}
-          >
-            <Palette className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Customize</span>
-          </Button>
+
+
           <Button 
             variant="ghost" 
             size="sm" 
@@ -307,22 +305,105 @@ function CreateSurveyContent() {
       {/* Split View Content */}
       <div className="flex-1 flex items-start relative">
         {/* Left Panel: Geniy Chat (30%) - Sticky on Desktop, Fixed Overlay on Mobile */}
-        <div className={cn(
-            "bg-background border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 ease-in-out",
-            // Desktop Styles
-            "md:block md:w-[30%] md:min-w-[320px] md:max-w-[450px] md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] md:z-0",
-            // Mobile Styles
-            isMobileChatOpen ? "fixed inset-0 top-14 z-40 w-full h-[calc(100vh-3.5rem)] block" : "hidden"
-        )}>
-          <GeniyChat 
-            setQuestions={setQuestions}
-            setTitle={setTitle}
-            setDescription={setDescription}
-            setContextData={setContextData}
-            initialContext={initialContext}
-            workspaceId={workspaceId || user?.workspaces?.[0]?.id}
-          />
+        {/* Left Panel: Geniy Chat - Resizable & Animated on Mobile */}
+        {/* Desktop Sidebar */}
+        <div 
+            ref={sidebarRef}
+            className={cn(
+                "hidden md:flex bg-background border-r border-zinc-200 dark:border-zinc-800 relative flex-col shrink-0 sticky top-14 h-[calc(100vh-3.5rem)]",
+                !isResizing && "transition-[width] duration-300 ease-in-out"
+            )}
+            style={{ 
+                width: isCollapsed ? 20 : sidebarWidth 
+            }}
+        >
+            {/* Collapse Toggle Button */}
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute -right-3 top-6 z-50 h-6 w-6 rounded-full border border-zinc-200 bg-white shadow-sm hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-800 flex items-center justify-center p-0"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+            </Button>
+
+            {/* Chat Content */}
+            <div className={cn("flex-1 overflow-hidden w-full h-full", isCollapsed && "opacity-0 invisible")}>
+                <GeniyChat 
+                    setQuestions={setQuestions}
+                    setTitle={setTitle}
+                    setDescription={setDescription}
+                    setContextData={setContextData}
+                    initialContext={initialContext}
+                    workspaceId={workspaceId || user?.workspaces?.[0]?.id}
+                />
+            </div>
+
+            {/* Drag Handle */}
+            {!isCollapsed && (
+                <div
+                    className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-violet-500/50 transition-colors z-10 group"
+                    onMouseDown={startResizing}
+                >
+                    <div className="absolute top-1/2 -translate-y-1/2 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="h-8 w-4 text-zinc-400" />
+                    </div>
+                </div>
+            )}
         </div>
+
+        {/* Mobile Chat FAB */}
+        <div className="md:hidden fixed bottom-6 right-6 z-50">
+            <Button
+                size="icon"
+                className="h-14 w-14 rounded-full shadow-lg bg-violet-600 hover:bg-violet-700 text-white"
+                onClick={() => setIsMobileChatOpen(true)}
+            >
+                <Sparkles className="w-6 h-6" />
+            </Button>
+        </div>
+
+        {/* Mobile Chat Drawer */}
+        <AnimatePresence>
+            {isMobileChatOpen && (
+                <>
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsMobileChatOpen(false)}
+                        className="md:hidden fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className="md:hidden fixed bottom-0 left-0 right-0 h-[85vh] bg-white dark:bg-zinc-900 rounded-t-3xl shadow-xl z-50 flex flex-col overflow-hidden border-t border-zinc-200 dark:border-zinc-800"
+                    >
+                        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-violet-600" />
+                                <h3 className="font-semibold">Geniy AI Assistant</h3>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setIsMobileChatOpen(false)}>
+                                <X className="w-5 h-5" />
+                            </Button>
+                        </div>
+                        <div className="flex-1 min-h-0">
+                            <GeniyChat 
+                                setQuestions={setQuestions}
+                                setTitle={setTitle}
+                                setDescription={setDescription}
+                                setContextData={setContextData}
+                                initialContext={initialContext}
+                                workspaceId={workspaceId || user?.workspaces?.[0]?.id}
+                            />
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
 
         {/* Right Panel: Survey Editor (70%) - Natural Flow */}
         <div className="flex-1 min-w-0">

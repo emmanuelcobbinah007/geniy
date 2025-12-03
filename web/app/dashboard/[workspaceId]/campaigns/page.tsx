@@ -52,31 +52,36 @@ export default function CampaignsPage() {
       className="p-8 space-y-8 max-w-7xl mx-auto"
     >
       {/* Header */}
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div variants={item} className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-8">
         <div>
-          <h1 className="text-3xl font-bold font-display tracking-tight">Campaigns</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            Manage your research projects and view insights.
+          <h1 className="text-4xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">Campaigns</h1>
+          <p className="text-lg text-zinc-500 dark:text-zinc-400 mt-2 max-w-2xl">
+            Manage your research projects, track responses, and uncover AI-driven insights.
           </p>
         </div>
         <Link href={`/create-survey?workspaceId=${workspaceId}`}>
-          <Button className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="lg" className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 rounded-full px-6">
+            <Plus className="mr-2 h-5 w-5" />
             New Survey
           </Button>
         </Link>
       </motion.div>
 
       {/* Filters */}
-      <motion.div variants={item} className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <motion.div variants={item} className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-          <Input placeholder="Search campaigns..." className="pl-9" />
+          <Input 
+            placeholder="Search campaigns..." 
+            className="pl-10 h-11 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500" 
+          />
         </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" className="h-11 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 flex-1 sm:flex-none">
+            <Filter className="mr-2 h-4 w-4" />
+            Filter
+            </Button>
+        </div>
       </motion.div>
 
       {/* Grid */}

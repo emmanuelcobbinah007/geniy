@@ -54,7 +54,7 @@ export function Navbar() {
                   className="object-contain hidden dark:block" 
                 />
               </div>
-              <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">Geniy</span>
+              <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white ml-[-15px]">Geniy</span>
             </Link>
 
             <div className="hidden items-center gap-8 md:flex">
@@ -147,10 +147,21 @@ export function Navbar() {
             <div className="flex flex-col h-full p-6">
               <div className="flex items-center justify-between mb-8">
                 <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
-                    <Zap className="h-5 w-5 fill-current" />
-                  </div>
-                  <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">Geniy</span>
+                  <div className="relative w-[60px] h-[60px]">
+                <Image 
+                  src="/gen_logo.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain dark:hidden" 
+                />
+                <Image 
+                  src="/gen_logo.png" 
+                  alt="Geniy Logo" 
+                  fill
+                  className="object-contain hidden dark:block" 
+                />
+              </div>
+                  <span className="text-xl font-bold font-display tracking-tight text-zinc-900 dark:text-white ml-[-15px]">Geniy</span>
                 </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="text-zinc-600 dark:text-zinc-300">
                   <X className="h-6 w-6" />

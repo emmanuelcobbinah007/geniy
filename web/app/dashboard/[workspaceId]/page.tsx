@@ -61,24 +61,24 @@ export default function DashboardPage() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="p-8 space-y-8 max-w-7xl mx-auto"
+      className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto"
     >
       <OnboardingTour />
       {/* Header Section */}
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold font-display tracking-tight">Command Center</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">Command Center</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm md:text-base">
             Welcome back, {user?.name || "User"}. Here is your strategic overview.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <Button variant="outline" className="hidden md:flex">
             <FileText className="mr-2 h-4 w-4" />
             Upload Context
           </Button>
-          <Link href={`/create-survey?workspaceId=${workspaceId}`}>
-            <Button id="create-survey-btn" className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
+          <Link href={`/create-survey?workspaceId=${workspaceId}`} className="flex-1 md:flex-none">
+            <Button id="create-survey-btn" className="w-full md:w-auto bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
               <Plus className="mr-2 h-4 w-4" />
               New Survey
             </Button>

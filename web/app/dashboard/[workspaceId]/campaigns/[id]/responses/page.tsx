@@ -18,11 +18,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 import { ExportButton } from "@/components/analytics/ExportButton"
 
-export default function CampaignResultsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function CampaignResultsPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
+  const { id, workspaceId } = use(params)
   const { token } = useAuth()
   
   const [analytics, setAnalytics] = useState<any>(null)
@@ -85,7 +93,7 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-zinc-500 text-sm mb-2">
-            <Link href={`/dashboard/campaigns/${id}`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
+            <Link href={`/dashboard/${workspaceId}/campaigns/${id}`} className="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" /> Back to Campaign
             </Link>
           </div>
@@ -101,11 +109,11 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
+        <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg w-full md:w-auto flex md:inline-flex">
+            <TabsTrigger value="overview" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
                 <BarChart3 className="w-4 h-4 mr-2" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="responses" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
+            <TabsTrigger value="responses" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
                 <List className="w-4 h-4 mr-2" /> Individual Responses
             </TabsTrigger>
         </TabsList>
@@ -113,29 +121,29 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
         <TabsContent value="overview" className="space-y-6">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
+                <Card className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-zinc-500">Total Responses</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{analytics?.totalResponses || 0}</div>
+                        <div className="text-4xl font-bold text-zinc-900 dark:text-white">{analytics?.totalResponses || 0}</div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-zinc-500">Completion Rate</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">100%</div>
+                        <div className="text-4xl font-bold text-zinc-900 dark:text-white">100%</div>
                         <p className="text-xs text-zinc-500 mt-1">Based on started vs completed</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-zinc-500">Avg. Time</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">2m 14s</div>
+                        <div className="text-4xl font-bold text-zinc-900 dark:text-white">2m 14s</div>
                         <p className="text-xs text-zinc-500 mt-1">Estimated</p>
                     </CardContent>
                 </Card>
@@ -144,11 +152,11 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
             {/* Question Analytics */}
             <div className="grid grid-cols-1 gap-6">
                 {analytics?.analytics && Object.entries(analytics.analytics).map(([key, data]: [string, any]) => (
-                    <Card key={key} className="overflow-hidden">
+                    <Card key={key} className="overflow-hidden border-zinc-200 dark:border-zinc-800">
                         <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-                            <CardTitle className="text-base font-medium leading-relaxed flex items-start gap-2">
-                                <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-xs px-2 py-1 rounded uppercase tracking-wider font-bold mt-0.5">{key}</span>
-                                {data.question}
+                            <CardTitle className="text-base font-medium leading-relaxed flex items-start gap-3">
+                                <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-xs px-2.5 py-1 rounded-md uppercase tracking-wider font-bold mt-0.5 shrink-0">{key}</span>
+                                <span className="text-zinc-900 dark:text-zinc-100">{data.question}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
@@ -158,13 +166,13 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
                             
                             {(data.type === 'text' || data.type === 'short_text' || data.type === 'long_text') && (
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                                    <div className="flex items-center gap-2 text-sm text-zinc-500 font-medium">
                                         <MessageSquare className="w-4 h-4" />
                                         Recent Answers
                                     </div>
                                     <div className="grid gap-3">
                                         {data.recentAnswers.slice(0, 5).map((ans: string, i: number) => (
-                                            <div key={i} className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm border border-zinc-100 dark:border-zinc-800">
+                                            <div key={i} className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl text-sm border border-zinc-100 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
                                                 "{ans}"
                                             </div>
                                         ))}
@@ -179,59 +187,84 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
         </TabsContent>
 
         <TabsContent value="responses">
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead className="w-[200px]">Submitted At</TableHead>
-                    <TableHead>Answers Preview</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {isLoading ? (
-                    <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">Loading responses...</TableCell>
-                    </TableRow>
-                    ) : responses.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-zinc-500">No responses yet.</TableCell>
-                    </TableRow>
-                    ) : (
-                    responses.map((response) => {
-                        // Parse schema to get question titles
-                        const questions = response.survey?.jsonSchema?.questions || {};
-                        const questionMap = Array.isArray(questions) 
-                            ? questions.reduce((acc: any, q: any, i: number) => ({ ...acc, [`Q${i+1}`]: q.question }), {})
-                            : Object.entries(questions).reduce((acc: any, [k, v]: [string, any]) => ({ ...acc, [k]: v.question }), {});
+            <div className="space-y-4">
+                {isLoading ? (
+                    <div className="text-center py-12 text-zinc-500">Loading responses...</div>
+                ) : responses.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">No responses yet.</div>
+                ) : (
+                    <div className="grid gap-4">
+                        {responses.map((response) => {
+                            // Parse schema to get question titles
+                            const questions = response.survey?.jsonSchema?.questions || {};
+                            const questionMap = Array.isArray(questions) 
+                                ? questions.reduce((acc: any, q: any, i: number) => ({ ...acc, [`Q${i+1}`]: q.question }), {})
+                                : Object.entries(questions).reduce((acc: any, [k, v]: [string, any]) => ({ ...acc, [k]: v.question }), {});
 
-                        return (
-                        <TableRow key={response.id}>
-                        <TableCell className="font-medium align-top">
-                            {format(new Date(response.submittedAt), "MMM d, yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                            <div className="space-y-2">
-                            {Object.entries(response.rawAnswers).map(([key, value]) => (
-                                <div key={key} className="text-sm">
-                                <span className="font-medium text-zinc-900 dark:text-zinc-200 block">
-                                    {questionMap[key] || key}:
-                                </span>
-                                <span className="text-zinc-600 dark:text-zinc-400">
-                                    {String(value)}
-                                </span>
-                                </div>
-                            ))}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right align-top">
-                            <Button variant="ghost" size="sm">View Details</Button>
-                        </TableCell>
-                        </TableRow>
-                    )})
-                    )}
-                </TableBody>
-                </Table>
+                            return (
+                                <Card key={response.id} className="overflow-hidden border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+                                    <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:items-start justify-between">
+                                        <div className="space-y-4 flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 text-sm text-zinc-500">
+                                                <span className="font-medium text-zinc-900 dark:text-white">
+                                                    {format(new Date(response.submittedAt), "MMM d, yyyy • h:mm a")}
+                                                </span>
+                                                <span>•</span>
+                                                <span>ID: {response.id.slice(0, 8)}</span>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                                {Object.entries(response.rawAnswers).slice(0, 3).map(([key, value]) => (
+                                                    <div key={key} className="text-sm">
+                                                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">
+                                                            {questionMap[key] || key}
+                                                        </p>
+                                                        <p className="text-zinc-900 dark:text-zinc-200 line-clamp-2">
+                                                            {String(value)}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                                {Object.keys(response.rawAnswers).length > 3 && (
+                                                    <p className="text-xs text-zinc-400 italic">
+                                                        + {Object.keys(response.rawAnswers).length - 3} more answers
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex md:flex-col gap-2 shrink-0">
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="w-full md:w-auto">View Full Response</Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+                                                    <DialogHeader>
+                                                        <DialogTitle className="text-zinc-900 dark:text-zinc-100">Response Details</DialogTitle>
+                                                        <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+                                                            Submitted on {format(new Date(response.submittedAt), "PPP p")}
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="space-y-6 mt-4">
+                                                        {Object.entries(response.rawAnswers).map(([key, value]) => (
+                                                            <div key={key} className="space-y-2 pb-4 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                                                                <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
+                                                                    {questionMap[key] || key}
+                                                                </h4>
+                                                                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800">
+                                                                    {String(value)}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                        </div>
+                                    </div>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
         </TabsContent>
       </Tabs>
