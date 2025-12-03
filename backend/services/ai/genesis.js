@@ -30,12 +30,17 @@ class GenesisAgent {
       Context:
       "${rawText.substring(0, 8000)}" // Truncate to avoid token limits if necessary
 
+      **CRITICAL INSTRUCTION:**
+      If the context does not explicitly state the company's goals or value proposition, you MUST **INFER** them based on the product description, industry, and typical business needs. Do not return "Unknown" unless absolutely impossible to guess.
+      - Example: If it's a "drug kit delivery system", infer that speed, privacy, and reliability are key values.
+
       Output JSON Schema:
       {
         "companyName": "string",
         "industry": "string",
         "targetAudience": ["string"],
-        "valueProposition": "string",
+        "valueProposition": "string", // Infer if missing
+        "goals": ["string"], // Infer if missing (e.g., "Increase user retention", "Validate pricing")
         "competitors": ["string"] // List any mentioned competitors
       }
     `;
@@ -165,14 +170,22 @@ class GenesisAgent {
       
       ${userInstruction ? `**USER INSTRUCTION:** ${userInstruction}\n(You MUST prioritize this instruction, e.g., if it asks for a specific number of questions or a specific topic, follow it strictly.)` : ""}
 
-      **ANTI-PATTERNS TO AVOID (Based on User Feedback):**
-      1. **Too Long/Complex:** Keep questions short and simple. Avoid cognitive overload.
-      2. **Irrelevant Questions:** Ensure every question directly relates to the strategy and context. Don't ask for the sake of asking.
-      3. **Poor Design:** Use simple, engaging language. Avoid corporate jargon.
-      4. **Lack of Action:** Ensure questions lead to actionable insights.
-      5. **Too Frequent:** Make the survey feel high-value and respectful of the user's time (e.g., "We value your quick feedback").
+      **TONE & STYLE GUIDELINES (CRITICAL):**
+      1. **Conversational & Human:** Write like a friendly researcher, not a robot. Use "I" and "We".
+         - BAD: "Rate your satisfaction with the delivery speed."
+         - GOOD: "How was the delivery speed? Did it arrive when you expected?"
+      2. **Engaging:** People hate surveys. Make this one feel like a chat.
+      3. **Strict Relevance:** Every question MUST be directly related to the provided context. 
+         - **DO NOT** ask generic market research questions (e.g., "What is your age?") unless specifically relevant to the product.
+         - If the product is a "drug kit delivery", ask about privacy, speed, and packaging. Do NOT ask about "shopping habits" in general.
 
-      **CRITICAL RULES FOR BRANCHING:**
+      **QUESTION RULES:**
+      1. **Rating Scales:** ALWAYS use a **1-5 scale** (1=Low, 5=High). NEVER use 1-10.
+      2. **Question Count:** 
+         - **DEFAULT:** Generate **18-25 questions** unless the user explicitly asks for a different number.
+         - If the user asks for a specific number (e.g., 10), follow it strictly.
+      3. **Cognitive Load:** Keep options simple.
+
       **CRITICAL RULES FOR BRANCHING:**
       1. **MANDATORY DIVERGENCE:** You MUST include at least 2 questions where different options lead to DIFFERENT questions (e.g., "If Yes, go to Q3; If No, go to Q4"). 
          - **FORBIDDEN:** Do NOT create "fake branching" where all options jump to the same next question (e.g., If A -> Q2, If B -> Q2). This is useless.
@@ -189,7 +202,7 @@ class GenesisAgent {
           "questions": {
               "Q1": {
                   "type": "multiple_choice | text | ranking | rating",
-                  "question": "string",
+                  "question": "string", // Conversational phrasing
                   "options": ["string"], // Required for multiple_choice/ranking
                   "branches": [
                       { "if": "Option String", "next": "Q#" }

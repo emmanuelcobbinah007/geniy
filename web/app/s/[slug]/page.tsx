@@ -1,54 +1,36 @@
-"use client";
-
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { Metadata } from "next"
 import { api } from "@/lib/api"
-import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
-import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
+import { SurveyPageClient } from "./SurveyPageClient"
 
-export default function PublicSurveyPage() {
-  const params = useParams()
-  const slug = params.slug as string
-  
-  const [survey, setSurvey] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+interface PageProps {
+  params: {
+    slug: string
+  }
+}
 
-  useEffect(() => {
-    if (slug) {
-      loadSurvey()
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  try {
+    const survey = await api.getSurveyBySlug(params.slug)
+    return {
+      title: survey.title || "Survey | Geniy",
+      description: survey.campaign?.name || "Please take a moment to complete this survey.",
     }
-  }, [slug])
-
-  const loadSurvey = async () => {
-    try {
-      const data = await api.getSurveyBySlug(slug)
-      setSurvey(data)
-    } catch (err) {
-      setError("Failed to load survey")
-    } finally {
-      setLoading(false)
+  } catch (error) {
+    return {
+      title: "Survey Not Found | Geniy",
     }
   }
+}
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center">
-      <GenStateIllustration state="loading" label="Loading survey..." />
-    </div>
-  )
-  if (error) return (
-    <div className="h-screen flex items-center justify-center">
-      <GenStateIllustration state="error" label={error} />
-    </div>
-  )
+export default async function PublicSurveyPage({ params }: PageProps) {
+  let surveyData = null;
+  
+  try {
+    surveyData = await api.getSurveyBySlug(params.slug)
+  } catch (error) {
+    // We'll let the client component handle the error state or we could render an error here
+    console.error("Failed to pre-fetch survey:", error)
+  }
 
-  return (
-    <div className="h-screen flex flex-col">
-      <SurveyRenderer 
-        surveyData={survey} 
-        slug={slug} 
-        theme={survey.themeConfig || undefined}
-      />
-    </div>
-  )
+  return <SurveyPageClient slug={params.slug} initialSurveyData={surveyData} />
 }

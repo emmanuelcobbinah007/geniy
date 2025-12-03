@@ -117,16 +117,27 @@ const uploadDocument = async (req, res) => {
 
         if (mimetype === 'application/pdf') {
             try {
+                console.log(`Downloading PDF from: ${path}`);
                 // Download file from Cloudinary
                 const response = await axios.get(path, { responseType: 'arraybuffer' });
                 const buffer = Buffer.from(response.data);
+                console.log(`PDF downloaded, buffer size: ${buffer.length}`);
 
                 // Parse PDF
                 const data = await pdf(buffer);
+                console.log(`PDF parsed, text length: ${data.text.length}`);
+
+                if (!data.text || data.text.trim().length === 0) {
+                    throw new Error("PDF parsed but no text found (scanned image?)");
+                }
+
                 extractedText = `\n\n=== EXTRACTED FROM ${originalname} ===\n${data.text}\n====================================\n`;
             } catch (parseError) {
                 console.error("PDF Parse Error:", parseError);
-                // Continue without text if parsing fails, but log it
+                return res.status(400).json({
+                    message: 'Failed to extract text from PDF. Ensure it is a text PDF, not a scanned image.',
+                    details: parseError.message
+                });
             }
         }
 

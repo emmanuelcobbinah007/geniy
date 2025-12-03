@@ -96,7 +96,7 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
         const errorMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: "Sorry, I encountered an error connecting to the brain. Please try again.",
+            content: `Connection Error: ${error instanceof Error ? error.message : "Unknown error"}. Please check console for details.`,
             timestamp: new Date()
         }
         setMessages(prev => [...prev, errorMessage])

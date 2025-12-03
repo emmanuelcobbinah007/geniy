@@ -132,6 +132,9 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         setDescription(surveySchema.description || "")
         setContextData({ analysis, strategy })
         
+        // CRITICAL FIX: Update local chat context so follow-up messages know about this document!
+        setChatContext(fullContext)
+        
         // Handle questions whether they are an array or object
         const questionsData = surveySchema.questions;
         const questionsArray = Array.isArray(questionsData) 
@@ -167,9 +170,10 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
         addMessage("assistant", "Done! I've generated the survey based on your new context. Check it out on the right! 👉")
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error)
-        addMessage("assistant", "Sorry, I encountered an error while processing your document.")
+        const errorMessage = error.message || "Sorry, I encountered an error while processing your document."
+        addMessage("assistant", errorMessage)
     } finally {
         setIsProcessing(false)
         if (fileInputRef.current) fileInputRef.current.value = ""
