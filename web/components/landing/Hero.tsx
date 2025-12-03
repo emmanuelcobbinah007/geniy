@@ -39,15 +39,15 @@ export function Hero() {
 
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-black/40 z-10" /> {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-white/90 dark:bg-black/40 z-10 transition-colors duration-300" /> {/* Overlay: White in light mode, Dark in dark mode */}
         <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
             style={{ 
                 backgroundImage: `url('/hero_concept_visionary_1764767464824.png')`,
-                backgroundPosition: 'center 20%' // Adjust focus to the person/cliff
+                backgroundPosition: 'center 20%' 
             }} 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent dark:from-zinc-950 dark:via-zinc-950/50 z-10 transition-colors duration-300" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4 md:px-6">
@@ -73,9 +73,9 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="max-w-5xl"
           >
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold font-display tracking-tight text-white mb-6 drop-shadow-2xl">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold font-display tracking-tight text-zinc-900 dark:text-white mb-6 drop-shadow-sm dark:drop-shadow-2xl transition-colors duration-300">
               Market research in <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 animate-gradient-x">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-violet-400 animate-gradient-x">
                 minutes, not months.
               </span>
             </h1>
@@ -88,7 +88,7 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="max-w-2xl"
           >
-            <p className="text-xl text-zinc-200 leading-relaxed drop-shadow-md">
+            <p className="text-xl text-zinc-600 dark:text-zinc-200 leading-relaxed drop-shadow-none dark:drop-shadow-md transition-colors duration-300">
               Upload your business context. Geniy’s AI builds dynamic surveys, analyzes competitors, and delivers actionable strategic insights—automatically.
             </p>
           </motion.div>
