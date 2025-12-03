@@ -22,6 +22,7 @@ interface LayoutProps {
     onStart?: () => void
     title?: string
     description?: string
+    companyName?: string
 }
 
 export function TerminalLayout({ 
@@ -38,7 +39,8 @@ export function TerminalLayout({
     hasStarted = true,
     onStart,
     title,
-    description
+    description,
+    companyName
 }: LayoutProps) {
     
     const [typedText, setTypedText] = useState("")

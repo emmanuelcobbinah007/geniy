@@ -22,6 +22,7 @@ interface LayoutProps {
     onStart?: () => void
     title?: string
     description?: string
+    companyName?: string
 }
 
 export function BookLayout({ 
@@ -38,7 +39,8 @@ export function BookLayout({
     hasStarted = true,
     onStart,
     title,
-    description
+    description,
+    companyName
 }: LayoutProps) {
     
     const isSystem = theme?.mode === 'system' || !theme
