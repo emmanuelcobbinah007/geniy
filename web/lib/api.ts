@@ -167,6 +167,30 @@ export const api = {
     return this.get(`/workspaces/${workspaceId}/health`, token);
   },
 
+  // Domains
+  async addDomain(workspaceId: string, domain: string, token: string) {
+    return this.post(`/workspaces/${workspaceId}/domains`, { domain }, token);
+  },
+
+  async getDomains(workspaceId: string, token: string) {
+    return this.get(`/workspaces/${workspaceId}/domains`, token);
+  },
+
+  async verifyDomain(workspaceId: string, domainId: string, token: string) {
+    return this.post(`/workspaces/${workspaceId}/domains/${domainId}/verify`, {}, token);
+  },
+
+  async deleteDomain(workspaceId: string, domainId: string, token: string) {
+    const response = await fetch(`${API_URL}/workspaces/${workspaceId}/domains/${domainId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    return this.handleResponse(response);
+  },
+
   // AI Integration
   async analyzeContext(contextText: string, token: string, workspaceId?: string) {
     return this.post('/ai/analyze-context', { contextText, workspaceId }, token);

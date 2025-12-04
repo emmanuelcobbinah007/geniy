@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "next-themes"
-import { Moon, Sun, User, Building, Users, Plus, Check, CreditCard, Sparkles } from "lucide-react"
+import { Moon, Sun, User, Building, Users, Plus, Check, CreditCard, Sparkles, Globe } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog"
+import { DomainsSettings } from "@/components/settings/DomainsSettings"
 
 const PLANS = [
     {
@@ -157,6 +158,7 @@ export default function SettingsPage() {
         <TabsList className="bg-zinc-100 dark:bg-zinc-900/50 p-1 border border-zinc-200 dark:border-zinc-800 w-full justify-start overflow-x-auto">
           <TabsTrigger value="general" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><User className="w-4 h-4" /> General</TabsTrigger>
           <TabsTrigger value="team" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Users className="w-4 h-4" /> Team</TabsTrigger>
+          <TabsTrigger value="domains" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Globe className="w-4 h-4" /> Domains</TabsTrigger>
           <TabsTrigger value="appearance" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Sun className="w-4 h-4" /> Appearance</TabsTrigger>
         </TabsList>
 
@@ -320,6 +322,13 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Domains Tab */}
+          <TabsContent value="domains" className="outline-none">
+            <motion.div {...fadeIn}>
+                <DomainsSettings />
             </motion.div>
           </TabsContent>
 

@@ -35,6 +35,17 @@ model Workspace {
   members         WorkspaceMember[]
   isEarlyAdopter  Boolean           @default(false)
   earlyAdopterJoinedAt DateTime?
+  domains         Domain[]
+}
+
+model Domain {
+  id          String   @id @default(uuid())
+  domain      String   @unique
+  workspaceId String
+  status      String   @default("pending") // pending, active, error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }
 
 model Document {
