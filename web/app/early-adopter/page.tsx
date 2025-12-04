@@ -78,11 +78,11 @@ export default function EarlyAdopterPage() {
       </div>
 
       <main className="relative z-10 container mx-auto px-4 pt-32 pb-24 flex items-center justify-center min-h-[calc(100vh-80px)]">
-        <div className="w-full max-w-7xl bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 md:p-12 lg:p-16 backdrop-blur-sm shadow-2xl relative overflow-hidden">
+        <div className="w-full max-w-7xl bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-5 md:p-12 lg:p-16 backdrop-blur-sm shadow-2xl relative overflow-hidden">
           {/* Container Glow Effect */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50" />
           
-          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 relative z-10">
           
           {/* Left Content */}
           <div className="flex-1 text-center lg:text-left space-y-8">
@@ -182,7 +182,7 @@ export default function EarlyAdopterPage() {
               transition={{ delay: 0.6 }}
               className="relative z-10 w-full max-w-md"
             >
-              <Card className="p-8 border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-2xl shadow-violet-900/20">
+              <Card className="p-6 md:p-8 border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-2xl shadow-violet-900/20">
                 <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none rounded-xl" />
                 
                 <div className="relative">
@@ -219,7 +219,7 @@ export default function EarlyAdopterPage() {
                       <span className="text-zinc-500">/ year</span>
                     </div>
                     <p className="text-sm text-zinc-500 mt-2">
-                      Standard price: GH₵625/year
+                      Standard price: GH₵1,188/year
                     </p>
                   </div>
 

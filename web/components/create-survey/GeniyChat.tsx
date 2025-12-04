@@ -29,9 +29,10 @@ interface GeniyChatProps {
     setContextData: (data: any) => void
     initialContext?: string
     workspaceId?: string
+    hideHeader?: boolean
 }
 
-export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext, workspaceId }: GeniyChatProps) {
+export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext, workspaceId, hideHeader = false }: GeniyChatProps) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -348,13 +349,15 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
-          <Image src="/gen_logo.png" alt="Gen Thinking" width={50} height={50}/>
-       <div>
-          <h2 className="font-semibold text-sm">Geniy Assistant</h2>
-          <p className="text-xs text-zinc-500">AI Research Partner</p>
+      {!hideHeader && (
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+            <Image src="/gen_states/gen_thinking.png" alt="Gen Thinking" width={50} height={50}/>
+         <div>
+            <h2 className="font-semibold text-sm">Geniy Assistant</h2>
+            <p className="text-xs text-zinc-500">AI Research Partner</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1">

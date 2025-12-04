@@ -126,10 +126,10 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
                 )}
                 >
                 <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                    "w-8 h-8 rounded-full items-center justify-center flex-shrink-0 hidden md:flex",
                     msg.role === "user" ? "bg-zinc-900 text-white dark:bg-white dark:text-black" : "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
                 )}>
-                    {msg.role === "user" ? <User className="w-4 h-4" /> : <Image src="/gen_logo.png" alt="Gen Thinking" width={34} height={34} />}
+                    {msg.role === "user" ? <User className="w-4 h-4" /> : <Image src="/gen_states/gen_thinking.png" alt="Gen Thinking" width={34} height={34} />}
                 </div>
                 <div className={cn(
                     "p-3 rounded-2xl text-sm overflow-hidden",
@@ -159,7 +159,7 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
             {isTyping && !streamingMessageId && (
                 <div className="flex gap-3 mr-auto max-w-[80%]">
                     <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center flex-shrink-0">
-                        <Image src="/gen_logo.png" alt="Gen Thinking" width={34} height={34} />
+                        <Image src="/gen_states/gen_thinking.png" alt="Gen Thinking" width={34} height={34} />
                     </div>
                     <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-2xl rounded-tl-sm">
                         <GenStateIllustration state="thinking" width={80} height={80} label={null} />

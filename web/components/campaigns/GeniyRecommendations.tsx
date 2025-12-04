@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, ArrowRight, ThumbsUp, ThumbsDown, MessageSquare, Share2, TrendingUp, Lightbulb, Loader2 } from "lucide-react"
+import { Sparkles, ArrowRight, ThumbsUp, ThumbsDown, MessageSquare, Share2, TrendingUp, Lightbulb, Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
@@ -20,6 +21,7 @@ export function GeniyRecommendations({ campaignId, hasResponses = false }: Geniy
   const [insights, setInsights] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const hasAttemptedRef = useRef(false)
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export function GeniyRecommendations({ campaignId, hasResponses = false }: Geniy
         </Card>
       ) : (
         <div className="space-y-4">
-            {/* Executive Summary */}
+            {/* Executive Summary - Always Visible */}
             <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-zinc-900">
                 <div className="space-y-2">
                     <h3 className="font-medium text-sm text-violet-700 dark:text-violet-300 flex items-center gap-2">
@@ -121,78 +123,97 @@ export function GeniyRecommendations({ campaignId, hasResponses = false }: Geniy
                 </div>
             </Card>
 
-            {/* Sentiment */}
-            <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl shrink-0 ${
-                        insights.sentiment?.label === 'Positive' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
-                        insights.sentiment?.label === 'Negative' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
-                        'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    }`}>
-                        {insights.sentiment?.label === 'Positive' ? <ThumbsUp className="w-6 h-6" /> :
-                         insights.sentiment?.label === 'Negative' ? <ThumbsDown className="w-6 h-6" /> :
-                         <TrendingUp className="w-6 h-6" />}
-                    </div>
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-zinc-900 dark:text-zinc-100">Overall Sentiment: {insights.sentiment?.label}</h3>
-                            <span className="text-xs font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500">
-                                {insights.sentiment?.score}/100
-                            </span>
-                        </div>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                            {insights.sentiment?.breakdown}
-                        </p>
-                    </div>
-                </div>
-            </Card>
-
-            {/* Trends */}
-            <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <div className="space-y-3">
-                    <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-blue-500" /> Key Trends
-                    </h3>
-                    <div className="space-y-3">
-                        {insights.trends?.map((trend: any, i: number) => (
-                            <div key={i} className="text-sm">
-                                <span className="font-medium text-zinc-800 dark:text-zinc-200 block mb-0.5">• {trend.title}</span>
-                                <span className="text-zinc-500 dark:text-zinc-400 text-xs">{trend.description}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </Card>
-
-            {/* Recommendations */}
-            <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <div className="space-y-3">
-                    <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-amber-500" /> Recommendations
-                    </h3>
-                    <div className="space-y-2">
-                        {insights.recommendations?.map((rec: string, i: number) => (
-                            <div key={i} className="flex gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                                <ArrowRight className="w-4 h-4 shrink-0 mt-0.5 text-zinc-400" />
-                                <span>{rec}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </Card>
-            
-            {insights && (
+            {/* Mobile Toggle Button */}
+            <div className="md:hidden">
                 <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     size="sm" 
-                    onClick={handleGenerate} 
-                    disabled={isGenerating}
-                    className="w-full text-xs text-zinc-500"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="w-full text-zinc-500 hover:text-violet-600"
                 >
-                    {isGenerating ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Sparkles className="w-3 h-3 mr-2" />}
-                    Refresh Analysis
+                    {isExpanded ? (
+                        <>Show Less <ChevronUp className="w-4 h-4 ml-2" /></>
+                    ) : (
+                        <>Show Full Report <ChevronDown className="w-4 h-4 ml-2" /></>
+                    )}
                 </Button>
-            )}
+            </div>
+
+            {/* Collapsible Content */}
+            <div className={cn("space-y-4", !isExpanded && "hidden md:block")}>
+                {/* Sentiment */}
+                <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-xl shrink-0 ${
+                            insights.sentiment?.label === 'Positive' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                            insights.sentiment?.label === 'Negative' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                            'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}>
+                            {insights.sentiment?.label === 'Positive' ? <ThumbsUp className="w-6 h-6" /> :
+                            insights.sentiment?.label === 'Negative' ? <ThumbsDown className="w-6 h-6" /> :
+                            <TrendingUp className="w-6 h-6" />}
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-medium text-zinc-900 dark:text-zinc-100">Overall Sentiment: {insights.sentiment?.label}</h3>
+                                <span className="text-xs font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500">
+                                    {insights.sentiment?.score}/100
+                                </span>
+                            </div>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                {insights.sentiment?.breakdown}
+                            </p>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Trends */}
+                <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <div className="space-y-3">
+                        <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-blue-500" /> Key Trends
+                        </h3>
+                        <div className="space-y-3">
+                            {insights.trends?.map((trend: any, i: number) => (
+                                <div key={i} className="text-sm">
+                                    <span className="font-medium text-zinc-800 dark:text-zinc-200 block mb-0.5">• {trend.title}</span>
+                                    <span className="text-zinc-500 dark:text-zinc-400 text-xs">{trend.description}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Recommendations */}
+                <Card className="p-5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <div className="space-y-3">
+                        <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500" /> Recommendations
+                        </h3>
+                        <div className="space-y-2">
+                            {insights.recommendations?.map((rec: string, i: number) => (
+                                <div key={i} className="flex gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                    <ArrowRight className="w-4 h-4 shrink-0 mt-0.5 text-zinc-400" />
+                                    <span>{rec}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </Card>
+                
+                {insights && (
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleGenerate} 
+                        disabled={isGenerating}
+                        className="w-full text-xs text-zinc-500"
+                    >
+                        {isGenerating ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                        Refresh Analysis
+                    </Button>
+                )}
+            </div>
         </div>
       )}
     </div>

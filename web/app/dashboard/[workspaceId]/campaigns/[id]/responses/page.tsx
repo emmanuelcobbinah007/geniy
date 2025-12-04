@@ -110,10 +110,10 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg w-full md:w-auto flex md:inline-flex">
-            <TabsTrigger value="overview" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
+            <TabsTrigger value="overview" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2 text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4 mr-2" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="responses" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2">
+            <TabsTrigger value="responses" className="flex-1 md:flex-none data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm rounded-md px-4 py-2 text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-white">
                 <List className="w-4 h-4 mr-2" /> Individual Responses
             </TabsTrigger>
         </TabsList>

@@ -57,39 +57,39 @@ export function Comparison() {
           <table className="w-full max-w-5xl mx-auto border-collapse">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                <th className="py-6 px-4 text-left text-sm font-medium text-zinc-500 uppercase tracking-wider">Feature</th>
-                <th className="py-6 px-4 text-left text-lg font-bold text-violet-600 dark:text-white bg-violet-50 dark:bg-zinc-900 rounded-t-xl border-t border-x border-violet-100 dark:border-zinc-800 relative transition-colors duration-300">
+                <th className="py-3 md:py-6 px-4 text-left text-sm font-medium text-zinc-500 uppercase tracking-wider">Feature</th>
+                <th className="py-3 md:py-6 px-4 text-left text-lg font-bold text-violet-600 dark:text-white bg-violet-50 dark:bg-zinc-900 rounded-t-xl border-t border-x border-violet-100 dark:border-zinc-800 relative transition-colors duration-300">
                   <div className="absolute top-0 left-0 w-full h-1 bg-violet-500 rounded-t-xl" />
                   Geniy
                 </th>
-                <th className="py-6 px-4 text-left text-sm font-medium text-zinc-500">Traditional Agency</th>
-                <th className="py-6 px-4 text-left text-sm font-medium text-zinc-500">Typeform / Tally</th>
+                <th className="py-3 md:py-6 px-4 text-left text-sm font-medium text-zinc-500">Traditional Agency</th>
+                <th className="py-3 md:py-6 px-4 text-left text-sm font-medium text-zinc-500">Typeform / Tally</th>
               </tr>
             </thead>
             <tbody>
               {comparisonData.map((row, index) => (
                 <tr key={index} className="border-b border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-900/20 transition-colors">
-                  <td className="py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">{row.feature}</td>
-                  <td className="py-6 px-4 text-sm font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-zinc-900 border-x border-violet-100 dark:border-zinc-800 transition-colors duration-300">
+                  <td className="py-3 md:py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">{row.feature}</td>
+                  <td className="py-3 md:py-6 px-4 text-sm font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-zinc-900 border-x border-violet-100 dark:border-zinc-800 transition-colors duration-300">
                     {row.geniy}
                   </td>
-                  <td className="py-6 px-4 text-sm text-zinc-600 dark:text-zinc-500">{row.agency}</td>
-                  <td className="py-6 px-4 text-sm text-zinc-600 dark:text-zinc-500">{row.typeform}</td>
+                  <td className="py-3 md:py-6 px-4 text-sm text-zinc-600 dark:text-zinc-500">{row.agency}</td>
+                  <td className="py-3 md:py-6 px-4 text-sm text-zinc-600 dark:text-zinc-500">{row.typeform}</td>
                 </tr>
               ))}
               <tr className="border-b border-zinc-200 dark:border-zinc-800/50">
-                 <td className="py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">Strategic Recommendations</td>
-                 <td className="py-6 px-4 bg-violet-50 dark:bg-zinc-900 border-x border-violet-100 dark:border-zinc-800 rounded-b-xl transition-colors duration-300">
+                 <td className="py-3 md:py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">Strategic Recommendations</td>
+                 <td className="py-3 md:py-6 px-4 bg-violet-50 dark:bg-zinc-900 border-x border-violet-100 dark:border-zinc-800 rounded-b-xl transition-colors duration-300">
                     <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-bold text-sm">
                        <Check className="w-5 h-5" /> Included
                     </div>
                  </td>
-                 <td className="py-6 px-4">
+                 <td className="py-3 md:py-6 px-4">
                     <div className="flex items-center gap-2 text-zinc-500 text-sm">
                        <Check className="w-5 h-5" /> Included
                     </div>
                  </td>
-                 <td className="py-6 px-4">
+                 <td className="py-3 md:py-6 px-4">
                     <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-600 text-sm">
                        <X className="w-5 h-5" /> None
                     </div>

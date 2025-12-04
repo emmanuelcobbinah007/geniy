@@ -233,56 +233,65 @@ export function SurveyEditor({
                               className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800/50 space-y-2"
                             >
                               {q.logic.map((rule: any, i: number) => (
-                                <div key={i} className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/50 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800/50 group/logic">
-                                  <GitBranch className="w-3.5 h-3.5 text-violet-500" />
-                                  {q.type === "multiple_choice" ? (
-                                    <>
-                                      <span>If answer is</span>
-                                      <Select 
-                                        value={rule.if as string} 
-                                        onValueChange={(val) => {
-                                            const newLogic = [...q.logic]
-                                            newLogic[i].if = val
-                                            updateQuestion(q.id, "logic", newLogic)
-                                        }}
-                                      >
-                                        <SelectTrigger className="w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
-                                          <SelectValue placeholder="Select option..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {q.options?.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                        </SelectContent>
-                                      </Select>
-                                    </>
-                                  ) : (
-                                    <span className="font-medium text-zinc-700 dark:text-zinc-300">After answering</span>
-                                  )}
-                                  <ArrowRight className="w-3 h-3 text-zinc-400" />
-                                  <span>jump to</span>
-                                  <Select
-                                    value={rule.then}
-                                    onValueChange={(val) => {
-                                        const newLogic = [...q.logic]
-                                        newLogic[i].then = val
-                                        updateQuestion(q.id, "logic", newLogic)
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
-                                      <SelectValue placeholder="Select question..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="end">End of Survey</SelectItem>
-                                      {questions.filter(targetQ => targetQ.id !== q.id).map(targetQ => (
-                                        <SelectItem key={targetQ.id} value={targetQ.id.toString()}>
-                                          {targetQ.id}. {targetQ.title || "Untitled"}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                <div key={i} className="flex flex-col md:flex-row md:items-center gap-3 md:gap-2 text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/50 p-3 md:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800/50 group/logic relative">
+                                  
+                                  {/* Condition Group */}
+                                  <div className="flex items-center gap-2 w-full md:w-auto">
+                                    <GitBranch className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                                    {q.type === "multiple_choice" ? (
+                                      <>
+                                        <span className="shrink-0">If answer is</span>
+                                        <Select 
+                                          value={rule.if as string} 
+                                          onValueChange={(val) => {
+                                              const newLogic = [...q.logic]
+                                              newLogic[i].if = val
+                                              updateQuestion(q.id, "logic", newLogic)
+                                          }}
+                                        >
+                                          <SelectTrigger className="flex-1 md:w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
+                                            <SelectValue placeholder="Select option..." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {q.options?.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                          </SelectContent>
+                                        </Select>
+                                      </>
+                                    ) : (
+                                      <span className="font-medium text-zinc-700 dark:text-zinc-300">After answering</span>
+                                    )}
+                                  </div>
+
+                                  {/* Action Group */}
+                                  <div className="flex items-center gap-2 w-full md:w-auto pl-5 md:pl-0">
+                                    <ArrowRight className="w-3 h-3 text-zinc-400 shrink-0" />
+                                    <span className="shrink-0">jump to</span>
+                                    <Select
+                                      value={rule.then}
+                                      onValueChange={(val) => {
+                                          const newLogic = [...q.logic]
+                                          newLogic[i].then = val
+                                          updateQuestion(q.id, "logic", newLogic)
+                                      }}
+                                    >
+                                      <SelectTrigger className="flex-1 md:w-[140px] h-7 text-xs border-none bg-transparent p-0 focus:ring-0 shadow-none hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 px-2 rounded-md transition-colors">
+                                        <SelectValue placeholder="Select question..." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="end">End of Survey</SelectItem>
+                                        {questions.filter(targetQ => targetQ.id !== q.id).map(targetQ => (
+                                          <SelectItem key={targetQ.id} value={targetQ.id.toString()}>
+                                            {targetQ.id}. {targetQ.title || "Untitled"}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 ml-auto opacity-0 group-hover/logic:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
+                                    className="absolute top-1 right-1 md:static h-6 w-6 md:ml-auto opacity-100 md:opacity-0 group-hover/logic:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
                                     onClick={() => removeLogic(q.id, i)}
                                   >
                                       <Trash2 className="w-3 h-3" />

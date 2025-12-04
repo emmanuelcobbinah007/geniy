@@ -9,8 +9,9 @@ import { api } from "@/lib/api"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { MessageCircle, X, Sparkles } from "lucide-react"
+import { MessageCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 import { useParams } from "next/navigation"
 
@@ -60,10 +61,10 @@ export default function ContextPage() {
       <div className="lg:hidden fixed bottom-6 right-6 z-50">
         <Button
             size="icon"
-            className="h-14 w-14 rounded-full shadow-lg bg-violet-600 hover:bg-violet-700 text-white"
+            className="h-14 w-14 rounded-full shadow-lg bg-violet-600 hover:bg-violet-700 text-white p-0 overflow-hidden"
             onClick={() => setShowMobileChat(true)}
         >
-            <Sparkles className="w-6 h-6" />
+            <Image src="/gen_states/gen_thinking.png" alt="Gen" width={56} height={56} className="w-full h-full object-cover" />
         </Button>
       </div>
 
@@ -87,7 +88,7 @@ export default function ContextPage() {
                 >
                     <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-violet-600" />
+                            <Image src="/gen_states/gen_thinking.png" alt="Gen" width={32} height={32} />
                             <h3 className="font-semibold">Chat with Geniy</h3>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setShowMobileChat(false)}>
