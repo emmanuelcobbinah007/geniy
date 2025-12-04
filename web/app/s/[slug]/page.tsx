@@ -3,14 +3,15 @@ import { api } from "@/lib/api"
 import { SurveyPageClient } from "./SurveyPageClient"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
   try {
-    const survey = await api.getSurveyBySlug(params.slug)
+    const survey = await api.getSurveyBySlug(slug)
     return {
       title: survey.title || "Survey | Geniy",
       description: survey.campaign?.name || "Please take a moment to complete this survey.",
@@ -23,14 +24,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicSurveyPage({ params }: PageProps) {
+  const { slug } = await params
   let surveyData = null;
   
   try {
-    surveyData = await api.getSurveyBySlug(params.slug)
+    surveyData = await api.getSurveyBySlug(slug)
   } catch (error) {
-    // We'll let the client component handle the error state or we could render an error here
     console.error("Failed to pre-fetch survey:", error)
   }
 
-  return <SurveyPageClient slug={params.slug} initialSurveyData={surveyData} />
+  return <SurveyPageClient slug={slug} initialSurveyData={surveyData} />
 }
