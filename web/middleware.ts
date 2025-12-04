@@ -30,7 +30,7 @@ export default async function middleware(req: NextRequest) {
   }`;
 
   // rewrites for app pages
-  if (hostname == `app.${rootDomain}`) {
+  if (hostname == `app.${rootDomain}` || hostname === rootDomain || hostname === `www.${rootDomain}`) {
     // If it's the main app domain, let it pass through normally
     // or rewrite to /app if you have a specific app folder structure
     // For Geniy, it seems everything is in the root app folder, so we might just return
