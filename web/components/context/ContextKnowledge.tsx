@@ -123,7 +123,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
   const analyzeMutation = useMutation({
     mutationFn: async () => {
       if (!token || !context) return
-      return api.analyzeContext(context, token)
+      return api.analyzeContext(context, token, workspaceId)
     },
     onSuccess: (data) => {
       setAnalysisResult(data)

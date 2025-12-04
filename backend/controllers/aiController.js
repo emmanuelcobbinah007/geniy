@@ -98,7 +98,33 @@ exports.chatWithContext = async (req, res) => {
         let enrichedContext = context;
 
         if (workspaceId) {
-            // Fetch live campaign data
+            // 1. Fetch Workspace Competitors
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { competitors: true }
+            });
+
+            console.log("DEBUG: Workspace Competitors:", JSON.stringify(workspace?.competitors));
+
+            if (workspace && workspace.competitors && Array.isArray(workspace.competitors) && workspace.competitors.length > 0) {
+                enrichedContext += `\n\n=== KNOWN COMPETITORS ===\n`;
+                workspace.competitors.forEach(c => {
+                    enrichedContext += `- ${c.name}`;
+                    if (c.analysis) {
+                        enrichedContext += `: ${JSON.stringify(c.analysis).substring(0, 300)}...`;
+                    }
+                    enrichedContext += `\n`;
+                });
+                enrichedContext += `=========================\n`;
+            } else {
+                console.log("DEBUG: No competitors found or invalid format");
+            }
+
+            console.log("DEBUG: Enriched Context Preview:", enrichedContext.substring(0, 500));
+
+            // 2. Fetch live campaign data
+
+            // 2. Fetch live campaign data
             const campaigns = await prisma.campaign.findMany({
                 where: { workspaceId },
                 include: {
@@ -118,7 +144,6 @@ exports.chatWithContext = async (req, res) => {
                 campaigns.forEach(campaign => {
                     campaignSummary += `Campaign: ${campaign.name}\n`;
                     campaign.surveys.forEach(survey => {
-                        const responseCount = survey.responses.length; // Note: This is just the fetched count (max 5), ideally we'd get total count separately but this is a quick context injection
                         // Actually, let's just say "Recent Responses"
                         campaignSummary += `  - Survey: ${survey.title} (Public Slug: ${survey.publicSlug})\n`;
                         if (survey.responses.length > 0) {
