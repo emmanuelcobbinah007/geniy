@@ -9,54 +9,71 @@ exports.analyzeContext = async (req, res) => {
             return res.status(400).json({ error: "Context text is required" });
         }
 
-        // Step 1: Analyze Context
+        // Step 1: Analyze Context (Fast)
         const contextSummary = await genesisAgent.analyzeContext(contextText);
 
-        // Step 2: Discover Competitors (Agentic)
-        const competitors = await genesisAgent.discoverCompetitors(contextSummary);
-        console.log("Manus Agent Competitors:", competitors); // Log for debugging
-        contextSummary.competitors = competitors;
+        // Step 2: Send Response Immediately
+        res.json(contextSummary);
 
-        // Step 3: Persist to Workspace (if workspaceId provided)
-        if (workspaceId && competitors.length > 0) {
-            try {
-                const workspace = await prisma.workspace.findUnique({
-                    where: { id: workspaceId }
-                });
-
-                if (workspace) {
-                    let existingCompetitors = workspace.competitors || [];
-
-                    // Merge new competitors (avoid duplicates)
-                    const newCompetitors = competitors.filter(c =>
-                        !existingCompetitors.some(ec => ec.name.toLowerCase() === c.toLowerCase())
-                    ).map(c => ({
-                        name: c,
-                        analysis: null, // Initial discovery has no deep analysis yet
-                        discoveredAt: new Date().toISOString()
-                    }));
-
-                    if (newCompetitors.length > 0) {
-                        await prisma.workspace.update({
-                            where: { id: workspaceId },
-                            data: {
-                                competitors: [...existingCompetitors, ...newCompetitors]
-                            }
-                        });
-                    }
-                }
-            } catch (dbError) {
-                console.error("Failed to persist discovered competitors:", dbError);
-                // Don't fail the request if persistence fails
-            }
+        // Step 3: Trigger Background Competitor Analysis (Fire-and-forget)
+        if (workspaceId) {
+            runBackgroundCompetitorAnalysis(contextSummary, workspaceId).catch(err => {
+                console.error("Background Competitor Analysis Failed:", err);
+            });
         }
 
-        res.json(contextSummary);
     } catch (error) {
         console.error("Context Analysis Error:", error);
-        res.status(500).json({ error: "Failed to analyze context" });
+        // Only send error if response hasn't been sent yet
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Failed to analyze context" });
+        }
     }
 };
+
+// Helper for background processing
+async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
+    console.log(`Starting background competitor analysis for workspace ${workspaceId}...`);
+
+    // Discover Competitors (Agentic - Slow)
+    const competitors = await genesisAgent.discoverCompetitors(contextSummary);
+    console.log("Manus Agent Competitors Discovered:", competitors);
+
+    if (competitors.length > 0) {
+        try {
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId }
+            });
+
+            if (workspace) {
+                let existingCompetitors = workspace.competitors || [];
+
+                // Merge new competitors (avoid duplicates)
+                const newCompetitors = competitors.filter(c =>
+                    !existingCompetitors.some(ec => ec.name.toLowerCase() === c.toLowerCase())
+                ).map(c => ({
+                    name: c,
+                    analysis: null, // Initial discovery has no deep analysis yet
+                    discoveredAt: new Date().toISOString()
+                }));
+
+                if (newCompetitors.length > 0) {
+                    await prisma.workspace.update({
+                        where: { id: workspaceId },
+                        data: {
+                            competitors: [...existingCompetitors, ...newCompetitors]
+                        }
+                    });
+                    console.log(`Persisted ${newCompetitors.length} new competitors for workspace ${workspaceId}`);
+                } else {
+                    console.log("No new competitors to persist.");
+                }
+            }
+        } catch (dbError) {
+            console.error("Failed to persist discovered competitors:", dbError);
+        }
+    }
+}
 
 exports.generateStrategy = async (req, res) => {
     try {

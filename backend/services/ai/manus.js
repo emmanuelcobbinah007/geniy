@@ -15,8 +15,9 @@ class ManusService {
         try {
             console.log("Creating Manus Task with prompt:", instruction.substring(0, 50) + "...");
             const response = await axios.post(`${this.baseUrl}/tasks`, {
-                prompt: instruction, // Changed from instruction to prompt
-                mode: "agent"
+                prompt: instruction,
+                taskMode: "agent",
+                agentProfile: "speed" // Changed to speed for free tier
             }, {
                 headers: {
                     'API_KEY': this.apiKey, // Changed from X-API-Key
@@ -26,8 +27,7 @@ class ManusService {
             console.log("Manus Task Created:", response.data);
             return response.data;
         } catch (error) {
-            console.error("Manus API Error:", error);
-            // Don't throw, just return null so we don't break the main flow if agent fails
+            console.error("Manus Create Task Error:", error.response ? error.response.data : error.message);
             return null;
         }
     }
@@ -41,7 +41,7 @@ class ManusService {
             });
             return response.data;
         } catch (error) {
-            console.error("Manus API Error:", error);
+            console.error(`Manus Get Task Error for ${taskId}:`, error.response ? error.response.data : error.message);
             return null;
         }
     }
