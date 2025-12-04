@@ -8,6 +8,7 @@ import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
+import Image from "next/image"
 
 interface GeniyRecommendationsProps {
     campaignId?: string
@@ -71,8 +72,8 @@ export function GeniyRecommendations({ campaignId, hasResponses = false }: Geniy
     <div className="space-y-6 relative">
       <div className="flex items-center justify-between text-zinc-900 dark:text-white">
         <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-500" />
-            <h2 className="font-semibold text-lg">Geniy Consultant</h2>
+            <Image src="/gen_states/gen_consultant.png" alt="Logo" width={60} height={60} className="w-16 h-16 text-violet-600 dark:text-violet-500" />
+            <h2 className="font-semibold text-lg ml-[-10px]">Geniy Consultant</h2>
         </div>
         {!insights && !isLoading && (
             <Button 

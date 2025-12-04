@@ -8,7 +8,7 @@ import { Check } from "lucide-react"
 const tiers = [
   {
     name: "Free",
-    price: "$0",
+    price: "GH₵0",
     description: "Perfect for testing the waters.",
     features: [
       "3 AI-generated forms",
@@ -21,8 +21,8 @@ const tiers = [
     variant: "outline"
   },
   {
-    name: "Pro",
-    price: "$29",
+    name: "Starter",
+    price: "GH₵99",
     period: "/mo",
     description: "For solo founders and creators.",
     features: [
@@ -32,24 +32,24 @@ const tiers = [
       "Advanced themes",
       "Shareable Live Reports"
     ],
-    cta: "Get Pro",
+    cta: "Get Starter",
     variant: "secondary"
   },
   {
-    name: "Business",
-    price: "$149",
+    name: "Pro",
+    price: "GH₵450",
     period: "/mo",
     description: "For growing startups and agencies.",
     popular: true,
     features: [
-      "Everything in Pro",
+      "Everything in Starter",
       "Track up to 10 Competitors",
       "Deep Insight reports",
       "Multi-user teams (5 seats)",
       "API access",
       "AI persona generation"
     ],
-    cta: "Get Business",
+    cta: "Get Pro",
     variant: "primary"
   },
   {

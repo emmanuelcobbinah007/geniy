@@ -33,6 +33,8 @@ model Workspace {
   documents       Document[]
   owner           User              @relation("UserWorkspaces", fields: [ownerId], references: [id])
   members         WorkspaceMember[]
+  isEarlyAdopter  Boolean           @default(false)
+  earlyAdopterJoinedAt DateTime?
 }
 
 model Document {

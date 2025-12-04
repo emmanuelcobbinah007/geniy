@@ -41,10 +41,9 @@ export function Hero() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-white/90 dark:bg-black/40 z-10 transition-colors duration-300" /> {/* Overlay: White in light mode, Dark in dark mode */}
         <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+            className="absolute inset-0 bg-no-repeat z-0 bg-[length:210%_auto] bg-[position:65%_15%] md:bg-cover md:bg-[position:center_20%]"
             style={{ 
                 backgroundImage: `url('/hero_concept_visionary_1764767464824.png')`,
-                backgroundPosition: 'center 20%' 
             }} 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent dark:from-zinc-950 dark:via-zinc-950/50 z-10 transition-colors duration-300" />
@@ -108,9 +107,11 @@ export function Hero() {
               Start with a Survey
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-zinc-200 bg-white/50 text-foreground hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 backdrop-blur-sm">
-              View Interactive Demo
-            </Button>
+            <Link href="/early-adopter">
+              <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-zinc-200 bg-white/50 text-foreground hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 backdrop-blur-sm">
+                Join Early Adopters Program
+              </Button>
+            </Link>
           </motion.div>
         </div>
 
