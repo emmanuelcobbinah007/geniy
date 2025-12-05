@@ -60,8 +60,17 @@ class ManusService {
             const result = await this.getTaskResult(task.task_id);
 
             if (result && result.status === 'completed') {
-                console.log("Manus Task Completed. Output:", result.output ? result.output.substring(0, 100) + "..." : "No output");
-                return result.output; // Assuming output contains the data
+                let outputStr = "";
+                if (typeof result.output === 'string') {
+                    outputStr = result.output;
+                } else if (typeof result.output === 'object') {
+                    outputStr = JSON.stringify(result.output);
+                } else {
+                    outputStr = String(result.output);
+                }
+
+                console.log("Manus Task Completed. Output:", outputStr.substring(0, 100) + "...");
+                return outputStr;
             }
             if (result && result.status === 'failed') {
                 console.error("Manus Task Failed:", result.error);

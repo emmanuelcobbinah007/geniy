@@ -72,18 +72,54 @@ class GenesisAgent {
         try {
             const agentOutput = await manus.runTask(instruction);
             if (agentOutput) {
-                // Try to parse JSON from output
+                let textToParse = agentOutput;
+
+                // Handle structured output (Array of messages)
                 try {
-                    // Extract JSON if wrapped in code blocks
-                    const jsonMatch = agentOutput.match(/\[.*\]/s);
-                    if (jsonMatch) {
-                        return JSON.parse(jsonMatch[0]);
+                    const parsedOutput = JSON.parse(agentOutput);
+                    if (Array.isArray(parsedOutput) && parsedOutput.some(m => m.role && m.content)) {
+                        // Find last assistant message
+                        const lastAssistantMsg = parsedOutput.reverse().find(m => m.role === 'assistant');
+                        if (lastAssistantMsg && Array.isArray(lastAssistantMsg.content)) {
+                            // Extract text from content array
+                            const textPart = lastAssistantMsg.content.find(c => c.type === 'text');
+                            if (textPart) {
+                                textToParse = textPart.text;
+                            }
+                        }
                     }
-                    return JSON.parse(agentOutput);
                 } catch (e) {
-                    console.warn("Failed to parse Manus output as JSON, returning raw list", e);
-                    // Fallback: split by newlines if it looks like a list
-                    return agentOutput.split('\n').filter(line => line.trim().length > 0).map(l => l.replace(/^- /, '').trim());
+                    // Not JSON or not the structure we expect, treat as raw string
+                }
+
+                // Try to parse JSON from the extracted text
+                try {
+                    let finalResult = null;
+                    // Extract JSON if wrapped in code blocks
+                    const jsonMatch = textToParse.match(/\[.*\]/s);
+                    if (jsonMatch) {
+                        finalResult = JSON.parse(jsonMatch[0]);
+                    } else {
+                        finalResult = JSON.parse(textToParse);
+                    }
+
+                    // Validate: Must be array of strings
+                    if (Array.isArray(finalResult) && finalResult.every(i => typeof i === 'string')) {
+                        return finalResult;
+                    } else {
+                        console.warn("Parsed Manus output is not an array of strings:", JSON.stringify(finalResult).substring(0, 200));
+                        // If it looks like the message history, we failed to extract. Fallback to regex on the raw text if possible, or just fail.
+                    }
+                } catch (e) {
+                    // console.warn("Failed to parse Manus output as JSON, returning raw list", e);
+                }
+
+                // Fallback: split by newlines if it looks like a list and is NOT the message object
+                if (typeof textToParse === 'string' && !textToParse.trim().startsWith('[{"')) {
+                    return textToParse.split('\n')
+                        .filter(line => line.trim().length > 0)
+                        .map(l => l.replace(/^- /, '').replace(/^\d+\.\s*/, '').trim()) // Remove bullets and numbers
+                        .filter(l => l.length > 0);
                 }
             }
         } catch (err) {
@@ -285,29 +321,57 @@ class GenesisAgent {
      * Dedicated method for the "Geniy's Brain" page.
      * Prioritizes context retrieval over survey generation.
      */
+    /**
+     * Step 8: Summarize Knowledge (for PDF/Context Injection)
+     * Compresses raw text into actionable insights.
+     */
+    async summarizeKnowledge(rawText) {
+        const prompt = `
+            You are an expert analyst. Summarize the following document into key actionable insights for a business context.
+            
+            Document Content:
+            "${rawText.substring(0, 15000)}" // Truncate to avoid massive token usage
+
+            Goal: Extract the "Need to Know" information.
+            - Key facts, figures, and dates.
+            - Strategic goals or problems mentioned.
+            - Competitor mentions.
+            
+            Output format:
+            - Bullet points.
+            - concise and dense.
+        `;
+
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", false, 1000);
+    }
+
+    /**
+     * Step 5a: Chat with Brain (Context Q&A)
+     * Dedicated method for the "Geniy's Brain" page.
+     * Prioritizes context retrieval over survey generation.
+     */
     async chatWithBrain(context, messages) {
         const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');
 
         const prompt = `
-        You are Geniy's Brain, the central intelligence for this workspace.
-        You have access to the following KNOWLEDGE BASE (Business Context, Documents, Live Campaign Data):
+        You are Geniy, a smart, enthusiastic teammate in this workspace. 
+        Your job is to help the user navigate their business context, competitors, and campaign data.
 
-        === KNOWLEDGE BASE ===
+        === KNOWLEDGE BASE (SOURCE OF TRUTH) ===
         ${context}
-        ======================
+        ========================================
 
-        Your goal is to answer the user's questions based STRICTLY on the provided KNOWLEDGE BASE.
-        
-        Instructions:
-        1. **Be Context-Driven:** If the user asks "Who are our competitors?", list the EXACT competitors found in the context. Do NOT make up generic ones.
-        2. **Be Specific:** Use the specific data points, numbers, and names from the context.
-        3. **Live Data:** If the context contains "LIVE CAMPAIGN DATA", use it to answer questions about performance or responses.
-        4. **Fallback:** If the answer is NOT in the context, you may use your general knowledge, but explicitly state: "Based on general market knowledge (since it's not in your context)..."
-        5. **Tone:** Professional, analytical, and helpful.
+        **CORE INSTRUCTIONS:**
+        1.  **Context is King:** ALWAYS answer based on the KNOWLEDGE BASE first. If the answer is there, use it.
+        2.  **Be Honest:** If the answer is NOT in the Knowledge Base, say: "I don't see that in our current context, but generally speaking..." or "I don't have that info yet. You can add it by uploading a PDF or telling me directly!"
+        3.  **Teammate Persona:** Be friendly, professional, and proactive. Use emojis sparingly.
+            -   User: "Hi" -> You: "Hey there! Ready to dive into our strategy?"
+        4.  **Memory Trigger:** If the user provides NEW information (e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that." (The system will handle the actual saving).
 
         Output JSON Schema:
         {
-            "message": "string"
+            "message": "string",
+            "memory": "string | null" // If the user provided new info worth saving, put the summary here. Else null.
         }
 
         Conversation History:

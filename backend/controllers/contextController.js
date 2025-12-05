@@ -143,20 +143,8 @@ const uploadDocument = async (req, res) => {
 
         // 3. Update Workspace Context
         if (extractedText) {
-            // Fetch current context first to append
-            const currentWorkspace = await prisma.workspace.findUnique({
-                where: { id: workspaceId },
-                select: { businessContext: true }
-            });
-
-            const newContext = (currentWorkspace.businessContext || "") + extractedText;
-
-            await prisma.workspace.update({
-                where: { id: workspaceId },
-                data: {
-                    businessContext: newContext
-                }
-            });
+            const contextService = require('../services/contextService');
+            await contextService.analyzeAndAppend(workspaceId, extractedText, originalname);
         }
 
         res.status(201).json(document);

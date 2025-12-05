@@ -53,13 +53,22 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const scrollViewportRef = useRef<HTMLDivElement>(null)
 
+  const [memoryUpdate, setMemoryUpdate] = useState<string | null>(null)
+
   // Auto-scroll to bottom
   useEffect(() => {
     const scrollContainer = document.querySelector('[data-radix-scroll-area-viewport]');
     if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
-  }, [messages, streamingMessageId]) // Trigger on messages change or streaming status
+  }, [messages, streamingMessageId, isTyping]) 
+
+  useEffect(() => {
+    if (memoryUpdate) {
+        const timer = setTimeout(() => setMemoryUpdate(null), 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [memoryUpdate])
 
   const handleSend = async () => {
     if (!input.trim() || !token) return
@@ -73,7 +82,7 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
 
     setMessages(prev => [...prev, userMessage])
     setInput("")
-    setIsTyping(true)
+    setIsTyping(true) // Show thinking state immediately
 
     try {
         const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
@@ -81,6 +90,10 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
 
         const response = await api.chatWithContext(context, history, workspaceId, token);
         
+        if (response.memory) {
+            setMemoryUpdate("Geniy learned something new!")
+        }
+
         const aiMessageId = (Date.now() + 1).toString()
         const aiMessage: Message = {
             id: aiMessageId,
@@ -110,10 +123,22 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
       {!hideHeader && (
         <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Chat with Geniy</h2>
+            {memoryUpdate && (
+                <div className="text-xs text-emerald-500 font-medium animate-in fade-in slide-in-from-top-2">
+                    {memoryUpdate}
+                </div>
+            )}
         </div>
       )}
 
-      <Card className="flex-1 flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      <Card className="flex-1 flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 relative">
+        {/* Memory Toast for Mobile/Embedded */}
+        {hideHeader && memoryUpdate && (
+             <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium z-10 shadow-sm">
+                {memoryUpdate}
+            </div>
+        )}
+
         {/* Messages Area */}
         <ScrollArea className="flex-1">
           <div className="space-y-4 p-4 pb-4">
@@ -157,17 +182,18 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
                 </div>
             ))}
             {isTyping && !streamingMessageId && (
-                <div className="flex gap-3 mr-auto max-w-[80%]">
+                <div className="flex gap-3 mr-auto max-w-[80%] animate-pulse">
                     <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center flex-shrink-0">
                         <Image src="/gen_states/gen_thinking.png" alt="Gen Thinking" width={34} height={34} />
                     </div>
-                    <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-2xl rounded-tl-sm">
-                        <GenStateIllustration state="thinking" width={80} height={80} label={null} />
+                    <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-2xl rounded-tl-sm flex items-center gap-2">
+                        <span className="text-xs text-zinc-500">Geniy is thinking...</span>
                     </div>
                 </div>
             )}
           </div>
         </ScrollArea>
+
 
         {/* Input Area */}
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50">

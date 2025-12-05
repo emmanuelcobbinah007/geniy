@@ -21,15 +21,16 @@ export default function ContextPage() {
   const workspaceId = params?.workspaceId as string
   const [showMobileChat, setShowMobileChat] = useState(false)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isRefetching } = useQuery({
     queryKey: ["context", workspaceId],
     queryFn: async () => {
       if (!token || !workspaceId) return null
       return api.getContext(workspaceId, token)
     },
     enabled: !!token && !!workspaceId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always fetch fresh data to ensure context is up-to-date
     gcTime: 1000 * 60 * 30, // 30 minutes
+    refetchOnWindowFocus: true,
   })
 
   if (isLoading) {
@@ -43,6 +44,11 @@ export default function ContextPage() {
   return (
     <div className="h-[calc(100vh-4rem)] p-6 gap-6 grid grid-cols-1 lg:grid-cols-3">
       <ContextTour />
+      {isRefetching && (
+          <div className="absolute top-6 right-6 text-xs text-zinc-400 animate-pulse">
+              Refreshing context...
+          </div>
+      )}
       {/* Left: Knowledge Base */}
       <div className="h-full min-h-0 lg:col-span-2">
         <ContextKnowledge 

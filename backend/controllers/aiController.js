@@ -49,6 +49,12 @@ async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
                 let existingCompetitors = workspace.competitors || [];
 
                 // Merge new competitors (avoid duplicates)
+                // Validate competitors is an array of strings
+                if (!Array.isArray(competitors) || !competitors.every(c => typeof c === 'string')) {
+                    console.error("Invalid competitors format received:", competitors);
+                    return;
+                }
+
                 const newCompetitors = competitors.filter(c =>
                     !existingCompetitors.some(ec => ec.name.toLowerCase() === c.toLowerCase())
                 ).map(c => ({
@@ -108,78 +114,33 @@ exports.generateSurvey = async (req, res) => {
 exports.chatWithContext = async (req, res) => {
     try {
         const { context, messages, workspaceId } = req.body;
-        if (!context || !messages) {
-            return res.status(400).json({ error: "Context and messages are required" });
+        // Note: 'context' param here might be the old client-side context. 
+        // We will IGNORE it and fetch fresh context using ContextService to ensure single source of truth.
+
+        if (!messages) {
+            return res.status(400).json({ error: "Messages are required" });
         }
 
-        let enrichedContext = context;
+        let enrichedContext = "";
 
         if (workspaceId) {
-            // 1. Fetch Workspace Competitors
-            const workspace = await prisma.workspace.findUnique({
-                where: { id: workspaceId },
-                select: { competitors: true }
-            });
-
-            console.log("DEBUG: Workspace Competitors:", JSON.stringify(workspace?.competitors));
-
-            if (workspace && workspace.competitors && Array.isArray(workspace.competitors) && workspace.competitors.length > 0) {
-                enrichedContext += `\n\n=== KNOWN COMPETITORS ===\n`;
-                workspace.competitors.forEach(c => {
-                    enrichedContext += `- ${c.name}`;
-                    if (c.analysis) {
-                        enrichedContext += `: ${JSON.stringify(c.analysis).substring(0, 300)}...`;
-                    }
-                    enrichedContext += `\n`;
-                });
-                enrichedContext += `=========================\n`;
-            } else {
-                console.log("DEBUG: No competitors found or invalid format");
-            }
-
-            console.log("DEBUG: Enriched Context Preview:", enrichedContext.substring(0, 500));
-
-            // 2. Fetch live campaign data
-
-            // 2. Fetch live campaign data
-            const campaigns = await prisma.campaign.findMany({
-                where: { workspaceId },
-                include: {
-                    surveys: {
-                        include: {
-                            responses: {
-                                orderBy: { submittedAt: 'desc' },
-                                take: 5 // Get 5 most recent responses per survey for context
-                            }
-                        }
-                    }
-                }
-            });
-
-            if (campaigns.length > 0) {
-                let campaignSummary = "\n\n=== LIVE CAMPAIGN DATA ===\n";
-                campaigns.forEach(campaign => {
-                    campaignSummary += `Campaign: ${campaign.name}\n`;
-                    campaign.surveys.forEach(survey => {
-                        // Actually, let's just say "Recent Responses"
-                        campaignSummary += `  - Survey: ${survey.title} (Public Slug: ${survey.publicSlug})\n`;
-                        if (survey.responses.length > 0) {
-                            campaignSummary += `    Recent Responses:\n`;
-                            survey.responses.forEach(r => {
-                                campaignSummary += `      - [${r.submittedAt.toISOString()}] ${JSON.stringify(r.rawAnswers).substring(0, 200)}...\n`;
-                            });
-                        } else {
-                            campaignSummary += `    No responses yet.\n`;
-                        }
-                    });
-                });
-                campaignSummary += "==========================\n";
-                enrichedContext += campaignSummary;
-            }
+            const contextService = require('../services/contextService');
+            enrichedContext = await contextService.getUnifiedContext(workspaceId);
+        } else {
+            // Fallback if no workspaceId (shouldn't happen in dashboard)
+            enrichedContext = context || "";
         }
 
         const result = await genesisAgent.chatWithBrain(enrichedContext, messages);
-        res.json({ reply: result.message });
+
+        // Handle Memory (If the agent flagged something to remember)
+        if (result.memory && workspaceId) {
+            const contextService = require('../services/contextService');
+            await contextService.appendContext(workspaceId, result.memory);
+            console.log(`[Memory] Appended new insight to workspace ${workspaceId}:`, result.memory);
+        }
+
+        res.json({ reply: result.message, memory: result.memory });
     } catch (error) {
         console.error("Chat Error:", error);
         res.status(500).json({ error: "Failed to chat" });
