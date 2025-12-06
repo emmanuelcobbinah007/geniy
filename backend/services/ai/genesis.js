@@ -239,24 +239,6 @@ class GenesisAgent {
       **CRITICAL RULES FOR BRANCHING:**
       1. **MANDATORY DIVERGENCE:** You MUST include at least 2 questions where different options lead to DIFFERENT questions (e.g., "If Yes, go to Q3; If No, go to Q4"). 
          - **FORBIDDEN:** Do NOT create "fake branching" where all options jump to the same next question (e.g., If A -> Q2, If B -> Q2). This is useless.
-      2. Use "Q1", "Q2", etc. as keys and references.
-      3. **Merging Branches:** If Question 1 branches to Q2 and Q3, and you want them to merge back at Q4, you MUST set "next": "Q4" for BOTH Q2 and Q3 (or whichever is the last question in that branch).
-      4. **Skip Logic:** If a question should skip the next one (e.g. Q2 -> Q4), set "next": "Q4".
-      5. **Format:** "next" and "branches[].next" MUST be in the format "Q#" (e.g., "Q2", "Q5") or "END".
-
-      Output must strictly follow this JSON schema:
-      {
-          "title": "string",
-          "version": "1.0",
-          "start": "Q1",
-          "questions": {
-              "Q1": {
-                  "type": "multiple_choice | text | ranking | rating",
-                  "question": "string", // Conversational phrasing
-                  "options": ["string"], // Required for multiple_choice/ranking
-                  "branches": [
-                      { "if": "Option String", "next": "Q#" }
-                  ],
                   "next": "Q#" // Default next question. Use this for merging branches!
           }
       }
@@ -285,7 +267,11 @@ class GenesisAgent {
             - weaknesses: array of strings (SWOT)
             - uniqueSellingPoint: string (What is their "moat"?)
             
-            Return ONLY valid JSON.
+            CRITICAL INSTRUCTIONS:
+            1. OUTPUT THE JSON DIRECTLY IN THE CHAT.
+            2. DO NOT CREATE A FILE.
+            3. DO NOT INCLUDE CONVERSATIONAL FILLER (e.g., "Here is the report").
+            4. START AND END WITH BRACES { }.
         `;
 
         try {
@@ -323,14 +309,30 @@ class GenesisAgent {
 
                 // Try to parse JSON from output
                 try {
+                    // 1. Try to extract JSON block using regex
                     const jsonMatch = textToParse.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         return JSON.parse(jsonMatch[0]);
                     }
-                    return JSON.parse(textToParse);
+
+                    // 2. Try to clean markdown and parse
+                    const cleanText = textToParse.replace(/```json\n?|\n?```/g, '').trim();
+                    return JSON.parse(cleanText);
                 } catch (e) {
                     console.warn("Failed to parse Manus output as JSON for competitor analysis", e);
-                    return { error: "Failed to parse analysis results", raw: textToParse };
+
+                    // 3. Fallback: Return a valid object with the raw text
+                    // This prevents the frontend from crashing and shows the info to the user
+                    return {
+                        pricingModel: "See detailed analysis in strengths",
+                        keyFeatures: ["See detailed analysis in strengths"],
+                        targetAudience: "See detailed analysis in strengths",
+                        marketingChannels: ["See detailed analysis in strengths"],
+                        customerSentiment: "See detailed analysis in strengths",
+                        strengths: [textToParse], // Dump the raw text here so it is visible
+                        weaknesses: ["See detailed analysis in strengths"],
+                        uniqueSellingPoint: "See detailed analysis in strengths"
+                    };
                 }
             }
         } catch (err) {
@@ -410,12 +412,22 @@ class GenesisAgent {
         2.  **Be Honest:** If the answer is NOT in the Knowledge Base, say: "I don't see that in our current context, but generally speaking..." or "I don't have that info yet. You can add it by uploading a PDF or telling me directly!"
         3.  **Teammate Persona:** Be friendly, professional, and proactive. Use emojis sparingly.
             -   User: "Hi" -> You: "Hey there! Ready to dive into our strategy?"
-        4.  **Memory Trigger:** If the user provides NEW information (e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that." (The system will handle the actual saving).
+        4.  **Formatting:** Use Markdown. **CRITICAL:** Use DOUBLE NEWLINES between paragraphs and list items to ensure they render correctly.
+            -   Bad: "Point 1\nPoint 2"
+            -   Good: "Point 1\n\nPoint 2"
+        5.  **Memory Trigger:** If the user provides NEW information (e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that." (The system will handle the actual saving).
+        6.  **Agentic Actions:** You can trigger background research tasks.
+            - If the user asks to "analyze competitors", "deep dive", or "research" companies, set "action" to "ANALYZE_COMPETITOR".
+            - If they want to analyze ALL discovered competitors, set "actionTarget" to "ALL".
+            - If they want a specific one, set "actionTarget" to the competitor name.
+            - When triggering an action, your "message" should confirm it: "On it! I'm starting the deep dive analysis for [Target]. Check the Competitor Intel tab in a few minutes."
 
         Output JSON Schema:
         {
             "message": "string",
-            "memory": "string | null" // If the user provided new info worth saving, put the summary here. Else null.
+            "memory": "string | null", // If the user provided new info worth saving, put the summary here. Else null.
+            "action": "CHAT" | "ANALYZE_COMPETITOR",
+            "actionTarget": "string | null" // "ALL" or specific name
         }
 
         Conversation History:

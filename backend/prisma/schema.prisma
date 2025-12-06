@@ -35,6 +35,7 @@ model Workspace {
   members         WorkspaceMember[]
   isEarlyAdopter  Boolean           @default(false)
   earlyAdopterJoinedAt DateTime?
+  lastAnalysisSummary String?       // Stores the summary of the last completed analysis batch
   domains         Domain[]
 }
 

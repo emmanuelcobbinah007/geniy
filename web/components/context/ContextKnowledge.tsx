@@ -37,9 +37,10 @@ interface ContextKnowledgeProps {
   documents: ContextDocument[]
   workspaceId: string
   competitors?: any[]
+  lastAnalysisSummary?: string | null
 }
 
-export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [] }: ContextKnowledgeProps) {
+export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [], lastAnalysisSummary }: ContextKnowledgeProps) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const [context, setContext] = useState(initialContext)
@@ -48,6 +49,20 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
   
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [strategy, setStrategy] = useState<Strategy | null>(null)
+
+  // Track the last summary we showed to avoid duplicate toasts
+  const lastShownSummaryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+      if (lastAnalysisSummary && lastAnalysisSummary !== lastShownSummaryRef.current) {
+          // Show toast with the summary
+          toast.success("Analysis Complete!", {
+              description: lastAnalysisSummary,
+              duration: 8000, // Show for longer so they can read it
+          });
+          lastShownSummaryRef.current = lastAnalysisSummary;
+      }
+  }, [lastAnalysisSummary]);
 
   // Sync local state when initialContext updates (e.g. after file upload)
   useEffect(() => {
@@ -100,6 +115,29 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 competitors: newNames
             };
          })
+    }
+
+    // Sync competitor analysis data from DB to local state
+    if (competitors && competitors.length > 0) {
+        setCompetitorData(prev => {
+            const newData = { ...prev };
+            let hasNewAnalysis = false;
+            
+            competitors.forEach(c => {
+                if (c.analysis && !prev[c.name]) {
+                    newData[c.name] = c.analysis;
+                    hasNewAnalysis = true;
+                } else if (c.analysis && JSON.stringify(prev[c.name]) !== JSON.stringify(c.analysis)) {
+                     newData[c.name] = c.analysis;
+                     hasNewAnalysis = true;
+                }
+            });
+
+            if (hasNewAnalysis) {
+                return newData;
+            }
+            return prev;
+        });
     }
   }, [initialContext, JSON.stringify(competitors)])
 

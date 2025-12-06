@@ -140,6 +140,80 @@ exports.chatWithContext = async (req, res) => {
             console.log(`[Memory] Appended new insight to workspace ${workspaceId}:`, result.memory);
         }
 
+        // Handle Agentic Actions
+        if (result.action === 'ANALYZE_COMPETITOR' && workspaceId) {
+            console.log(`[Agent Action] Triggering competitor analysis. Target: ${result.actionTarget}`);
+
+            // Fetch workspace to get competitors
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId }
+            });
+
+            if (workspace && workspace.competitors) {
+                let targets = [];
+                if (result.actionTarget === 'ALL') {
+                    targets = workspace.competitors.map(c => c.name);
+                } else if (result.actionTarget) {
+                    // Fuzzy match or exact match
+                    const targetName = result.actionTarget.toLowerCase();
+                    const match = workspace.competitors.find(c => c.name.toLowerCase().includes(targetName));
+                    if (match) targets.push(match.name);
+                }
+
+                // Trigger background analysis for each target
+                // Run sequentially to avoid rate limits
+                (async () => {
+                    const results = [];
+                    for (const compName of targets) {
+                        try {
+                            console.log(`Starting background analysis for ${compName}...`);
+                            // Extract industry from businessContext if possible, or default
+                            const industryMatch = workspace.businessContext ? workspace.businessContext.match(/Industry:\s*(.+?)(\n|$)/) : null;
+                            const industry = industryMatch ? industryMatch[1].trim() : "General";
+
+                            const analysis = await genesisAgent.analyzeCompetitor(compName, industry);
+
+                            if (analysis) {
+                                // Update the specific competitor in the array
+                                const freshWorkspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+                                if (freshWorkspace && freshWorkspace.competitors) {
+                                    const updatedCompetitors = freshWorkspace.competitors.map(c => {
+                                        if (c.name === compName) {
+                                            return { ...c, analysis: analysis };
+                                        }
+                                        return c;
+                                    });
+
+                                    await prisma.workspace.update({
+                                        where: { id: workspaceId },
+                                        data: { competitors: updatedCompetitors }
+                                    });
+                                    console.log(`Updated analysis for ${compName}`);
+                                    results.push({ name: compName, analysis });
+                                }
+                            }
+
+                            // Wait 2 seconds before next request to respect rate limits
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        } catch (err) {
+                            console.error(`Failed background analysis for ${compName}:`, err);
+                        }
+                    }
+
+                    // Generate and save summary
+                    if (results.length > 0) {
+                        const summary = await genesisAgent.summarizeAnalysis(results);
+                        await prisma.workspace.update({
+                            where: { id: workspaceId },
+                            data: { lastAnalysisSummary: summary }
+                        });
+                        console.log("Analysis summary generated and saved:", summary);
+                    }
+                })();
+            }
+        }
+
         res.json({ reply: result.message, memory: result.memory });
     } catch (error) {
         console.error("Chat Error:", error);

@@ -31,6 +31,7 @@ export default function ContextPage() {
     staleTime: 0, // Always fetch fresh data to ensure context is up-to-date
     gcTime: 1000 * 60 * 30, // 30 minutes
     refetchOnWindowFocus: true,
+    refetchInterval: 5000, // Poll every 5 seconds to check for background analysis updates
   })
 
   if (isLoading) {
@@ -56,6 +57,7 @@ export default function ContextPage() {
             documents={data?.documents || []} 
             workspaceId={workspaceId}
             competitors={data?.competitors || []}
+            lastAnalysisSummary={data?.lastAnalysisSummary}
         />
       </div>
 
