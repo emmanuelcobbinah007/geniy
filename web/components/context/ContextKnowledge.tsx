@@ -4,22 +4,17 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Upload, FileText, Save, Loader2, Trash2, Sparkles } from "lucide-react"
+import { Upload, FileText, Save, Loader2, Trash2, Sparkles, Target } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CompetitorBattlecard } from "@/components/competitor/CompetitorBattlecard"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import Image from "next/image"
+import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Lightbulb, Target, TrendingUp } from "lucide-react"
 
 interface ContextDocument {
   id: string
@@ -41,21 +36,16 @@ interface Strategy {
   hypotheses: string[]
 }
 
-interface GapAnalysisResult {
-  gaps: { title: string; description: string }[]
-  opportunities: { title: string; description: string }[]
-  recommendations: string[]
-}
-
 interface ContextKnowledgeProps {
   initialContext: string
   documents: ContextDocument[]
   workspaceId: string
   competitors?: any[]
   lastAnalysisSummary?: string | null
+  gapAnalysis?: any
 }
 
-export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [], lastAnalysisSummary }: ContextKnowledgeProps) {
+export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [], lastAnalysisSummary, gapAnalysis }: ContextKnowledgeProps) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const [context, setContext] = useState(initialContext)
@@ -64,6 +54,11 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
   
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [strategy, setStrategy] = useState<Strategy | null>(null)
+  
+  const [gapAnalysisData, setGapAnalysisData] = useState<any | null>(gapAnalysis || null)
+  const [isGapAnalysisOpen, setIsGapAnalysisOpen] = useState(false)
+  
+  const displayCompetitors = analysisResult?.competitors && analysisResult.competitors.length > 0 ? analysisResult.competitors : competitors;
 
   // Track the last summary we showed to avoid duplicate toasts
   const lastShownSummaryRef = useRef<string | null>(null);
@@ -154,7 +149,12 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
             return prev;
         });
     }
-  }, [initialContext, JSON.stringify(competitors)])
+
+    // Sync gap analysis data
+    if (gapAnalysis) {
+        setGapAnalysisData(gapAnalysis)
+    }
+  }, [initialContext, competitors, gapAnalysis])
 
   // Update Context Mutation
   const updateContextMutation = useMutation({
@@ -328,14 +328,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       }
   })
 
-  const handleAnalyzeCompetitor = (name: string) => {
-      setAnalyzingCompetitor(name)
-      analyzeCompetitorMutation.mutate(name)
-  }
-
-  const [isGapAnalysisOpen, setIsGapAnalysisOpen] = useState(false)
-  const [gapAnalysisData, setGapAnalysisData] = useState<GapAnalysisResult | null>(null)
-
+  // Gap Analysis Mutation
   const gapAnalysisMutation = useMutation({
       mutationFn: async () => {
           if (!token) return
@@ -344,12 +337,19 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       onSuccess: (data) => {
           setGapAnalysisData(data)
           setIsGapAnalysisOpen(true)
+          // Invalidate query to fetch updated workspace with persisted analysis
+          queryClient.invalidateQueries({ queryKey: ["context", workspaceId] })
           toast.success("Gap Analysis Generated!")
       },
       onError: () => {
           toast.error("Failed to generate Gap Analysis")
       }
   })
+
+  const handleAnalyzeCompetitor = (name: string) => {
+      setAnalyzingCompetitor(name)
+      analyzeCompetitorMutation.mutate(name)
+  }
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -501,27 +501,32 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     <div className="space-y-6">
-                        {/* Gap Analysis Header */}
-                        {analysisResult?.competitors && analysisResult.competitors.length > 0 && (
+                        {displayCompetitors && displayCompetitors.length > 0 && (
                             <div className="flex justify-end mb-4">
                                 <Button 
-                                    onClick={() => gapAnalysisMutation.mutate()}
+                                    onClick={() => {
+                                        if (gapAnalysisData) {
+                                            setIsGapAnalysisOpen(true)
+                                        } else {
+                                            gapAnalysisMutation.mutate()
+                                        }
+                                    }}
                                     disabled={gapAnalysisMutation.isPending}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
                                     {gapAnalysisMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Target className="w-4 h-4 mr-2" />}
-                                    Run Gap Analysis
+                                    {gapAnalysisData ? "View Gap Analysis" : "Run Gap Analysis"}
                                 </Button>
                             </div>
                         )}
 
-                        {!analysisResult?.competitors || analysisResult.competitors.length === 0 ? (
+                        {!displayCompetitors || displayCompetitors.length === 0 ? (
                             <div className="text-center py-12 text-zinc-500">
                                 <p>No competitors discovered yet.</p>
                                 <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
                             </div>
                         ) : (
-                            analysisResult.competitors.map((comp) => (
+                            displayCompetitors.map((comp: string) => (
                                 <div key={comp} className="space-y-4">
                                     {competitorData[comp] ? (
                                         <CompetitorBattlecard name={comp} analysis={competitorData[comp]} />
@@ -558,70 +563,119 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
         </Tabs>
 
         <Dialog open={isGapAnalysisOpen} onOpenChange={setIsGapAnalysisOpen}>
-            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogContent 
+                className="max-w-4xl max-h-[85vh] overflow-y-auto scrollbar-hide text-zinc-950 dark:text-zinc-50 dark:bg-zinc-950 dark:border-zinc-800"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                ref={(node) => {
+                    if (node) {
+                        // Initialize Lenis on this container
+                        import('lenis').then(({ default: Lenis }) => {
+                            const lenis = new Lenis({
+                                wrapper: node,
+                                content: node.firstElementChild as HTMLElement,
+                                duration: 1.2,
+                                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                                orientation: 'vertical',
+                                gestureOrientation: 'vertical',
+                                smoothWheel: true,
+                                touchMultiplier: 2,
+                            })
+
+                            function raf(time: number) {
+                                lenis.raf(time)
+                                requestAnimationFrame(raf)
+                            }
+
+                            requestAnimationFrame(raf)
+                        })
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                        <Target className="w-6 h-6 text-emerald-600" />
+                        <img src="/gen_states/gen_consultant.png" alt="Strategy" width={50} height={50} />
                         Strategic Gap Analysis
                     </DialogTitle>
-                    <DialogDescription>
-                        AI-powered comparison of your business context against discovered competitors.
+                    <DialogDescription className="dark:text-zinc-400">
+                        AI-driven analysis of unmet market needs and strategic opportunities based on your context and competitors.
                     </DialogDescription>
                 </DialogHeader>
 
-                {gapAnalysisData && (
-                    <div className="space-y-8 mt-4">
-                        {/* Market Gaps */}
-                        <section>
-                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
-                                <TrendingUp className="w-5 h-5 text-amber-500" />
-                                Unmet Market Needs
-                            </h3>
-                            <div className="grid md:grid-cols-3 gap-4">
-                                {gapAnalysisData.gaps.map((gap, i) => (
-                                    <Card key={i} className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30">
-                                        <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">{gap.title}</h4>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{gap.description}</p>
-                                    </Card>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Opportunities */}
-                        <section>
-                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
-                                <Sparkles className="w-5 h-5 text-violet-500" />
-                                Your Strategic Opportunities
-                            </h3>
-                            <div className="grid md:grid-cols-3 gap-4">
-                                {gapAnalysisData.opportunities.map((opp, i) => (
-                                    <Card key={i} className="p-4 bg-violet-50/50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800/30">
-                                        <h4 className="font-medium text-violet-900 dark:text-violet-100 mb-2">{opp.title}</h4>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{opp.description}</p>
-                                    </Card>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Recommendations */}
-                        <section>
-                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
-                                <Lightbulb className="w-5 h-5 text-emerald-500" />
-                                Actionable Recommendations
-                            </h3>
-                            <div className="space-y-3">
-                                {gapAnalysisData.recommendations.map((rec, i) => (
-                                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 border-emerald-200">
-                                            Step {i + 1}
-                                        </Badge>
-                                        <p className="text-sm text-zinc-700 dark:text-zinc-300 pt-0.5">{rec}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
+                <div className="mt-6">
+                    <div className="flex justify-end mb-6">
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => gapAnalysisMutation.mutate()}
+                            disabled={gapAnalysisMutation.isPending}
+                        >
+                             {gapAnalysisMutation.isPending ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                             Regenerate Analysis
+                        </Button>
                     </div>
-                )}
+
+                    {gapAnalysisData && (
+                        <div className="space-y-8 mt-4">
+                            {/* Market Gaps */}
+                            <section>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                    <img src="/gen_states/gen_thinking.png" alt="Gaps" width={50} height={0} />
+                                    Unmet Market Needs
+                                </h3>
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {gapAnalysisData.gaps.map((gap: any, i: number) => (
+                                        <Card key={i} className="p-4 bg-white dark:bg-zinc-900 border-1 border-rose-500 dark:border-rose-500 shadow-sm">
+                                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 text-base">{gap.title}</h4>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{gap.description}</p>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Opportunities */}
+                            <section>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                    <img src="/gen_states/gen_success.png" alt="Opportunities" width={50} height={0} />
+                                    Your Strategic Opportunities
+                                </h3>
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {gapAnalysisData.opportunities.map((opp: any, i: number) => (
+                                        <Card key={i} className="p-4 bg-white dark:bg-zinc-900 border-1 border-violet-500 dark:border-violet-500 shadow-sm">
+                                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 text-base">{opp.title}</h4>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{opp.description}</p>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Recommendations */}
+                            <section>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                    <img src="/gen_states/gen_bulb.png" alt="Recommendations" width={50} height={0} />
+                                    Actionable Recommendations
+                                </h3>
+                                <div className="space-y-3">
+                                    {gapAnalysisData.recommendations.map((rec: string, i: number) => (
+                                        <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/30 transition-colors group">
+                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 border-emerald-200 shrink-0 mt-0.5">
+                                                Step {i + 1}
+                                            </Badge>
+                                            <div className="flex-1">
+                                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-2">{rec}</p>
+                                                <Link href={`/create-survey?workspaceId=${workspaceId}&prompt=${encodeURIComponent(rec)}`}>
+                                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 -ml-2">
+                                                        <Sparkles className="w-3 h-3 mr-1.5" />
+                                                        Create Campaign
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
       </div>

@@ -337,6 +337,7 @@ function CreateSurveyContent() {
                     setContextData={setContextData}
                     initialContext={initialContext}
                     workspaceId={workspaceId || user?.workspaces?.[0]?.id}
+                    initialPrompt={searchParams.get("prompt") || undefined}
                 />
             </div>
 
@@ -403,6 +404,7 @@ function CreateSurveyContent() {
                                 initialContext={initialContext}
                                 workspaceId={workspaceId || user?.workspaces?.[0]?.id}
                                 hideHeader={true}
+                                initialPrompt={searchParams.get("prompt") || undefined}
                             />
                         </div>
                     </motion.div>

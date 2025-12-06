@@ -201,8 +201,8 @@ export const api = {
     return this.post('/campaigns/chat', payload, token);
   },
 
-  async generateStrategy(contextSummary: any, token: string) {
-    return this.post('/ai/generate-strategy', { contextSummary }, token);
+  async generateStrategy(contextSummary: any, token: string, workspaceId?: string) {
+    return this.post('/ai/generate-strategy', { contextSummary, workspaceId }, token);
   },
 
   async generateSurvey(contextSummary: any, strategy: any, userInstruction: string = "", token: string) {

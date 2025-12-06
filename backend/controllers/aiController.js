@@ -35,6 +35,23 @@ exports.analyzeContext = async (req, res) => {
 async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
     console.log(`Starting background competitor analysis for workspace ${workspaceId}...`);
 
+    try {
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId },
+            select: { competitors: true }
+        });
+
+        // CRITICAL: If competitors already exist, DO NOT run discovery.
+        if (workspace && workspace.competitors && workspace.competitors.length > 0) {
+            console.log(`Workspace ${workspaceId} already has ${workspace.competitors.length} competitors. Skipping discovery.`);
+            return;
+        }
+    } catch (err) {
+        console.error("Failed to check existing competitors:", err);
+        // Continue if check fails? Or abort? Safer to abort to avoid redundant costs.
+        return;
+    }
+
     // Discover Competitors (Agentic - Slow)
     const competitors = await genesisAgent.discoverCompetitors(contextSummary);
     console.log("Manus Agent Competitors Discovered:", competitors);
@@ -83,12 +100,30 @@ async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
 
 exports.generateStrategy = async (req, res) => {
     try {
-        const { contextSummary } = req.body;
-        if (!contextSummary) {
+        const { contextSummary, workspaceId } = req.body;
+
+        let fullContext = contextSummary;
+
+        // If workspaceId is provided, fetch the full unified context to ensure relevance
+        if (workspaceId) {
+            const contextService = require('../services/contextService');
+            const unifiedContext = await contextService.getUnifiedContext(workspaceId);
+            if (unifiedContext) {
+                // We append the unified context to the summary to give the AI the full picture
+                fullContext = `
+                Summary: ${JSON.stringify(contextSummary)}
+                
+                Full Unified Context (Includes Chat History & PDFs):
+                ${unifiedContext}
+                `;
+            }
+        }
+
+        if (!fullContext) {
             return res.status(400).json({ error: "Context summary is required" });
         }
 
-        const strategy = await genesisAgent.generateStrategy(contextSummary);
+        const strategy = await genesisAgent.generateStrategy(fullContext);
         res.json(strategy);
     } catch (error) {
         console.error("Strategy Generation Error:", error);
@@ -98,12 +133,30 @@ exports.generateStrategy = async (req, res) => {
 
 exports.generateSurvey = async (req, res) => {
     try {
-        const { contextSummary, strategy, userInstruction } = req.body;
-        if (!contextSummary || !strategy) {
+        const { contextSummary, strategy, userInstruction, workspaceId } = req.body;
+
+        let fullContext = contextSummary;
+
+        // If workspaceId is provided, fetch the full unified context to ensure relevance
+        if (workspaceId) {
+            const contextService = require('../services/contextService');
+            const unifiedContext = await contextService.getUnifiedContext(workspaceId);
+            if (unifiedContext) {
+                // We append the unified context to the summary to give the AI the full picture
+                fullContext = `
+                Summary: ${JSON.stringify(contextSummary)}
+                
+                Full Unified Context (Includes Chat History & PDFs):
+                ${unifiedContext}
+                `;
+            }
+        }
+
+        if (!fullContext || !strategy) {
             return res.status(400).json({ error: "Context summary and strategy are required" });
         }
 
-        const survey = await genesisAgent.generateSurvey(contextSummary, strategy, userInstruction);
+        const survey = await genesisAgent.generateSurvey(fullContext, strategy, userInstruction);
         res.json(survey);
     } catch (error) {
         console.error("Survey Generation Error:", error);
@@ -267,6 +320,12 @@ exports.generateGapAnalysis = async (req, res) => {
         }
 
         const analysis = await genesisAgent.generateGapAnalysis(contextSummary, competitors);
+
+        // Save analysis to workspace
+        await prisma.workspace.update({
+            where: { id: workspaceId },
+            data: { gapAnalysis: analysis }
+        });
 
         res.json(analysis);
 

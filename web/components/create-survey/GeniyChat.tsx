@@ -30,9 +30,10 @@ interface GeniyChatProps {
     initialContext?: string
     workspaceId?: string
     hideHeader?: boolean
+    initialPrompt?: string
 }
 
-export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext, workspaceId, hideHeader = false }: GeniyChatProps) {
+export function GeniyChat({ setQuestions, setTitle, setDescription, setContextData, initialContext, workspaceId, hideHeader = false, initialPrompt }: GeniyChatProps) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -54,6 +55,15 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             role: "assistant",
             content: `Hi! I see you're working on **${company}** in the **${industry}** space. I've loaded your context and I'm ready to help you build a survey. What's your goal for this campaign?`
         }])
+
+        if (initialPrompt) {
+            setTimeout(() => {
+                addMessage("user", initialPrompt)
+                // We don't auto-send to avoid accidental triggers, or we could?
+                // Let's auto-send for better UX
+                handleSend(initialPrompt)
+            }, 1000)
+        }
     } else {
         setMessages([{
             id: "1",
@@ -123,7 +133,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         const analysis = await api.analyzeContext(fullContext, token, workspaceId)
         addMessage("assistant", `I've analyzed ${analysis.companyName}. Generating a research strategy... 📝`)
 
-        const strategy = await api.generateStrategy(analysis, token)
+        const strategy = await api.generateStrategy(analysis, token, workspaceId)
         addMessage("assistant", `Strategy created! I've outlined the core objectives and hypotheses below. Generating survey questions... ✍️`, { strategy })
 
         const surveySchema = await api.generateSurvey(analysis, strategy, "", token)
@@ -192,7 +202,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
         addMessage("assistant", "Drafting questions... ✍️")
         
         const analysis = await api.analyzeContext(contextText, token!, workspaceId)
-        const strategy = await api.generateStrategy(analysis, token!)
+        const strategy = await api.generateStrategy(analysis, token!, workspaceId)
         const surveySchema = await api.generateSurvey(analysis, strategy, userInstruction, token!)
         
         setTitle(surveySchema.title)
@@ -238,12 +248,13 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
     }
   }
 
-  const handleSend = async () => {
-    if (!input.trim() || !token) return
+  const handleSend = async (overrideInput?: string) => {
+    const textToSend = overrideInput || input;
+    if (!textToSend.trim() || !token) return
 
-    const userText = input
-    setInput("")
-    addMessage("user", userText)
+    const userText = textToSend
+    if (!overrideInput) setInput("")
+    if (!overrideInput) addMessage("user", userText) // If override, we likely added it manually before calling
     setIsProcessing(true)
 
     try {
@@ -280,7 +291,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             
             // 2. Strategy
             addMessage("assistant", "Generating research strategy... 📝")
-            const strategy = await api.generateStrategy(analysis, token)
+            const strategy = await api.generateStrategy(analysis, token, workspaceId)
             
             // 3. Survey
             addMessage("assistant", `Strategy created! I've outlined the core objectives and hypotheses below. Generating survey questions... ✍️`, { strategy })
@@ -435,7 +446,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
             size="icon"
             variant="ghost"
             className="absolute right-1 top-1 h-8 w-8 text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-500/20"
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={isProcessing}
           >
             <Send className="w-4 h-4" />

@@ -35,7 +35,8 @@ const getContext = async (req, res) => {
         res.json({
             businessContext: workspace.businessContext,
             documents: workspace.documents,
-            competitors: workspace.competitors
+            competitors: workspace.competitors,
+            gapAnalysis: workspace.gapAnalysis
         });
     } catch (error) {
         console.error(error);

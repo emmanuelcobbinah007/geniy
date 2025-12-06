@@ -194,6 +194,11 @@ class GenesisAgent {
 
       Context: ${JSON.stringify(contextSummary)}
 
+      **CRITICAL INSTRUCTIONS:**
+      1. **BE SPECIFIC:** Do NOT generalize the target audience. If the context says "18-30 year old Ghanaians", do NOT say "18-65 year olds". Use the EXACT demographics provided.
+      2. **BE RELEVANT:** Ensure the objectives and hypotheses are directly tied to the specific industry and value proposition mentioned.
+      3. **NO FLUFF:** Keep the output concise and actionable.
+
       Output JSON Schema:
       {
         "objectives": ["string"],
@@ -239,6 +244,20 @@ class GenesisAgent {
       **CRITICAL RULES FOR BRANCHING:**
       1. **MANDATORY DIVERGENCE:** You MUST include at least 2 questions where different options lead to DIFFERENT questions (e.g., "If Yes, go to Q3; If No, go to Q4"). 
          - **FORBIDDEN:** Do NOT create "fake branching" where all options jump to the same next question (e.g., If A -> Q2, If B -> Q2). This is useless.
+
+      Output JSON Schema:
+      {
+          "title": "string",
+          "description": "string",
+          "questions": {
+              "Q1": {
+                  "type": "multiple_choice" | "text" | "rating",
+                  "question": "string",
+                  "options": ["string"], // Only for multiple_choice
+                  "required": boolean,
+                  "branches": [
+                      { "if": "string", "next": "Q#" }
+                  ],
                   "next": "Q#" // Default next question. Use this for merging branches!
           }
       }
@@ -392,6 +411,47 @@ class GenesisAgent {
     }
 
     /**
+     * Step 9: Gap Analysis
+     * Compares user context with competitors to find gaps and opportunities.
+     */
+    async generateGapAnalysis(contextSummary, competitors) {
+        const competitorAnalysisText = competitors.map(c => {
+            if (c.analysis) {
+                return `Competitor: ${c.name}\nAnalysis: ${JSON.stringify(c.analysis)}`;
+            }
+            return `Competitor: ${c.name} (No detailed analysis available)`;
+        }).join('\n\n');
+
+        const prompt = `
+            Perform a Strategic Gap Analysis for the following business.
+
+            === OUR BUSINESS ===
+            ${JSON.stringify(contextSummary)}
+
+            === COMPETITORS ===
+            ${competitorAnalysisText}
+
+            Identify:
+            1. 3 Market Gaps (Needs that competitors are ignoring).
+            2. 3 Strategic Opportunities (How we can win).
+            3. 3 Specific Recommendations (Actionable steps).
+
+            Output JSON Schema:
+            {
+                "gaps": [
+                    { "title": "string", "description": "string" }
+                ],
+                "opportunities": [
+                    { "title": "string", "description": "string" }
+                ],
+                "recommendations": ["string"]
+            }
+        `;
+
+        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2000);
+    }
+
+    /**
      * Step 5a: Chat with Brain (Context Q&A)
      * Dedicated method for the "Geniy's Brain" page.
      * Prioritizes context retrieval over survey generation.
@@ -417,6 +477,11 @@ class GenesisAgent {
                         - Good: "Point 1\n\nPoint 2"
                     5. ** Memory Trigger:** If the user provides NEW information(e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that."(The system will handle the actual saving).
         6. ** Agentic Actions:** You can trigger background research tasks.
+            - **CRITICAL:** Before triggering "ANALYZE_COMPETITOR", CHECK THE KNOWLEDGE BASE.
+            - If the competitor is ALREADY listed in "KNOWN COMPETITORS" with analysis, DO NOT trigger the action. Just answer using the existing data.
+            - ONLY trigger "ANALYZE_COMPETITOR" if:
+                a) The competitor is NOT in the Knowledge Base.
+                b) The user explicitly asks to "re-analyze" or "update" the data.
             - If the user asks to "analyze competitors", "deep dive", or "research" companies, set "action" to "ANALYZE_COMPETITOR".
             - If they want to analyze ALL discovered competitors, set "actionTarget" to "ALL".
             - If they want a specific one, set "actionTarget" to the competitor name.

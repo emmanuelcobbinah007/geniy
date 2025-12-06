@@ -36,6 +36,7 @@ model Workspace {
   isEarlyAdopter  Boolean           @default(false)
   earlyAdopterJoinedAt DateTime?
   lastAnalysisSummary String?       // Stores the summary of the last completed analysis batch
+  gapAnalysis     Json?             // Stores the latest gap analysis result
   domains         Domain[]
 }
 

@@ -58,6 +58,7 @@ export default function ContextPage() {
             workspaceId={workspaceId}
             competitors={data?.competitors || []}
             lastAnalysisSummary={data?.lastAnalysisSummary}
+            gapAnalysis={data?.gapAnalysis}
         />
       </div>
 

@@ -21,7 +21,8 @@ class ContextService {
             where: { id: workspaceId },
             select: {
                 businessContext: true,
-                competitors: true
+                competitors: true,
+                gapAnalysis: true
             }
         });
 
@@ -43,6 +44,13 @@ class ContextService {
                 unifiedContext += `\n`;
             });
             unifiedContext += `=========================\n`;
+        }
+
+        // 2.5 Append Gap Analysis (Strategic Insights)
+        if (workspace.gapAnalysis) {
+            unifiedContext += `\n=== STRATEGIC GAP ANALYSIS ===\n`;
+            unifiedContext += JSON.stringify(workspace.gapAnalysis, null, 2);
+            unifiedContext += `\n==============================\n`;
         }
 
         // 3. Append Live Campaign Data
