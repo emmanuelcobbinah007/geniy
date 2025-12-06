@@ -221,6 +221,10 @@ export const api = {
     return this.post('/ai/generate-theme', { prompt }, token);
   },
 
+  async generateGapAnalysis(workspaceId: string, token: string) {
+    return this.post('/ai/generate-gap-analysis', { workspaceId }, token);
+  },
+
   async updateSurvey(campaignId: string, data: any, token: string) {
     return this.put(`/campaigns/${campaignId}/survey`, data, token);
   },

@@ -11,6 +11,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CompetitorBattlecard } from "@/components/competitor/CompetitorBattlecard"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Lightbulb, Target, TrendingUp } from "lucide-react"
 
 interface ContextDocument {
   id: string
@@ -30,6 +39,12 @@ interface AnalysisResult {
 interface Strategy {
   objectives: string[]
   hypotheses: string[]
+}
+
+interface GapAnalysisResult {
+  gaps: { title: string; description: string }[]
+  opportunities: { title: string; description: string }[]
+  recommendations: string[]
 }
 
 interface ContextKnowledgeProps {
@@ -318,6 +333,24 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       analyzeCompetitorMutation.mutate(name)
   }
 
+  const [isGapAnalysisOpen, setIsGapAnalysisOpen] = useState(false)
+  const [gapAnalysisData, setGapAnalysisData] = useState<GapAnalysisResult | null>(null)
+
+  const gapAnalysisMutation = useMutation({
+      mutationFn: async () => {
+          if (!token) return
+          return api.generateGapAnalysis(workspaceId, token)
+      },
+      onSuccess: (data) => {
+          setGapAnalysisData(data)
+          setIsGapAnalysisOpen(true)
+          toast.success("Gap Analysis Generated!")
+      },
+      onError: () => {
+          toast.error("Failed to generate Gap Analysis")
+      }
+  })
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -468,6 +501,20 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     <div className="space-y-6">
+                        {/* Gap Analysis Header */}
+                        {analysisResult?.competitors && analysisResult.competitors.length > 0 && (
+                            <div className="flex justify-end mb-4">
+                                <Button 
+                                    onClick={() => gapAnalysisMutation.mutate()}
+                                    disabled={gapAnalysisMutation.isPending}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                    {gapAnalysisMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Target className="w-4 h-4 mr-2" />}
+                                    Run Gap Analysis
+                                </Button>
+                            </div>
+                        )}
+
                         {!analysisResult?.competitors || analysisResult.competitors.length === 0 ? (
                             <div className="text-center py-12 text-zinc-500">
                                 <p>No competitors discovered yet.</p>
@@ -509,6 +556,74 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 </div>
             </TabsContent>
         </Tabs>
+
+        <Dialog open={isGapAnalysisOpen} onOpenChange={setIsGapAnalysisOpen}>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <Target className="w-6 h-6 text-emerald-600" />
+                        Strategic Gap Analysis
+                    </DialogTitle>
+                    <DialogDescription>
+                        AI-powered comparison of your business context against discovered competitors.
+                    </DialogDescription>
+                </DialogHeader>
+
+                {gapAnalysisData && (
+                    <div className="space-y-8 mt-4">
+                        {/* Market Gaps */}
+                        <section>
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                <TrendingUp className="w-5 h-5 text-amber-500" />
+                                Unmet Market Needs
+                            </h3>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                {gapAnalysisData.gaps.map((gap, i) => (
+                                    <Card key={i} className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30">
+                                        <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">{gap.title}</h4>
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{gap.description}</p>
+                                    </Card>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Opportunities */}
+                        <section>
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                <Sparkles className="w-5 h-5 text-violet-500" />
+                                Your Strategic Opportunities
+                            </h3>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                {gapAnalysisData.opportunities.map((opp, i) => (
+                                    <Card key={i} className="p-4 bg-violet-50/50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800/30">
+                                        <h4 className="font-medium text-violet-900 dark:text-violet-100 mb-2">{opp.title}</h4>
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{opp.description}</p>
+                                    </Card>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Recommendations */}
+                        <section>
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                <Lightbulb className="w-5 h-5 text-emerald-500" />
+                                Actionable Recommendations
+                            </h3>
+                            <div className="space-y-3">
+                                {gapAnalysisData.recommendations.map((rec, i) => (
+                                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 border-emerald-200">
+                                            Step {i + 1}
+                                        </Badge>
+                                        <p className="text-sm text-zinc-700 dark:text-zinc-300 pt-0.5">{rec}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

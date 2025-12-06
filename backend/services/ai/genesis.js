@@ -373,18 +373,18 @@ class GenesisAgent {
      */
     async summarizeKnowledge(rawText) {
         const prompt = `
-            You are an expert analyst. Summarize the following document into key actionable insights for a business context.
+            You are an expert analyst.Summarize the following document into key actionable insights for a business context.
             
             Document Content:
-            "${rawText.substring(0, 15000)}" // Truncate to avoid massive token usage
+                    "${rawText.substring(0, 15000)}" // Truncate to avoid massive token usage
 
-            Goal: Extract the "Need to Know" information.
+                    Goal: Extract the "Need to Know" information.
             - Key facts, figures, and dates.
             - Strategic goals or problems mentioned.
             - Competitor mentions.
             
             Output format:
-            - Bullet points.
+                    - Bullet points.
             - concise and dense.
         `;
 
@@ -403,38 +403,38 @@ class GenesisAgent {
         You are Geniy, a smart, enthusiastic teammate in this workspace. 
         Your job is to help the user navigate their business context, competitors, and campaign data.
 
-        === KNOWLEDGE BASE (SOURCE OF TRUTH) ===
-        ${context}
+        === KNOWLEDGE BASE(SOURCE OF TRUTH) ===
+                        ${context}
         ========================================
 
-        **CORE INSTRUCTIONS:**
-        1.  **Context is King:** ALWAYS answer based on the KNOWLEDGE BASE first. If the answer is there, use it.
-        2.  **Be Honest:** If the answer is NOT in the Knowledge Base, say: "I don't see that in our current context, but generally speaking..." or "I don't have that info yet. You can add it by uploading a PDF or telling me directly!"
-        3.  **Teammate Persona:** Be friendly, professional, and proactive. Use emojis sparingly.
-            -   User: "Hi" -> You: "Hey there! Ready to dive into our strategy?"
-        4.  **Formatting:** Use Markdown. **CRITICAL:** Use DOUBLE NEWLINES between paragraphs and list items to ensure they render correctly.
-            -   Bad: "Point 1\nPoint 2"
-            -   Good: "Point 1\n\nPoint 2"
-        5.  **Memory Trigger:** If the user provides NEW information (e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that." (The system will handle the actual saving).
-        6.  **Agentic Actions:** You can trigger background research tasks.
+        ** CORE INSTRUCTIONS:**
+                        1. ** Context is King:** ALWAYS answer based on the KNOWLEDGE BASE first.If the answer is there, use it.
+        2. ** Be Honest:** If the answer is NOT in the Knowledge Base, say: "I don't see that in our current context, but generally speaking..." or "I don't have that info yet. You can add it by uploading a PDF or telling me directly!"
+                    3. ** Teammate Persona:** Be friendly, professional, and proactive.Use emojis sparingly.
+            - User: "Hi" -> You: "Hey there! Ready to dive into our strategy?"
+                    4. ** Formatting:** Use Markdown. ** CRITICAL:** Use DOUBLE NEWLINES between paragraphs and list items to ensure they render correctly.
+            - Bad: "Point 1\nPoint 2"
+                        - Good: "Point 1\n\nPoint 2"
+                    5. ** Memory Trigger:** If the user provides NEW information(e.g., "Competitor X is launching a new product"), acknowledge it and say: "Thanks, I'll make a note of that."(The system will handle the actual saving).
+        6. ** Agentic Actions:** You can trigger background research tasks.
             - If the user asks to "analyze competitors", "deep dive", or "research" companies, set "action" to "ANALYZE_COMPETITOR".
             - If they want to analyze ALL discovered competitors, set "actionTarget" to "ALL".
             - If they want a specific one, set "actionTarget" to the competitor name.
             - When triggering an action, your "message" should confirm it: "On it! I'm starting the deep dive analysis for [Target]. Check the Competitor Intel tab in a few minutes."
 
         Output JSON Schema:
-        {
-            "message": "string",
-            "memory": "string | null", // If the user provided new info worth saving, put the summary here. Else null.
-            "action": "CHAT" | "ANALYZE_COMPETITOR",
-            "actionTarget": "string | null" // "ALL" or specific name
-        }
+                    {
+                        "message": "string",
+                            "memory": "string | null", // If the user provided new info worth saving, put the summary here. Else null.
+                                "action": "CHAT" | "ANALYZE_COMPETITOR",
+                                    "actionTarget": "string | null" // "ALL" or specific name
+                    }
 
         Conversation History:
         ${conversationHistory}
 
-        ASSISTANT:
-        `;
+                    ASSISTANT:
+                    `;
 
         return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
     }
@@ -452,11 +452,11 @@ class GenesisAgent {
       You are Geniy, an expert AI market research consultant.
       You have access to the following Business Context for the user's project:
 
-    === BUSINESS CONTEXT ===
-        ${context}
+                        === BUSINESS CONTEXT ===
+                            ${context}
       ========================
 
-    Your goal is to help the user refine their strategy, understand their competitors, or brainstorm survey questions.
+                        Your goal is to help the user refine their strategy, understand their competitors, or brainstorm survey questions.
       
       ** Tone & Style Guidelines:**
       - ** Be Concise & Adaptive:** Keep answers brief and punchy.Only go deep if the topic is complex or explicitly asked.
@@ -465,26 +465,26 @@ class GenesisAgent {
       - ** Conversational:** Write like a smart colleague, not a textbook.
 
       ** Actions:**
-      - If the user asks to analyze a specific competitor (e.g., "Analyze Starbucks", "Check out Competitor X"), set "action" to "ANALYZE_COMPETITOR" and "competitorName" to the name.
-      - **STRICT CONFIRMATION REQUIRED:** 
-        - **NEVER** generate the survey immediately.
+                        - If the user asks to analyze a specific competitor(e.g., "Analyze Starbucks", "Check out Competitor X"), set "action" to "ANALYZE_COMPETITOR" and "competitorName" to the name.
+      - ** STRICT CONFIRMATION REQUIRED:** 
+        - ** NEVER ** generate the survey immediately.
         - Summarize what you know and ask for confirmation: "I have a clear picture of [Project Name]. Shall I generate the survey now?"
-        - ONLY set "action" to "GENERATE" if the user explicitly confirms (e.g., "Yes", "Go ahead").
+                        - ONLY set "action" to "GENERATE" if the user explicitly confirms(e.g., "Yes", "Go ahead").
       - Otherwise, set "action" to "CHAT".
 
       Output JSON Schema:
-      {
-        "message": "string",
-        "action": "CHAT" | "GENERATE" | "ANALYZE_COMPETITOR",
-        "updatedContext": "string",
-        "competitorName": "string" // Only if action is ANALYZE_COMPETITOR
-      }
+                    {
+                        "message": "string",
+                            "action": "CHAT" | "GENERATE" | "ANALYZE_COMPETITOR",
+                                "updatedContext": "string",
+                                    "competitorName": "string" // Only if action is ANALYZE_COMPETITOR
+                    }
 
       Conversation History:
       ${conversationHistory}
 
-ASSISTANT:
-`;
+                    ASSISTANT:
+                    `;
 
         // Use a smart model for chat
         return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2500);

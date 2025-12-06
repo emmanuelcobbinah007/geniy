@@ -201,15 +201,6 @@ exports.chatWithContext = async (req, res) => {
                         }
                     }
 
-                    // Generate and save summary
-                    if (results.length > 0) {
-                        const summary = await genesisAgent.summarizeAnalysis(results);
-                        await prisma.workspace.update({
-                            where: { id: workspaceId },
-                            data: { lastAnalysisSummary: summary }
-                        });
-                        console.log("Analysis summary generated and saved:", summary);
-                    }
                 })();
             }
         }
@@ -250,3 +241,39 @@ exports.generateTheme = async (req, res) => {
         res.status(500).json({ error: "Failed to generate theme" });
     }
 };
+
+exports.generateGapAnalysis = async (req, res) => {
+    try {
+        const { workspaceId } = req.body;
+
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId }
+        });
+
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        // Prepare context summary
+        const contextSummary = {
+            businessContext: workspace.businessContext,
+            // We could parse more if needed
+        };
+
+        const competitors = workspace.competitors || [];
+
+        if (competitors.length === 0) {
+            return res.status(400).json({ message: "No competitors found to analyze against." });
+        }
+
+        const analysis = await genesisAgent.generateGapAnalysis(contextSummary, competitors);
+
+        res.json(analysis);
+
+    } catch (error) {
+        console.error("Gap Analysis Error:", error);
+        res.status(500).json({ message: "Failed to generate gap analysis" });
+    }
+};
+
+

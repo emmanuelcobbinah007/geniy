@@ -86,21 +86,18 @@ export function CompetitorBattlecard({ name, analysis }: CompetitorBattlecardPro
             </div>
         </div>
 
-        {/* Features - Compact */}
-        <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
-            <div className="flex flex-wrap gap-1.5">
-                {analysis.keyFeatures.slice(0, isExpanded ? undefined : 4).map((f, i) => (
-                    <span key={i} className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                        {f}
-                    </span>
-                ))}
-                {analysis.keyFeatures.length > 4 && !isExpanded && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-400 border border-zinc-100 dark:border-zinc-800">
-                        +{analysis.keyFeatures.length - 4} more
-                    </span>
-                )}
+        {/* Features - Only show in expanded view */}
+        {isExpanded && (
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="flex flex-wrap gap-1.5">
+                    {analysis.keyFeatures.map((f, i) => (
+                        <span key={i} className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                            {f}
+                        </span>
+                    ))}
+                </div>
             </div>
-        </div>
+        )}
 
         {/* Expand/Collapse for details */}
         <div className="flex justify-center pt-2">
