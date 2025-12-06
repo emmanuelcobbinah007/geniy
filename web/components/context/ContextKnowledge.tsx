@@ -36,9 +36,10 @@ interface ContextKnowledgeProps {
   initialContext: string
   documents: ContextDocument[]
   workspaceId: string
+  competitors?: any[]
 }
 
-export function ContextKnowledge({ initialContext, documents, workspaceId }: ContextKnowledgeProps) {
+export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [] }: ContextKnowledgeProps) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const [context, setContext] = useState(initialContext)
@@ -58,34 +59,49 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
         const industryMatch = initialContext.match(/Industry:\s*(.+?)(\n|$)/);
         const audienceMatch = initialContext.match(/Target Audience:\s*(.+?)(\n|$)/);
         
-        // Extract competitors (looking for list after "Competitors:")
-        const competitorsSection = initialContext.split("Competitors:")[1];
-        let competitors: string[] = [];
-        if (competitorsSection) {
-            // Extract lines starting with "- " until double newline or end of section
-            const lines = competitorsSection.split('\n');
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('- ')) {
-                    competitors.push(trimmed.substring(2));
-                } else if (trimmed === '' && competitors.length > 0) {
-                    // Stop at empty line if we found competitors (end of list)
-                    // But be careful, sometimes there are extra newlines. 
-                    // Let's just grab all bullet points in the section.
+        // Use DB competitors if available, otherwise parse from text
+        let competitorNames: string[] = [];
+        if (competitors && competitors.length > 0) {
+            competitorNames = competitors.map(c => c.name);
+        } else {
+            // Fallback: Extract competitors from text
+            const competitorsSection = initialContext.split("Competitors:")[1];
+            if (competitorsSection) {
+                const lines = competitorsSection.split('\n');
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('- ')) {
+                        competitorNames.push(trimmed.substring(2));
+                    }
                 }
             }
         }
 
-        if (companyMatch || competitors.length > 0) {
+        if (companyMatch || competitorNames.length > 0) {
             setAnalysisResult({
                 companyName: companyMatch ? companyMatch[1].trim() : "Unknown",
                 industry: industryMatch ? industryMatch[1].trim() : "General",
                 targetAudience: audienceMatch ? audienceMatch[1].split(',').map(s => s.trim()) : [],
-                competitors: competitors
+                competitors: competitorNames
             })
         }
+    } else if (competitors && competitors.length > 0) {
+        // If no context text but we have competitors from DB
+         setAnalysisResult(prev => {
+             // Only update if actually changed to avoid loop
+             const newNames = competitors.map(c => c.name);
+             if (prev && JSON.stringify(prev.competitors) === JSON.stringify(newNames)) {
+                 return prev;
+             }
+             return {
+                companyName: "Unknown",
+                industry: "General",
+                targetAudience: [],
+                competitors: newNames
+            };
+         })
     }
-  }, [initialContext])
+  }, [initialContext, JSON.stringify(competitors)])
 
   // Update Context Mutation
   const updateContextMutation = useMutation({
@@ -384,45 +400,74 @@ export function ContextKnowledge({ initialContext, documents, workspaceId }: Con
                 </Card>
             </TabsContent>
 
-            <TabsContent value="competitors" className="flex-1 overflow-y-auto data-[state=inactive]:hidden">
-                <div className="space-y-6">
-                    {!analysisResult?.competitors || analysisResult.competitors.length === 0 ? (
-                        <div className="text-center py-12 text-zinc-500">
-                            <p>No competitors discovered yet.</p>
-                            <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
-                        </div>
-                    ) : (
-                        analysisResult.competitors.map((comp) => (
-                            <div key={comp} className="space-y-4">
-                                {competitorData[comp] ? (
-                                    <CompetitorBattlecard name={comp} analysis={competitorData[comp]} />
-                                ) : (
-                                    <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-semibold">{comp}</h3>
-                                            <p className="text-sm text-zinc-500">Competitor detected from context</p>
-                                        </div>
-                                        <Button 
-                                            onClick={() => handleAnalyzeCompetitor(comp)}
-                                            disabled={analyzingCompetitor === comp}
-                                        >
-                                            {analyzingCompetitor === comp ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    Researching...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Sparkles className="w-4 h-4 mr-2" />
-                                                    Analyze Deep Dive
-                                                </>
-                                            )}
-                                        </Button>
-                                    </Card>
-                                )}
+            <TabsContent value="competitors" className="flex-1 min-h-0 relative data-[state=inactive]:hidden">
+                <div 
+                    ref={(node) => {
+                        if (node) {
+                            // Initialize Lenis on this container
+                            import('lenis').then(({ default: Lenis }) => {
+                                const lenis = new Lenis({
+                                    wrapper: node,
+                                    content: node.firstElementChild as HTMLElement,
+                                    duration: 1.2,
+                                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                                    orientation: 'vertical',
+                                    gestureOrientation: 'vertical',
+                                    smoothWheel: true,
+                                    touchMultiplier: 2,
+                                })
+
+                                function raf(time: number) {
+                                    lenis.raf(time)
+                                    requestAnimationFrame(raf)
+                                }
+
+                                requestAnimationFrame(raf)
+                            })
+                        }
+                    }}
+                    className="absolute inset-0 overflow-y-auto pr-2 pb-20 scrollbar-hide"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    <div className="space-y-6">
+                        {!analysisResult?.competitors || analysisResult.competitors.length === 0 ? (
+                            <div className="text-center py-12 text-zinc-500">
+                                <p>No competitors discovered yet.</p>
+                                <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
                             </div>
-                        ))
-                    )}
+                        ) : (
+                            analysisResult.competitors.map((comp) => (
+                                <div key={comp} className="space-y-4">
+                                    {competitorData[comp] ? (
+                                        <CompetitorBattlecard name={comp} analysis={competitorData[comp]} />
+                                    ) : (
+                                        <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold">{comp}</h3>
+                                                <p className="text-sm text-zinc-500">Competitor detected from context</p>
+                                            </div>
+                                            <Button 
+                                                onClick={() => handleAnalyzeCompetitor(comp)}
+                                                disabled={analyzingCompetitor === comp}
+                                            >
+                                                {analyzingCompetitor === comp ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Researching...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="w-4 h-4 mr-2" />
+                                                        Analyze Deep Dive
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </Card>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </TabsContent>
         </Tabs>

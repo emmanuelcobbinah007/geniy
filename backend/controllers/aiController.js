@@ -56,7 +56,7 @@ async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
                 }
 
                 const newCompetitors = competitors.filter(c =>
-                    !existingCompetitors.some(ec => ec.name.toLowerCase() === c.toLowerCase())
+                    !existingCompetitors.some(ec => ec && ec.name && ec.name.toLowerCase() === c.toLowerCase())
                 ).map(c => ({
                     name: c,
                     analysis: null, // Initial discovery has no deep analysis yet

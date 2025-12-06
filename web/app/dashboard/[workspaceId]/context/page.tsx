@@ -42,7 +42,7 @@ export default function ContextPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 gap-6 grid grid-cols-1 lg:grid-cols-3">
+    <div className="h-[calc(100vh-4rem)] p-6 gap-6 grid grid-cols-1 lg:grid-cols-3 overflow-hidden">
       <ContextTour />
       {isRefetching && (
           <div className="absolute top-6 right-6 text-xs text-zinc-400 animate-pulse">
@@ -55,6 +55,7 @@ export default function ContextPage() {
             initialContext={data?.businessContext || ""} 
             documents={data?.documents || []} 
             workspaceId={workspaceId}
+            competitors={data?.competitors || []}
         />
       </div>
 

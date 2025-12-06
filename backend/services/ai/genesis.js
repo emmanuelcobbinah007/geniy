@@ -76,15 +76,29 @@ class GenesisAgent {
 
                 // Handle structured output (Array of messages)
                 try {
-                    const parsedOutput = JSON.parse(agentOutput);
-                    if (Array.isArray(parsedOutput) && parsedOutput.some(m => m.role && m.content)) {
+                    let parsedOutput = null;
+                    if (typeof agentOutput === 'string') {
+                        parsedOutput = JSON.parse(agentOutput);
+                    } else {
+                        parsedOutput = agentOutput;
+                    }
+
+                    if (Array.isArray(parsedOutput)) {
                         // Find last assistant message
-                        const lastAssistantMsg = parsedOutput.reverse().find(m => m.role === 'assistant');
-                        if (lastAssistantMsg && Array.isArray(lastAssistantMsg.content)) {
-                            // Extract text from content array
-                            const textPart = lastAssistantMsg.content.find(c => c.type === 'text');
-                            if (textPart) {
-                                textToParse = textPart.text;
+                        // Use slice().reverse() to avoid mutating the original array
+                        const lastAssistantMsg = parsedOutput.slice().reverse().find(m => m.role === 'assistant');
+
+                        if (lastAssistantMsg) {
+                            // Check for content array (Anthropic style)
+                            if (Array.isArray(lastAssistantMsg.content)) {
+                                const textPart = lastAssistantMsg.content.find(c => c.type === 'text' || c.type === 'output_text');
+                                if (textPart && textPart.text) {
+                                    textToParse = textPart.text;
+                                }
+                            }
+                            // Check for simple content string (OpenAI style)
+                            else if (typeof lastAssistantMsg.content === 'string') {
+                                textToParse = lastAssistantMsg.content;
                             }
                         }
                     }
@@ -108,13 +122,13 @@ class GenesisAgent {
                         return finalResult;
                     } else {
                         console.warn("Parsed Manus output is not an array of strings:", JSON.stringify(finalResult).substring(0, 200));
-                        // If it looks like the message history, we failed to extract. Fallback to regex on the raw text if possible, or just fail.
                     }
                 } catch (e) {
                     // console.warn("Failed to parse Manus output as JSON, returning raw list", e);
                 }
 
                 // Fallback: split by newlines if it looks like a list and is NOT the message object
+                // Ensure textToParse is a string and doesn't look like the message array
                 if (typeof textToParse === 'string' && !textToParse.trim().startsWith('[{"')) {
                     return textToParse.split('\n')
                         .filter(line => line.trim().length > 0)
@@ -277,16 +291,46 @@ class GenesisAgent {
         try {
             const agentOutput = await manus.runTask(instruction);
             if (agentOutput) {
+                let textToParse = agentOutput;
+
+                // Handle structured output (Array of messages)
+                try {
+                    let parsedOutput = null;
+                    if (typeof agentOutput === 'string') {
+                        parsedOutput = JSON.parse(agentOutput);
+                    } else {
+                        parsedOutput = agentOutput;
+                    }
+
+                    if (Array.isArray(parsedOutput)) {
+                        // Find last assistant message
+                        const lastAssistantMsg = parsedOutput.slice().reverse().find(m => m.role === 'assistant');
+
+                        if (lastAssistantMsg) {
+                            if (Array.isArray(lastAssistantMsg.content)) {
+                                const textPart = lastAssistantMsg.content.find(c => c.type === 'text' || c.type === 'output_text');
+                                if (textPart && textPart.text) {
+                                    textToParse = textPart.text;
+                                }
+                            } else if (typeof lastAssistantMsg.content === 'string') {
+                                textToParse = lastAssistantMsg.content;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Not JSON or not the structure we expect, treat as raw string
+                }
+
                 // Try to parse JSON from output
                 try {
-                    const jsonMatch = agentOutput.match(/\{[\s\S]*\}/);
+                    const jsonMatch = textToParse.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         return JSON.parse(jsonMatch[0]);
                     }
-                    return JSON.parse(agentOutput);
+                    return JSON.parse(textToParse);
                 } catch (e) {
                     console.warn("Failed to parse Manus output as JSON for competitor analysis", e);
-                    return { error: "Failed to parse analysis results", raw: agentOutput };
+                    return { error: "Failed to parse analysis results", raw: textToParse };
                 }
             }
         } catch (err) {
