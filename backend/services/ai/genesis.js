@@ -49,8 +49,31 @@ class GenesisAgent {
     }
 
     /**
-     * Step 2: Discover Competitors (Agentic)
-     * Uses Manus to find competitors if none are known.
+     * Helper to perform real-time web research using Perplexity via OpenRouter.
+     * Uses: perplexity/llama-3.1-sonar-large-128k-online
+     */
+    async research(prompt) {
+        // We use a specific system prompt for the researcher to ensure concise, factual results.
+        const researchPrompt = `
+        You are a high-speed market research assistant with real-time web access.
+        
+        Task: ${prompt}
+        
+        CRITICAL INSTRUCTIONS:
+        1. Search the live web for the most current data.
+        2. Citations are helpful but prioritize the direct answer.
+        3. Be concise and structured.
+        4. If you cannot find specific data, infer based on reasonable industry standards but mark it as "Estimated".
+        `;
+
+        // Using prompt-only completions often works better for "search" style queries with Sonar
+        // But OpenRouter standard is chat.
+        return this.completeWithRetry(researchPrompt, "perplexity/llama-3.1-sonar-large-128k-online", false, 1500);
+    }
+
+    /**
+     * Step 2: Discover Competitors (Hybrid: Perplexity -> Manus)
+     * Uses Perplexity for fast discovery.
      */
     async discoverCompetitors(contextSummary) {
         if (contextSummary.competitors && contextSummary.competitors.length >= 3) {
@@ -58,89 +81,53 @@ class GenesisAgent {
         }
 
         const instruction = `
-            Research task: Identify top 5 direct competitors for "${contextSummary.companyName}" in the "${contextSummary.industry}" industry.
-            Context: ${contextSummary.valueProposition || "Unknown value prop"}
+            Find the top 5 direct competitors for:
+            Company: "${contextSummary.companyName}"
+            Industry: "${contextSummary.industry}"
+            Value Prop: "${contextSummary.valueProposition || "Unknown"}"
             
-            Criteria:
-            - Must offer similar core features.
-            - Must target a similar audience (${contextSummary.targetAudience?.join(', ') || "General"}).
-            
-            Return ONLY a JSON array of strings, e.g. ["Comp1", "Comp2"].
+            Return ONLY a raw JSON array of strings. Example: ["Competitor A", "Competitor B"]
         `;
 
-        // Trigger Manus Agent
         try {
-            const agentOutput = await manus.runTask(instruction);
+            console.log("🔍 Researching competitors with Perplexity...");
+            const agentOutput = await this.research(instruction);
+
             if (agentOutput) {
-                let textToParse = agentOutput;
-
-                // Handle structured output (Array of messages)
-                try {
-                    let parsedOutput = null;
-                    if (typeof agentOutput === 'string') {
-                        parsedOutput = JSON.parse(agentOutput);
-                    } else {
-                        parsedOutput = agentOutput;
-                    }
-
-                    if (Array.isArray(parsedOutput)) {
-                        // Find last assistant message
-                        // Use slice().reverse() to avoid mutating the original array
-                        const lastAssistantMsg = parsedOutput.slice().reverse().find(m => m.role === 'assistant');
-
-                        if (lastAssistantMsg) {
-                            // Check for content array (Anthropic style)
-                            if (Array.isArray(lastAssistantMsg.content)) {
-                                const textPart = lastAssistantMsg.content.find(c => c.type === 'text' || c.type === 'output_text');
-                                if (textPart && textPart.text) {
-                                    textToParse = textPart.text;
-                                }
-                            }
-                            // Check for simple content string (OpenAI style)
-                            else if (typeof lastAssistantMsg.content === 'string') {
-                                textToParse = lastAssistantMsg.content;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    // Not JSON or not the structure we expect, treat as raw string
-                }
-
                 // Try to parse JSON from the extracted text
                 try {
                     let finalResult = null;
                     // Extract JSON if wrapped in code blocks
-                    const jsonMatch = textToParse.match(/\[.*\]/s);
+                    const jsonMatch = agentOutput.match(/\[.*\]/s);
                     if (jsonMatch) {
                         finalResult = JSON.parse(jsonMatch[0]);
                     } else {
-                        finalResult = JSON.parse(textToParse);
+                        finalResult = JSON.parse(agentOutput);
                     }
 
                     // Validate: Must be array of strings
-                    if (Array.isArray(finalResult) && finalResult.every(i => typeof i === 'string')) {
+                    if (Array.isArray(finalResult) && finalResult.length > 0) {
+                        console.log("✅ Perplexity found competitors:", finalResult);
                         return finalResult;
-                    } else {
-                        console.warn("Parsed Manus output is not an array of strings:", JSON.stringify(finalResult).substring(0, 200));
                     }
                 } catch (e) {
-                    // console.warn("Failed to parse Manus output as JSON, returning raw list", e);
+                    // console.warn("Failed to parse Perplexity output as JSON", e);
                 }
 
-                // Fallback: split by newlines if it looks like a list and is NOT the message object
-                // Ensure textToParse is a string and doesn't look like the message array
-                if (typeof textToParse === 'string' && !textToParse.trim().startsWith('[{"')) {
-                    return textToParse.split('\n')
+                // Fallback: split by newlines if it looks like a list
+                if (typeof agentOutput === 'string') {
+                    return agentOutput.split('\n')
                         .filter(line => line.trim().length > 0)
-                        .map(l => l.replace(/^- /, '').replace(/^\d+\.\s*/, '').trim()) // Remove bullets and numbers
-                        .filter(l => l.length > 0);
+                        .map(l => l.replace(/^- /, '').replace(/^\d+\.\s*/, '').replace(/"/g, '').replace(/,$/, '').trim()) // Remove bullets, numbers, quotes
+                        .filter(l => l.length > 0 && !l.startsWith('[') && !l.startsWith(']'));
                 }
             }
         } catch (err) {
-            console.error("Manus discovery failed:", err);
+            console.error("Perplexity discovery failed:", err);
         }
 
-        // Fallback to existing or empty
+        // Fallback to existing logic (Manus) if Perplexity completely fails to return valid data? 
+        // Or just return empty array to let the UI prompt user.
         return contextSummary.competitors || [];
     }
 
@@ -172,7 +159,10 @@ class GenesisAgent {
         for (let i = 0; i <= retries; i++) {
             try {
                 const result = await openRouter.complete(prompt, model, jsonMode, maxTokens);
-                return this.safeParse(result);
+                if (jsonMode) {
+                    return this.safeParse(result);
+                }
+                return result;
             } catch (error) {
                 console.warn(`AI Attempt ${i + 1} failed:`, error.message);
                 if (i === retries) {
@@ -293,6 +283,7 @@ class GenesisAgent {
             4. START AND END WITH BRACES { }.
         `;
 
+        // Kept MANUS here for deep dives per hybrid plan
         try {
             const agentOutput = await manus.runTask(instruction);
             if (agentOutput) {
@@ -415,6 +406,23 @@ class GenesisAgent {
      * Compares user context with competitors to find gaps and opportunities.
      */
     async generateGapAnalysis(contextSummary, competitors) {
+        // 1. Research Current Trends using Perplexity
+        let marketTrends = "";
+        try {
+            console.log("🔍 Researching market gaps/trends with Perplexity...");
+            const trendsPrompt = `
+                What are the current emerging trends and customer complaints in the "${contextSummary.industry}" industry right now?
+                Focus on:
+                - Unmet customer needs.
+                - New technologies or delivery methods.
+                - Features customers are asking for.
+            `;
+            marketTrends = await this.research(trendsPrompt);
+        } catch (err) {
+            console.warn("Market trends research failed:", err);
+            marketTrends = "Unable to fetch live trends.";
+        }
+
         const competitorAnalysisText = competitors.map(c => {
             if (c.analysis) {
                 return `Competitor: ${c.name}\nAnalysis: ${JSON.stringify(c.analysis)}`;
@@ -431,8 +439,11 @@ class GenesisAgent {
             === COMPETITORS ===
             ${competitorAnalysisText}
 
+            === LIVE MARKET TRENDS (Real-time data) ===
+            ${marketTrends}
+
             Identify:
-            1. 3 Market Gaps (Needs that competitors are ignoring).
+            1. 3 Market Gaps (Needs that competitors are ignoring, especially based on the live trends).
             2. 3 Strategic Opportunities (How we can win).
             3. 3 Specific Recommendations (Actionable steps).
 

@@ -147,6 +147,10 @@ export const api = {
     return this.put(`/workspaces/${id}`, { name }, token);
   },
 
+  async getWorkspace(id: string, token: string) {
+      return this.get(`/workspaces/${id}`, token);
+  },
+
   async createWorkspace(name: string, token: string) {
     return this.post("/workspaces", { name }, token);
   },
