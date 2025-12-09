@@ -94,7 +94,7 @@ export function SurveyEditor({
   }
 
   return (
-    <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 p-4 md:p-8 min-h-full">
+    <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 p-4 md:p-8 min-h-full overflow-x-hidden">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Survey Header Card */}

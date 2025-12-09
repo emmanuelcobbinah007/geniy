@@ -58,7 +58,7 @@ export function ResearchStrategyCard({ strategy }: ResearchStrategyCardProps) {
             </ul>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
             {/* Target Audience */}
             <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">

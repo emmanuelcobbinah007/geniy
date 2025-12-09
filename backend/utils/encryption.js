@@ -26,23 +26,24 @@ function encrypt(text) {
     }
 }
 
-const key = getKey();
-if (!text || !key) return text;
-try {
-    let textParts = text.split(':');
-    if (textParts.length !== 2) return text; // Not encrypted or invalid format
+function decrypt(text) {
+    const key = getKey();
+    if (!text || !key) return text;
+    try {
+        let textParts = text.split(':');
+        if (textParts.length !== 2) return text; // Not encrypted or invalid format
 
-    let iv = Buffer.from(textParts.shift(), 'hex');
-    let encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    let decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-} catch (error) {
-    // console.error("Decryption Error:", error); 
-    // If decryption fails, it might be plaintext (legacy data). Return original.
-    return text;
-}
+        let iv = Buffer.from(textParts.shift(), 'hex');
+        let encryptedText = Buffer.from(textParts.join(':'), 'hex');
+        let decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+        let decrypted = decipher.update(encryptedText);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString();
+    } catch (error) {
+        // console.error("Decryption Error:", error); 
+        // If decryption fails, it might be plaintext (legacy data). Return original.
+        return text;
+    }
 }
 
 module.exports = { encrypt, decrypt };

@@ -44,12 +44,43 @@ export default function DashboardPage() {
     show: { opacity: 1, y: 0 }
   }
 
+import { Skeleton } from "@/components/ui/skeleton"
+
   if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <GenStateIllustration state="loading" label="Loading dashboard..." />
+    return (
+      <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32 hidden md:block" />
         </div>
-      )
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <Skeleton className="h-[200px] w-full rounded-xl" />
+            <div className="space-y-4">
+               <Skeleton className="h-6 w-32" />
+               <div className="space-y-4">
+                 {[1, 2].map(i => (
+                   <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                 ))}
+               </div>
+            </div>
+          </div>
+          <div className="space-y-8">
+            <Skeleton className="h-[300px] w-full rounded-xl" />
+            <Skeleton className="h-[200px] w-full rounded-xl" />
+            <div className="grid grid-cols-2 gap-4">
+               <Skeleton className="h-24 w-full rounded-xl" />
+               <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const stats = dashboard?.stats || { totalResponses: 0, conversionRate: 0, healthScore: 0, campaignCount: 0 }

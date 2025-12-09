@@ -34,7 +34,7 @@ export default function EarlyAdopterPage() {
   const [loading, setLoading] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
 
-  const amount = 50000 // 500 GHS in pesewas
+  const amount = 100000 // 1000 GHS in pesewas
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || ""
 
   const onSuccess = async (reference: any) => {
@@ -198,8 +198,8 @@ export default function EarlyAdopterPage() {
 
                   <ul className="space-y-5 mb-8">
                     {[
+                      "Lifetime Access to Pro Plan",
                       "Exclusive 'Verified' Badge",
-                      "Lifetime Discount (20% OFF)",
                       "Priority Support Channel",
                       "Early Access to Beta Features",
                       "Direct Roadmap Influence"
@@ -215,11 +215,11 @@ export default function EarlyAdopterPage() {
                   
                   <div className="pt-8 border-t border-white/10">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold text-white">GH₵500</span>
-                      <span className="text-zinc-500">/ year</span>
+                      <span className="text-4xl font-bold text-white">GH₵1,000</span>
+                      <span className="text-zinc-500 font-medium">One-Time Payment</span>
                     </div>
                     <p className="text-sm text-zinc-500 mt-2">
-                      Standard price: GH₵1,188/year
+                      Get Lifetime Access (Value: GH₵5,400/year)
                     </p>
                   </div>
 

@@ -35,7 +35,7 @@ export function CompetitorCard({ name, analysis }: CompetitorCardProps) {
                 </div>
 
                 {/* Pricing & Audience */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-medium">
                             <DollarSign className="w-3.5 h-3.5" /> Pricing
@@ -51,7 +51,7 @@ export function CompetitorCard({ name, analysis }: CompetitorCardProps) {
                 </div>
 
                 {/* SWOT */}
-                <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 pt-2">
                     <div className="space-y-2">
                         <p className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
                             <Check className="w-3 h-3" /> Strengths
