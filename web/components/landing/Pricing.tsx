@@ -22,13 +22,14 @@ const tiers = [
   },
   {
     name: "Starter",
-    price: "GH₵99",
+    price: "GH₵150",
     period: "/mo",
     description: "For solo founders and creators.",
     features: [
       "Unlimited surveys & responses",
       "AI analysis & insights",
-      "Basic Competitor research",
+      "Live Market Trends (Perplexity)",
+      "Basic Competitor Tracking (3)",
       "Advanced themes",
       "Shareable Live Reports"
     ],
@@ -43,6 +44,7 @@ const tiers = [
     popular: true,
     features: [
       "Everything in Starter",
+      "Deep Dive Competitor Intel (Manus)",
       "Track up to 10 Competitors",
       "Deep Insight reports",
       "Multi-user teams (5 seats)",
