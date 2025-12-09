@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 // If circular dependency becomes an issue, we'll refactor.
 const genesisAgent = require('./ai/genesis');
 
+const { encrypt, decrypt } = require('../utils/encryption');
+
 class ContextService {
     /**
      * Aggregates all workspace knowledge into a single context string for the AI.
@@ -28,8 +30,11 @@ class ContextService {
 
         if (!workspace) throw new Error("Workspace not found");
 
+        // Decrypt business context
+        const businessContext = decrypt(workspace.businessContext);
+
         let unifiedContext = "=== BUSINESS CONTEXT & KNOWLEDGE BASE ===\n";
-        unifiedContext += workspace.businessContext || "No business context provided yet.";
+        unifiedContext += businessContext || "No business context provided yet.";
         unifiedContext += "\n=========================================\n";
 
         // 2. Append Competitors
@@ -106,13 +111,20 @@ class ContextService {
 
         if (!workspace) return;
 
+        // Decrypt first
+        const currentContext = decrypt(workspace.businessContext) || "";
+
         const timestamp = new Date().toISOString().split('T')[0];
         const entry = `\n\n[User Note - ${timestamp}]: ${newInfo}`;
+        const updatedContext = currentContext + entry;
+
+        // Encrypt before saving
+        const encryptedContext = encrypt(updatedContext);
 
         await prisma.workspace.update({
             where: { id: workspaceId },
             data: {
-                businessContext: (workspace.businessContext || "") + entry
+                businessContext: encryptedContext
             }
         });
 
@@ -137,10 +149,17 @@ class ContextService {
             select: { businessContext: true }
         });
 
+        // Decrypt first
+        const currentContext = decrypt(workspace.businessContext) || "";
+        const updatedContext = currentContext + entry;
+
+        // Encrypt before saving
+        const encryptedContext = encrypt(updatedContext);
+
         await prisma.workspace.update({
             where: { id: workspaceId },
             data: {
-                businessContext: (workspace.businessContext || "") + entry
+                businessContext: encryptedContext
             }
         });
 

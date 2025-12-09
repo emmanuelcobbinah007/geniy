@@ -7,9 +7,18 @@ const prisma = new PrismaClient();
 // @desc    Get workspace context and documents
 // @route   GET /api/context
 // @access  Private
+const { encrypt, decrypt } = require('../utils/encryption');
+const auditService = require('../services/auditService');
+
+// @desc    Get workspace context and documents
+// @route   GET /api/context
+// @access  Private
 const getContext = async (req, res) => {
     try {
         const { workspaceId } = req.query;
+
+        // Log the access even if it fails validation? Usually only successful or attempted authorized access.
+        // We'll log inside the success path for now to reduce noise.
 
         if (!workspaceId) {
             return res.status(400).json({ message: 'Workspace ID required' });
@@ -32,8 +41,21 @@ const getContext = async (req, res) => {
             return res.status(404).json({ message: 'Workspace not found' });
         }
 
+        // Decrypt business context before sending to frontend
+        const decryptedContext = decrypt(workspace.businessContext);
+
+        // Audit Log
+        if (req.user) {
+            auditService.log({
+                userId: req.user.id,
+                workspaceId: workspaceId,
+                action: 'CONTEXT_VIEW',
+                metadata: { source: 'dashboard' }
+            });
+        }
+
         res.json({
-            businessContext: workspace.businessContext,
+            businessContext: decryptedContext,
             documents: workspace.documents,
             competitors: workspace.competitors,
             gapAnalysis: workspace.gapAnalysis
@@ -63,9 +85,24 @@ const updateContext = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to access this workspace' });
         }
 
+        // Encrypt business context before saving to DB
+        const encryptedContext = encrypt(businessContext);
+
         const workspace = await prisma.workspace.update({
             where: { id: workspaceId },
-            data: { businessContext }
+            data: { businessContext: encryptedContext }
+        });
+
+        // Return decrypted context to frontend (or just the saved object but with decrypted context?)
+        // The frontend usually expects the updated object. Let's return the decrypted version.
+        workspace.businessContext = businessContext; // We know what we just sent
+
+        // Audit Log
+        auditService.log({
+            userId: req.user.id,
+            workspaceId: workspaceId,
+            action: 'CONTEXT_UPDATE',
+            metadata: { length: businessContext.length }
         });
 
         res.json(workspace);
@@ -148,6 +185,19 @@ const uploadDocument = async (req, res) => {
             const contextService = require('../services/contextService');
             await contextService.analyzeAndAppend(workspaceId, extractedText, originalname);
         }
+
+        // Audit Log
+        auditService.log({
+            userId: req.user.id,
+            workspaceId: workspaceId,
+            action: 'DOCUMENT_UPLOAD',
+            metadata: {
+                filename: originalname,
+                size: size,
+                type: mimetype,
+                encrypted: true
+            }
+        });
 
         res.status(201).json(document);
     } catch (error) {

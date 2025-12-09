@@ -30,15 +30,31 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>3. AI Processing</h2>
+        <h2>3. Data Security & Encryption</h2>
         <p>
-          Your business context and documents are processed by our AI partners (e.g., OpenAI, Anthropic) solely for the purpose of generating responses for you. 
-          We have data processing agreements in place to ensure your data is not used to train public models without your consent.
+          Security is our top priority. We implement enterprise-grade security measures:
         </p>
+        <ul>
+          <li><strong>Data at Rest:</strong> All sensitive business context and documents are encrypted using <strong>AES-256 encryption</strong> before being stored in our database.</li>
+          <li><strong>Data in Transit:</strong> All data is transmitted over secure SSL/TLS connections.</li>
+          <li><strong>Access Control:</strong> We maintain strict audit logs of all access to your confidential data.</li>
+        </ul>
       </section>
 
       <section>
-        <h2>4. Data Control</h2>
+        <h2>4. AI Processing & Privacy</h2>
+        <p>
+          Your business context and documents are processed by our AI partners (e.g., OpenAI) solely for the purpose of generating insights for you.
+        </p>
+        <p className="mt-2"><strong>Zero-Training Policy:</strong></p>
+        <ul>
+          <li>We use enterprise APIs that <strong>do not use your data for model training</strong>.</li>
+          <li>Your proprietary business secrets remain yours and are never used to improve public AI models.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. Data Control</h2>
         <p>
           You have full control over your data. You can:
         </p>

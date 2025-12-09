@@ -1,5 +1,6 @@
 const genesisAgent = require('../services/ai/genesis');
 const { PrismaClient } = require('@prisma/client');
+const auditService = require('../services/auditService');
 const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
@@ -116,6 +117,14 @@ exports.generateStrategy = async (req, res) => {
                 Full Unified Context (Includes Chat History & PDFs):
                 ${unifiedContext}
                 `;
+
+                // Audit Log
+                auditService.log({
+                    userId: req.user ? req.user.id : null,
+                    workspaceId: workspaceId,
+                    action: 'AI_CONTEXT_ACCESS',
+                    metadata: { type: 'strategy_generation' }
+                });
             }
         }
 
@@ -303,13 +312,22 @@ exports.generateGapAnalysis = async (req, res) => {
             where: { id: workspaceId }
         });
 
+        const { encrypt, decrypt } = require('../utils/encryption');
+
+        // ... (other imports seem to be at the top of the file, this tool edits a chunk)
+
+        // ...
+
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
         }
 
+        // Decrypt business context
+        const businessContext = decrypt(workspace.businessContext);
+
         // Prepare context summary
         const contextSummary = {
-            businessContext: workspace.businessContext,
+            businessContext: businessContext,
             // We could parse more if needed
         };
 
@@ -317,6 +335,16 @@ exports.generateGapAnalysis = async (req, res) => {
 
         if (competitors.length === 0) {
             return res.status(400).json({ message: "No competitors found to analyze against." });
+        }
+
+        // Audit Log for Gap Analysis
+        if (req.user) {
+            auditService.log({
+                userId: req.user.id,
+                workspaceId: workspaceId,
+                action: 'AI_CONTEXT_ACCESS',
+                metadata: { type: 'gap_analysis' }
+            });
         }
 
         const analysis = await genesisAgent.generateGapAnalysis(contextSummary, competitors);
