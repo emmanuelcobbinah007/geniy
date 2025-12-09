@@ -14,15 +14,31 @@ const generateToken = (id) => {
     });
 };
 
-// Helper to get user with workspaces
+// Helper to get user with workspaces (LITE VERSION for faster login)
 const getUserWithWorkspaces = async (userId) => {
     const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
-            workspaces: true, // Owned workspaces
+            workspaces: {
+                select: {
+                    id: true,
+                    name: true,
+                    ownerId: true,
+                    planTier: true,
+                    // EXCLUDING: businessContext, competitors, gapAnalysis (Heavy fields)
+                }
+            }, // Owned workspaces
             memberships: {
                 include: {
-                    workspace: true // Shared workspaces
+                    workspace: {
+                        select: {
+                            id: true,
+                            name: true,
+                            ownerId: true,
+                            planTier: true,
+                            // EXCLUDING heavy fields here too
+                        }
+                    } // Shared workspaces
                 }
             }
         }
@@ -33,7 +49,7 @@ const getUserWithWorkspaces = async (userId) => {
     // Segregate workspaces
     const ownedWorkspaces = user.workspaces;
     const sharedWorkspaces = user.memberships
-        .filter(m => m.role !== 'OWNER') // Filter out owned ones just in case, though schema relates owner differently
+        .filter(m => m.role !== 'OWNER') // Filter out owned ones just in case
         .map(m => m.workspace);
 
     return {
@@ -173,10 +189,9 @@ const googleAuth = async (req, res) => {
 
         if (!user) {
             // Create new user
-            // Generate a random password for Google users
-            const randomPassword = Math.random().toString(36).slice(-8);
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+            // OPTIMIZATION: Do not hash random password. Use placeholder.
+            // Saves ~200-300ms of CPU time.
+            const hashedPassword = "GOOGLE_AUTH_USER_NO_PASSWORD";
 
             user = await prisma.$transaction(async (prisma) => {
                 // 1. Create User

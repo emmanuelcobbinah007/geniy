@@ -336,7 +336,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       },
       onSuccess: (data) => {
           setGapAnalysisData(data)
-          setIsGapAnalysisOpen(true)
+          setActiveTab("strategy")
           // Invalidate query to fetch updated workspace with persisted analysis
           queryClient.invalidateQueries({ queryKey: ["context", workspaceId] })
           toast.success("Gap Analysis Generated!")
@@ -385,6 +385,9 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 </TabsTrigger>
                 <TabsTrigger value="competitors" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
                     Competitor Intel
+                </TabsTrigger>
+                <TabsTrigger value="strategy" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+                    Strategy & Gaps
                 </TabsTrigger>
             </TabsList>
 
@@ -506,7 +509,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                 <Button 
                                     onClick={() => {
                                         if (gapAnalysisData) {
-                                            setIsGapAnalysisOpen(true)
+                                            setActiveTab("strategy")
                                         } else {
                                             gapAnalysisMutation.mutate()
                                         }
@@ -515,7 +518,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
                                     {gapAnalysisMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Target className="w-4 h-4 mr-2" />}
-                                    {gapAnalysisData ? "View Gap Analysis" : "Run Gap Analysis"}
+                                    {gapAnalysisData ? "View Strategic Insights" : "Run Gap Analysis"}
                                 </Button>
                             </div>
                         )}
@@ -560,72 +563,76 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     </div>
                 </div>
             </TabsContent>
-        </Tabs>
-
-        <Dialog open={isGapAnalysisOpen} onOpenChange={setIsGapAnalysisOpen}>
-            <DialogContent 
-                className="max-w-4xl max-h-[85vh] overflow-y-auto scrollbar-hide text-zinc-950 dark:text-zinc-50 dark:bg-zinc-950 dark:border-zinc-800"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                ref={(node) => {
-                    if (node) {
-                        // Initialize Lenis on this container
-                        import('lenis').then(({ default: Lenis }) => {
-                            const lenis = new Lenis({
-                                wrapper: node,
-                                content: node.firstElementChild as HTMLElement,
-                                duration: 1.2,
-                                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                                orientation: 'vertical',
-                                gestureOrientation: 'vertical',
-                                smoothWheel: true,
-                                touchMultiplier: 2,
-                            })
-
-                            function raf(time: number) {
-                                lenis.raf(time)
-                                requestAnimationFrame(raf)
-                            }
-
-                            requestAnimationFrame(raf)
-                        })
-                    }
-                }}
-            >
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                        <img src="/gen_states/gen_consultant.png" alt="Strategy" width={50} height={50} />
-                        Strategic Gap Analysis
-                    </DialogTitle>
-                    <DialogDescription className="dark:text-zinc-400">
-                        AI-driven analysis of unmet market needs and strategic opportunities based on your context and competitors.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-6">
-                    <div className="flex justify-end mb-6">
+            
+            <TabsContent value="strategy" className="flex-1 min-h-0 overflow-y-auto pr-2 pb-20 scrollbar-hide data-[state=inactive]:hidden">
+                <div className="space-y-8 max-w-5xl mx-auto py-4">
+                    
+                    {/* Header Action */}
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Strategic Intelligence</h2>
+                            <p className="text-zinc-500 dark:text-zinc-400">AI-generated roadmap based on your business context and competitors.</p>
+                        </div>
                         <Button 
                             variant="outline" 
-                            size="sm"
                             onClick={() => gapAnalysisMutation.mutate()}
                             disabled={gapAnalysisMutation.isPending}
+                            className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/10 dark:text-emerald-400 dark:border-emerald-900"
                         >
-                             {gapAnalysisMutation.isPending ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
-                             Regenerate Analysis
+                            {gapAnalysisMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                            Refresh Analysis
                         </Button>
                     </div>
 
-                    {gapAnalysisData && (
-                        <div className="space-y-8 mt-4">
-                            {/* Market Gaps */}
-                            <section>
-                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                    {/* Initial Strategy Section */}
+                    {strategy && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Target className="w-5 h-5 text-violet-500" />
+                                    Key Objectives
+                                </h3>
+                                <ul className="space-y-3">
+                                    {strategy.objectives.map((obj, i) => (
+                                        <li key={i} className="flex gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                                            <Badge variant="outline" className="h-5 w-5 rounded-full p-0 flex items-center justify-center shrink-0 border-violet-200 text-violet-700">
+                                                {i + 1}
+                                            </Badge>
+                                            {obj}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Card>
+                            <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-amber-500" />
+                                    Core Hypotheses
+                                </h3>
+                                <ul className="space-y-3">
+                                    {strategy.hypotheses.map((hyp, i) => (
+                                        <li key={i} className="flex gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0 mt-1.5" />
+                                            {hyp}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Gap Analysis Section */}
+                    {gapAnalysisData ? (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                             {/* Market Gaps */}
+                             <section>
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                                     <img src="/gen_states/gen_thinking.png" alt="Gaps" width={50} height={0} />
-                                    Unmet Market Needs
+                                    Unmet Market Needs (Gaps)
                                 </h3>
                                 <div className="grid md:grid-cols-3 gap-4">
                                     {gapAnalysisData.gaps.map((gap: any, i: number) => (
-                                        <Card key={i} className="p-4 bg-white dark:bg-zinc-900 border-1 border-rose-500 dark:border-rose-500 shadow-sm">
-                                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 text-base">{gap.title}</h4>
+                                        <Card key={i} className="p-5 bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/20 dark:to-zinc-900 border-rose-100 dark:border-rose-900/50 shadow-sm hover:shadow-md transition-shadow">
+                                            <h4 className="font-semibold text-rose-900 dark:text-rose-100 mb-2">{gap.title}</h4>
                                             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{gap.description}</p>
                                         </Card>
                                     ))}
@@ -634,14 +641,14 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
 
                             {/* Opportunities */}
                             <section>
-                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                                     <img src="/gen_states/gen_success.png" alt="Opportunities" width={50} height={0} />
-                                    Your Strategic Opportunities
+                                    Strategic Opportunities
                                 </h3>
                                 <div className="grid md:grid-cols-3 gap-4">
                                     {gapAnalysisData.opportunities.map((opp: any, i: number) => (
-                                        <Card key={i} className="p-4 bg-white dark:bg-zinc-900 border-1 border-violet-500 dark:border-violet-500 shadow-sm">
-                                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 text-base">{opp.title}</h4>
+                                        <Card key={i} className="p-5 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-zinc-900 border-violet-100 dark:border-violet-900/50 shadow-sm hover:shadow-md transition-shadow">
+                                            <h4 className="font-semibold text-violet-900 dark:text-violet-100 mb-2">{opp.title}</h4>
                                             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{opp.description}</p>
                                         </Card>
                                     ))}
@@ -650,22 +657,25 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
 
                             {/* Recommendations */}
                             <section>
-                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                                     <img src="/gen_states/gen_bulb.png" alt="Recommendations" width={50} height={0} />
                                     Actionable Recommendations
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {gapAnalysisData.recommendations.map((rec: string, i: number) => (
-                                        <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/30 transition-colors group">
-                                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 border-emerald-200 shrink-0 mt-0.5">
-                                                Step {i + 1}
-                                            </Badge>
-                                            <div className="flex-1">
-                                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-2">{rec}</p>
+                                        <div key={i} className="flex items-start gap-4 p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all group">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 h-8 w-8 flex items-center justify-center rounded-full text-sm">
+                                                    {i + 1}
+                                                </Badge>
+                                                <div className="w-px h-full bg-emerald-100 dark:bg-emerald-900/30 group-last:hidden min-h-[20px]" />
+                                            </div>
+                                            <div className="flex-1 pb-2">
+                                                <p className="text-base text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium mb-3">{rec}</p>
                                                 <Link href={`/create-survey?workspaceId=${workspaceId}&prompt=${encodeURIComponent(rec)}`}>
-                                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 -ml-2">
+                                                    <Button variant="outline" size="sm" className="text-xs border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-400 dark:hover:bg-violet-900/20">
                                                         <Sparkles className="w-3 h-3 mr-1.5" />
-                                                        Create Campaign
+                                                        Create Campaign from this
                                                     </Button>
                                                 </Link>
                                             </div>
@@ -674,10 +684,31 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                 </div>
                             </section>
                         </div>
+                    ) : (
+                         <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50">
+                            <div className="bg-white dark:bg-zinc-800 p-4 rounded-full mb-4 shadow-sm">
+                                <img src="/gen_states/gen_consultant.png" alt="Analyst" width={64} height={64} className="opacity-90" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2">No Strategic Analysis Yet</h3>
+                            <p className="text-zinc-500 max-w-md mb-6">
+                                Run a Gap Analysis to have Geniy compare your business context against competitors and find winning opportunities.
+                            </p>
+                            <Button 
+                                onClick={() => gapAnalysisMutation.mutate()}
+                                disabled={gapAnalysisMutation.isPending}
+                                size="lg"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
+                            >
+                                {gapAnalysisMutation.isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Sparkles className="w-5 h-5 mr-2" />}
+                                Run Strategic Analysis
+                            </Button>
+                        </div>
                     )}
                 </div>
-            </DialogContent>
-        </Dialog>
+            </TabsContent>
+        </Tabs>
+
+
       </div>
     </div>
   )
