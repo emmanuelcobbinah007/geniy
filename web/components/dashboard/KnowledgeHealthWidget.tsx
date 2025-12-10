@@ -31,17 +31,6 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
     enabled: !!workspaceId && !!token,
   })
   
-  if (isLoading) {
-    return (
-      <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 flex items-center justify-center min-h-[180px]">
-        <GenStateIllustration state="loading" label="Analyzing health..." width={120} height={120} />
-      </Card>
-    )
-  }
-
-  const score = health?.completenessScore || 0
-  const isGood = score > 70
-  
   const [suggestions, setSuggestions] = useState<any | null>(null)
   
   // Use existing queryClient to invalidate
@@ -89,6 +78,17 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
           toast.error("Failed to update context.")
       }
   })
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 flex items-center justify-center min-h-[180px]">
+        <GenStateIllustration state="loading" label="Analyzing health..." width={120} height={120} />
+      </Card>
+    )
+  }
+
+  const score = health?.completenessScore || 0
+  const isGood = score > 70
 
   return (
     <Card className="p-6 border-violet-100 dark:border-violet-900/20 bg-gradient-to-br from-white to-violet-50/50 dark:from-zinc-900 dark:to-violet-950/10 hover-lift transition-all duration-300">

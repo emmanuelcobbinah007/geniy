@@ -7,6 +7,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { useParams } from "next/navigation"
 
 import { useQuery } from "@tanstack/react-query"
@@ -43,8 +44,6 @@ export default function DashboardPage() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
   }
-
-import { Skeleton } from "@/components/ui/skeleton"
 
   if (isLoading) {
     return (

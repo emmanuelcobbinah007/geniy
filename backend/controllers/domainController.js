@@ -12,6 +12,11 @@ const getVercelHeaders = () => ({
     'Content-Type': 'application/json',
 });
 
+const getVercelConfig = () => ({
+    headers: getVercelHeaders(),
+    timeout: 10000 // 10 seconds timeout
+});
+
 const addDomain = async (req, res) => {
     const { workspaceId } = req.params;
     const { domain } = req.body;
@@ -26,7 +31,7 @@ const addDomain = async (req, res) => {
         const vercelResponse = await axios.post(
             `${VERCEL_API_URL}/v10/projects/${VERCEL_PROJECT_ID}/domains${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
             { name: domain },
-            { headers: getVercelHeaders() }
+            getVercelConfig()
         );
 
         // 2. Add to Database
@@ -46,7 +51,8 @@ const addDomain = async (req, res) => {
             return res.status(409).json({ error: 'Domain already exists on Vercel or is owned by another account.' });
         }
 
-        res.status(500).json({ error: 'Failed to add domain' });
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        res.status(500).json({ error: `Failed to add domain: ${errorMessage}` });
     }
 };
 
@@ -61,7 +67,7 @@ const getDomains = async (req, res) => {
         res.json(domains);
     } catch (error) {
         console.error('Error fetching domains:', error);
-        res.status(500).json({ error: 'Failed to fetch domains' });
+        res.status(500).json({ error: `Failed to fetch domains: ${error.message}` });
     }
 };
 
@@ -81,16 +87,33 @@ const verifyDomain = async (req, res) => {
         // https://vercel.com/docs/rest-api/endpoints/domains#get-a-domain-configuration
         const configResponse = await axios.get(
             `${VERCEL_API_URL}/v6/domains/${domainRecord.domain}/config${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
-            { headers: getVercelHeaders() }
+            getVercelConfig()
         );
 
         const domainResponse = await axios.get(
             `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domainRecord.domain}${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
-            { headers: getVercelHeaders() }
+            getVercelConfig()
         );
 
         const { misconfigured } = configResponse.data;
         const { verified } = domainResponse.data;
+
+        console.log('--- Domain Verification Result ---');
+        console.log(`Domain: ${domainRecord.domain}`);
+        console.log(`Verified: ${verified}`);
+        console.log(`Misconfigured: ${misconfigured}`);
+
+        // Extract verification error if any
+        let verificationError = null;
+        if (!verified) {
+            // Vercel returns verification errors in the domain object sometimes
+            verificationError = domainResponse.data.verification?.[0]?.reason ||
+                (configResponse.data.misconfigured ? 'Configuration Missing' : null);
+
+            if (verificationError) {
+                console.log('Verification Error:', verificationError);
+            }
+        }
 
         let status = 'pending';
         if (verified && !misconfigured) {
@@ -104,11 +127,16 @@ const verifyDomain = async (req, res) => {
             data: { status },
         });
 
-        res.json(updatedDomain);
+        // Return verification details to frontend
+        res.json({
+            ...updatedDomain,
+            verificationError
+        });
 
     } catch (error) {
         console.error('Error verifying domain:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to verify domain' });
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        res.status(500).json({ error: `Failed to verify domain: ${errorMessage}` });
     }
 };
 
@@ -128,7 +156,7 @@ const deleteDomain = async (req, res) => {
         try {
             await axios.delete(
                 `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domainRecord.domain}${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
-                { headers: getVercelHeaders() }
+                getVercelConfig()
             );
         } catch (vercelError) {
             console.warn("Failed to remove from Vercel (might already be gone):", vercelError.message);
@@ -142,7 +170,7 @@ const deleteDomain = async (req, res) => {
         res.json({ message: 'Domain deleted' });
     } catch (error) {
         console.error('Error deleting domain:', error);
-        res.status(500).json({ error: 'Failed to delete domain' });
+        res.status(500).json({ error: `Failed to delete domain: ${error.message}` });
     }
 };
 
