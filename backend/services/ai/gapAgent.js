@@ -30,11 +30,16 @@ class GapAgent {
             **Goal:** Determine what is MISSING.
             
             **Dimensions to Check:**
-            1. **Value Proposition:** Do we clearly know what they sell and why it's unique?
-            2. **Target Audience:** Do we have specific personas (not just "everyone")?
-            3. **Pricing/Business Model:** Do we know how they make money?
-            4. **Competitors:** Do we know who they are fighting against?
-            5. **Goals:** Do we know what they want to achieve with this survey?
+            1. **Value Proposition:** (Look for: "Value Prop", "USP", "Why us", or descriptions of benefits).
+            2. **Target Audience:** (Look for: "Audience", "Persona", "Target", or specific demographics).
+            3. **Pricing/Business Model:** (Look for: "Model", "Pricing", "Revenue", "SaaS", "Freemium").
+            4. **Competitors:** (Look for: "Competitors", "Alternatives", or list of companies).
+            5. **Goals:** (Look for: "Goals", "Objectives", "KPIs", "Aim").
+
+            **Evaluation Rules:**
+            - If the text contains a section for the dimension (e.g. "Value Proposition: Speed"), count it as **PRESENT** (do not list in missingDimensions).
+            - Only list it in "missingDimensions" if it is **COMPLETELY ABSENT** or explicitly marked as "Unknown".
+            - Be lenient. Short descriptions are fine.
 
             Output JSON Schema:
             {

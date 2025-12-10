@@ -13,6 +13,9 @@ import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Pencil, Save } from "lucide-react"
 
 interface KnowledgeHealthWidgetProps {
   workspaceId: string
@@ -32,6 +35,14 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
   })
   
   const [suggestions, setSuggestions] = useState<any | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  
+  const handleSuggestionChange = (field: string, value: any) => {
+      setSuggestions((prev: any) => ({
+          ...prev,
+          [field]: value
+      }))
+  }
   
   // Use existing queryClient to invalidate
   const queryClient = useQueryClient()
@@ -46,7 +57,9 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
           // HACK: We will use the analyzeContext endpoint but we need to provide the context string.
           // Since we don't have it here, let's fetch the workspace first.
           const ws = await api.getWorkspace(workspaceId, token)
-          return api.analyzeContext(ws.businessContext || "", token, workspaceId)
+          // Pass the current recommendations to help the agent
+          const recommendations = health?.recommendations || [];
+          return api.analyzeContext(ws.businessContext || "", token, workspaceId, recommendations)
       },
       onSuccess: (data) => {
           setSuggestions(data)
@@ -62,7 +75,21 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
           if (!token || !suggestions) return
           
           // Construct the new context string
-          let newContext = `Company: ${suggestions.companyName}\nIndustry: ${suggestions.industry}\nTarget Audience: ${suggestions.targetAudience.join(', ')}\n\n`;
+          // Construct the new context string
+          let newContext = `Company: ${suggestions.companyName}\nIndustry: ${suggestions.industry}\nTarget Audience: ${suggestions.targetAudience.join(', ')}\n`;
+          
+          if (suggestions.valueProposition) {
+              newContext += `Value Proposition: ${suggestions.valueProposition}\n`;
+          }
+          if (suggestions.businessModel) {
+              newContext += `Business Model: ${suggestions.businessModel}\n`;
+          }
+          if (suggestions.goals && suggestions.goals.length > 0) {
+              newContext += `Goals:\n- ${suggestions.goals.join('\n- ')}\n`;
+          }
+          
+          newContext += `\n`;
+          
           if (suggestions.competitors && suggestions.competitors.length > 0) {
               newContext += `Competitors:\n- ${suggestions.competitors.join('\n- ')}\n\n`;
           }
@@ -121,34 +148,139 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
         {/* Suggestion Review UI (Transient State) */}
         {suggestions && (
              <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-lg p-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-4">
                     <h4 className="text-sm font-semibold text-violet-900 dark:text-violet-100 flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-violet-500" />
                         Geniy Found Suggestions
                     </h4>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSuggestions(null)}>
-                        <X className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        {!isEditing ? (
+                             <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-violet-600 dark:text-violet-300" onClick={() => setIsEditing(true)}>
+                                <Pencil className="w-3 h-3 mr-1" /> Edit
+                            </Button>
+                        ) : (
+                             <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-green-600 dark:text-green-400" onClick={() => setIsEditing(false)}>
+                                <Save className="w-3 h-3 mr-1" /> Done
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-red-500" onClick={() => { setSuggestions(null); setIsEditing(false); }}>
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
                 
-                <div className="space-y-2 mb-4">
-                    {suggestions.companyName && suggestions.companyName !== "Unknown" && (
-                        <div className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline" className="bg-white dark:bg-zinc-900 border-violet-200">Company</Badge>
-                            <span>{suggestions.companyName}</span>
-                        </div>
+                <div className="grid grid-cols-[100px_1fr] gap-x-4 gap-y-4 mb-4">
+                    {/* Collaborative Editing Fields */}
+                    
+                    {/* Company */}
+                    <div className="flex items-center">
+                         <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Company</Badge>
+                    </div>
+                    <div>
+                        {isEditing ? (
+                            <Input 
+                                value={suggestions.companyName} 
+                                onChange={(e) => handleSuggestionChange('companyName', e.target.value)}
+                                className="h-8 bg-white/50 dark:bg-zinc-900/50"
+                            />
+                        ) : (
+                            <span className="text-sm text-zinc-800 dark:text-zinc-200 font-medium">{suggestions.companyName}</span>
+                        )}
+                    </div>
+
+                    {/* Industry */}
+                    <div className="flex items-center">
+                         <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Industry</Badge>
+                    </div>
+                    <div>
+                        {isEditing ? (
+                            <Input 
+                                value={suggestions.industry} 
+                                onChange={(e) => handleSuggestionChange('industry', e.target.value)}
+                                className="h-8 bg-white/50 dark:bg-zinc-900/50"
+                            />
+                        ) : (
+                             <span className="text-sm text-zinc-800 dark:text-zinc-200">{suggestions.industry}</span>
+                        )}
+                    </div>
+
+                    {/* Audience */}
+                    <div className="flex items-start pt-1">
+                         <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Audience</Badge>
+                    </div>
+                    <div>
+                        {isEditing ? (
+                            <Textarea 
+                                value={suggestions.targetAudience.join(", ")} 
+                                onChange={(e) => handleSuggestionChange('targetAudience', e.target.value.split(',').map((s: string) => s.trim()))}
+                                className="min-h-[60px] bg-white/50 dark:bg-zinc-900/50 text-xs"
+                            />
+                        ) : (
+                             <span className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed block">{suggestions.targetAudience.join(", ")}</span>
+                        )}
+                    </div>
+
+                    {/* Value Prop */}
+                    {(suggestions.valueProposition || isEditing) && (
+                        <>
+                            <div className="flex items-start pt-1">
+                                <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Value Prop</Badge>
+                            </div>
+                            <div>
+                                {isEditing ? (
+                                    <Textarea 
+                                        value={suggestions.valueProposition || ""} 
+                                        onChange={(e) => handleSuggestionChange('valueProposition', e.target.value)}
+                                        className="min-h-[80px] bg-white/50 dark:bg-zinc-900/50 text-xs"
+                                        placeholder="Add value proposition..."
+                                    />
+                                ) : (
+                                    <span className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed block">{suggestions.valueProposition}</span>
+                                )}
+                            </div>
+                        </>
                     )}
-                    {suggestions.industry && suggestions.industry !== "General" && (
-                        <div className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline" className="bg-white dark:bg-zinc-900 border-violet-200">Industry</Badge>
-                            <span>{suggestions.industry}</span>
-                        </div>
+
+                    {/* Business Model */}
+                    {(suggestions.businessModel || isEditing) && (
+                        <>
+                            <div className="flex items-center">
+                                <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Model</Badge>
+                            </div>
+                            <div>
+                                {isEditing ? (
+                                    <Input 
+                                        value={suggestions.businessModel || ""} 
+                                        onChange={(e) => handleSuggestionChange('businessModel', e.target.value)}
+                                        className="h-8 bg-white/50 dark:bg-zinc-900/50"
+                                        placeholder="e.g. SaaS, Marketplace..."
+                                    />
+                                ) : (
+                                    <span className="text-sm text-zinc-800 dark:text-zinc-200">{suggestions.businessModel}</span>
+                                )}
+                            </div>
+                        </>
                     )}
-                    {suggestions.targetAudience && suggestions.targetAudience.length > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
-                            <Badge variant="outline" className="bg-white dark:bg-zinc-900 border-violet-200 mt-0.5">Audience</Badge>
-                            <span className="flex-1">{suggestions.targetAudience.join(", ")}</span>
-                        </div>
+
+                    {/* Goals */}
+                     {(suggestions.goals?.length > 0 || isEditing) && (
+                        <>
+                            <div className="flex items-start pt-1">
+                                <Badge variant="outline" className="w-full justify-center bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800 text-zinc-700 dark:text-zinc-300">Goals</Badge>
+                            </div>
+                            <div>
+                                {isEditing ? (
+                                    <Textarea 
+                                        value={suggestions.goals?.join(", ") || ""} 
+                                        onChange={(e) => handleSuggestionChange('goals', e.target.value.split(',').map((s: string) => s.trim()))}
+                                        className="min-h-[60px] bg-white/50 dark:bg-zinc-900/50 text-xs"
+                                        placeholder="Add goals..."
+                                    />
+                                ) : (
+                                    <span className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed block">{suggestions.goals?.join(", ")}</span>
+                                )}
+                            </div>
+                        </>
                     )}
                 </div>
 

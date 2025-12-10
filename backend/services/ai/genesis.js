@@ -23,12 +23,25 @@ class GenesisAgent {
      * Step 1: Analyze Context
      * Extracts key entities from the raw BCD text.
      */
-    async analyzeContext(rawText) {
+    async analyzeContext(rawText, recommendations = []) {
+        let focusInstruction = "";
+        if (recommendations && recommendations.length > 0) {
+            focusInstruction = `
+            **FOCUS AREAS (Based on previous analysis):**
+            The user has been advised to:
+            ${recommendations.map(r => `- ${r}`).join('\n')}
+            
+            **INSTRUCTION:** Pay EXTRA attention to inferring details related to these recommendations. If the context is vague, make a reasonable professional inference for these specific areas.
+             `;
+        }
+
         const prompt = `
       Analyze the following business context and extract key information into a JSON object.
       
       Context:
-      "${rawText.substring(0, 8000)}" // Truncate to avoid token limits if necessary
+      "${rawText.substring(0, 8000)}" 
+      
+      ${focusInstruction}
 
       **CRITICAL INSTRUCTION:**
       If the context does not explicitly state the company's goals or value proposition, you MUST **INFER** them based on the product description, industry, and typical business needs. Do not return "Unknown" unless absolutely impossible to guess.
@@ -41,6 +54,7 @@ class GenesisAgent {
         "targetAudience": ["string"],
         "valueProposition": "string", // Infer if missing
         "goals": ["string"], // Infer if missing (e.g., "Increase user retention", "Validate pricing")
+        "businessModel": "string", // Infer if missing (e.g., "SaaS", "Freemium", "Direct Sales")
         "competitors": ["string"] // List any mentioned competitors
       }
     `;

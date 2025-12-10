@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const {
     updateWorkspace,
+    getWorkspace,
     getWorkspaceMembers,
     createWorkspace,
     addMember
@@ -17,6 +18,7 @@ router.get('/:id/members', protect, getWorkspaceMembers);
 router.post('/:id/members', protect, addMember);
 router.get('/dashboard', protect, getDashboardStats);
 router.get('/:id/health', protect, getWorkspaceHealth);
+router.get('/:id', protect, getWorkspace);
 router.post('/paystack/initialize', protect, initializeTransaction);
 router.post('/paystack/verify', protect, verifyTransaction);
 

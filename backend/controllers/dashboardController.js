@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const gapAgent = require('../services/ai/gapAgent');
+const { decrypt } = require('../utils/encryption');
 
 exports.getDashboardStats = async (req, res) => {
     try {
@@ -117,9 +118,12 @@ exports.getWorkspaceHealth = async (req, res) => {
 
         if (!workspace) return res.status(404).json({ error: "Workspace not found" });
 
+        // Decrypt business context
+        const decryptedContext = decrypt(workspace.businessContext || "");
+
         // Call Gap Agent
         const analysis = await gapAgent.analyze(
-            workspace.businessContext || "",
+            decryptedContext,
             workspace.documents.map(d => d.filename)
         );
 

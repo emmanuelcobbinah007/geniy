@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { decrypt } = require('../utils/encryption');
 
 // @desc    Update workspace details
 // @route   PUT /api/workspaces/:id
@@ -25,6 +26,54 @@ const updateWorkspace = async (req, res) => {
             where: { id },
             data: { name }
         });
+
+        res.json(workspace);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Get workspace details
+// @route   GET /api/workspaces/:id
+// @access  Private
+const getWorkspace = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Check if user is member of workspace
+        const member = await prisma.workspaceMember.findFirst({
+            where: {
+                workspaceId: id,
+                userId: req.user.id
+            }
+        });
+
+        if (!member) {
+            return res.status(403).json({ message: 'Not authorized to verify this workspace' });
+        }
+
+        const workspace = await prisma.workspace.findUnique({
+            where: { id },
+            include: {
+                members: {
+                    include: {
+                        user: {
+                            select: { id: true, name: true, email: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!workspace) {
+            return res.status(404).json({ message: 'Workspace not found' });
+        }
+
+        // Decrypt business context if present
+        if (workspace.businessContext) {
+            workspace.businessContext = decrypt(workspace.businessContext);
+        }
 
         res.json(workspace);
     } catch (error) {
@@ -176,6 +225,7 @@ const addMember = async (req, res) => {
 
 module.exports = {
     updateWorkspace,
+    getWorkspace,
     getWorkspaceMembers,
     createWorkspace,
     addMember

@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
     try {
-        const { contextText, workspaceId } = req.body;
+        const { contextText, workspaceId, recommendations } = req.body;
         if (!contextText) {
             return res.status(400).json({ error: "Context text is required" });
         }
 
         // Step 1: Analyze Context (Fast)
-        const contextSummary = await genesisAgent.analyzeContext(contextText);
+        const contextSummary = await genesisAgent.analyzeContext(contextText, recommendations);
 
         // Step 2: Send Response Immediately
         res.json(contextSummary);
