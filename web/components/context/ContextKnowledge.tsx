@@ -15,6 +15,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { LenisScroll } from "@/components/ui/lenis-scroll"
 
 interface ContextDocument {
   id: string
@@ -43,9 +44,10 @@ interface ContextKnowledgeProps {
   competitors?: any[]
   lastAnalysisSummary?: string | null
   gapAnalysis?: any
+  analyzingCompetitors?: string[]
 }
 
-export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [], lastAnalysisSummary, gapAnalysis }: ContextKnowledgeProps) {
+export function ContextKnowledge({ initialContext, documents, workspaceId, competitors = [], lastAnalysisSummary, gapAnalysis, analyzingCompetitors = [] }: ContextKnowledgeProps) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const [context, setContext] = useState(initialContext)
@@ -86,20 +88,45 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
         
         // Use DB competitors if available, otherwise parse from text
         let competitorNames: string[] = [];
-        if (competitors && competitors.length > 0) {
-            competitorNames = competitors.map(c => c.name);
+        
+        // Merge DB and Text competitors (Unique) with DB taking precedence on name casing
+        if (initialContext || (competitors && competitors.length > 0)) {
+            const dbNames = competitors && competitors.length > 0 ? competitors.map(c => c.name) : [];
+            const textNames = [];
+            
+             // Fallback: Extract competitors from text if not in DB
+             // We do this to catch "just discovered" competitors that aren't in DB yet
+             // Fallback: Extract competitors from text if not in DB
+             // We do this to catch "just discovered" competitors that aren't in DB yet
+             const competitorsSplit = initialContext.split("Competitors:");
+             if (competitorsSplit.length > 1) {
+                 const competitorsSection = competitorsSplit[1].split("\n\n")[0];
+                 const lines = competitorsSection.split('\n');
+                 for (const line of lines) {
+                     const trimmed = line.trim();
+                     if (trimmed.startsWith('- ')) {
+                         const name = trimmed.substring(2);
+                         if (!dbNames.some(dbn => dbn.toLowerCase() === name.toLowerCase())) {
+                            textNames.push(name);
+                         }
+                     }
+                 }
+             }
+             
+             competitorNames = [...dbNames, ...textNames];
         } else {
-            // Fallback: Extract competitors from text
-            const competitorsSection = initialContext.split("Competitors:")[1];
-            if (competitorsSection) {
-                const lines = competitorsSection.split('\n');
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (trimmed.startsWith('- ')) {
-                        competitorNames.push(trimmed.substring(2));
-                    }
-                }
-            }
+             // If local array was empty, check text
+             const competitorsSplit = initialContext.split("Competitors:");
+             if (competitorsSplit.length > 1) {
+                 const competitorsSection = competitorsSplit[1].split("\n\n")[0];
+                 const lines = competitorsSection.split('\n');
+                 for (const line of lines) {
+                     const trimmed = line.trim();
+                     if (trimmed.startsWith('- ')) {
+                         competitorNames.push(trimmed.substring(2));
+                     }
+                 }
+             }
         }
 
         if (companyMatch || competitorNames.length > 0) {
@@ -352,7 +379,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
   }
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div className="space-y-6 flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">Geniy's Brain</h2>
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
@@ -377,8 +404,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <div className="flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
             <TabsList className="w-full justify-start border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 h-auto rounded-none mb-4">
                 <TabsTrigger value="context" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
                     Context & Documents
@@ -391,26 +418,27 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="context" className="flex-1 flex flex-col gap-6 min-h-0 data-[state=inactive]:hidden">
+            <TabsContent value="context" className="flex flex-col gap-6 pb-4 data-[state=inactive]:hidden">
                 {/* Text Context */}
-                <Card className="p-6 flex flex-col flex-1 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+                <Card className="p-6 flex flex-col h-[45vh] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm min-h-[300px]">
                 <div className="flex items-center justify-between mb-4">
                     <label className="text-sm font-medium text-zinc-500">Business Context</label>
                     {strategyMutation.isPending && <span className="text-xs text-violet-500 animate-pulse">Generating Strategy...</span>}
                 </div>
-                <Textarea 
-                    id="business-context-input"
-                    value={context}
-                    readOnly
-                    className="flex-1 resize-none border-zinc-200 dark:border-zinc-800 focus:ring-0 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed"
-                    placeholder="Context will appear here after AI analysis or document upload..."
-                />
+                <LenisScroll className="flex-1 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-900/50 min-h-0">
+                    <div 
+                        id="business-context-display"
+                        className="w-full min-h-full text-zinc-800 dark:text-zinc-200 font-mono text-sm leading-relaxed p-4 whitespace-pre-wrap"
+                    >
+                        {context || "Context will appear here after AI analysis or document upload..."}
+                    </div>
+                </LenisScroll>
                 </Card>
 
                 {/* Documents */}
                 <Card 
                     id="upload-documents-section"
-                    className={`p-6 flex flex-col h-1/3 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
+                    className={`p-6 flex flex-col  border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm transition-colors min-h-[400px] ${isDragging ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : ''}`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -441,9 +469,10 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                <LenisScroll className="flex-1 pr-2 min-h-0">
+                    <div className="space-y-2">
                     {documents.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
+                        <div className="h-full flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg min-h-[100px]">
                             <FileText className="w-8 h-8 mb-2 opacity-50" />
                             <p className="text-sm">{isDragging ? "Drop file to upload" : "No documents uploaded yet"}</p>
                         </div>
@@ -462,7 +491,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             </div>
                         ))
                     )}
-                </div>
+                    </div>
+                </LenisScroll>
                 {isDragging && (
                     <div className="absolute inset-0 bg-violet-500/10 backdrop-blur-[1px] rounded-xl flex items-center justify-center border-2 border-violet-500 border-dashed z-50">
                         <div className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-violet-600 font-medium flex items-center gap-2">
@@ -474,52 +504,12 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 </Card>
             </TabsContent>
 
-            <TabsContent value="competitors" className="flex-1 min-h-0 relative data-[state=inactive]:hidden">
-                <div 
-                    ref={(node) => {
-                        if (node) {
-                            // Initialize Lenis on this container
-                            import('lenis').then(({ default: Lenis }) => {
-                                const lenis = new Lenis({
-                                    wrapper: node,
-                                    content: node.firstElementChild as HTMLElement,
-                                    duration: 1.2,
-                                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                                    orientation: 'vertical',
-                                    gestureOrientation: 'vertical',
-                                    smoothWheel: true,
-                                    touchMultiplier: 2,
-                                })
-
-                                function raf(time: number) {
-                                    lenis.raf(time)
-                                    requestAnimationFrame(raf)
-                                }
-
-                                requestAnimationFrame(raf)
-                            })
-                        }
-                    }}
-                    className="absolute inset-0 overflow-y-auto pr-2 pb-20 scrollbar-hide"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
+            <TabsContent value="competitors" className="flex flex-col gap-6 data-[state=inactive]:hidden">
+                <div className="pr-2 pb-20">
                     <div className="space-y-6">
                         {displayCompetitors && displayCompetitors.length > 0 && (
                             <div className="flex justify-end mb-4">
-                                <Button 
-                                    onClick={() => {
-                                        if (gapAnalysisData) {
-                                            setActiveTab("strategy")
-                                        } else {
-                                            gapAnalysisMutation.mutate()
-                                        }
-                                    }}
-                                    disabled={gapAnalysisMutation.isPending}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                >
-                                    {gapAnalysisMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Target className="w-4 h-4 mr-2" />}
-                                    {gapAnalysisData ? "View Strategic Insights" : "Run Gap Analysis"}
-                                </Button>
+                                {/* Action buttons can go here if needed */}
                             </div>
                         )}
 
@@ -561,10 +551,12 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             ))
                         )}
                     </div>
+
                 </div>
             </TabsContent>
             
-            <TabsContent value="strategy" className="flex-1 min-h-0 overflow-y-auto pr-2 pb-20 scrollbar-hide data-[state=inactive]:hidden">
+            <TabsContent value="strategy" className="flex flex-col gap-4 data-[state=inactive]:hidden">
+                <div className="pr-2 pb-20">
                 <div className="space-y-8 max-w-5xl mx-auto py-4">
                     
                     {/* Header Action */}
@@ -704,6 +696,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             </Button>
                         </div>
                     )}
+                    </div>
                 </div>
             </TabsContent>
         </Tabs>

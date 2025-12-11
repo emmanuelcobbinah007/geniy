@@ -5,23 +5,30 @@ const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
     try {
-        const { contextText, workspaceId, recommendations } = req.body;
-        if (!contextText) {
-            return res.status(400).json({ error: "Context text is required" });
+
+        const { workspaceId, recommendations } = req.body;
+
+        if (!workspaceId) {
+            return res.status(400).json({ error: "Workspace ID is required for unified analysis" });
+        }
+
+        const contextService = require('../services/contextService');
+        const unifiedContext = await contextService.getUnifiedContext(workspaceId);
+
+        if (!unifiedContext) {
+            return res.status(400).json({ error: "No context found for this workspace" });
         }
 
         // Step 1: Analyze Context (Fast)
-        const contextSummary = await genesisAgent.analyzeContext(contextText, recommendations);
+        const contextSummary = await genesisAgent.analyzeContext(unifiedContext, recommendations);
 
         // Step 2: Send Response Immediately
         res.json(contextSummary);
 
         // Step 3: Trigger Background Competitor Analysis (Fire-and-forget)
-        if (workspaceId) {
-            runBackgroundCompetitorAnalysis(contextSummary, workspaceId).catch(err => {
-                console.error("Background Competitor Analysis Failed:", err);
-            });
-        }
+        runBackgroundCompetitorAnalysis(contextSummary, workspaceId).catch(err => {
+            console.error("Background Competitor Analysis Failed:", err);
+        });
 
     } catch (error) {
         console.error("Context Analysis Error:", error);
@@ -42,15 +49,11 @@ async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
             select: { competitors: true }
         });
 
-        // CRITICAL: If competitors already exist, DO NOT run discovery.
-        if (workspace && workspace.competitors && workspace.competitors.length > 0) {
-            console.log(`Workspace ${workspaceId} already has ${workspace.competitors.length} competitors. Skipping discovery.`);
-            return;
-        }
+        // REMOVED: Early exit check. We want to discover new competitors even if some exist.
+        // if (workspace && workspace.competitors && workspace.competitors.length > 0) { ... }
     } catch (err) {
         console.error("Failed to check existing competitors:", err);
-        // Continue if check fails? Or abort? Safer to abort to avoid redundant costs.
-        return;
+        // Continue regardless
     }
 
     // Discover Competitors (Agentic - Slow)
@@ -175,23 +178,13 @@ exports.generateSurvey = async (req, res) => {
 
 exports.chatWithContext = async (req, res) => {
     try {
-        const { context, messages, workspaceId } = req.body;
-        // Note: 'context' param here might be the old client-side context. 
-        // We will IGNORE it and fetch fresh context using ContextService to ensure single source of truth.
-
-        if (!messages) {
-            return res.status(400).json({ error: "Messages are required" });
+        const { workspaceId, messages } = req.body;
+        if (!workspaceId) {
+            return res.status(400).json({ error: "Workspace ID is required" });
         }
 
-        let enrichedContext = "";
-
-        if (workspaceId) {
-            const contextService = require('../services/contextService');
-            enrichedContext = await contextService.getUnifiedContext(workspaceId);
-        } else {
-            // Fallback if no workspaceId (shouldn't happen in dashboard)
-            enrichedContext = context || "";
-        }
+        const contextService = require('../services/contextService');
+        const enrichedContext = await contextService.getUnifiedContext(workspaceId);
 
         const result = await genesisAgent.chatWithBrain(enrichedContext, messages);
 

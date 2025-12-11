@@ -14,12 +14,14 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 
 import { useParams } from "next/navigation"
+import { LenisScroll } from "@/components/ui/lenis-scroll"
 
 export default function ContextPage() {
   const { token } = useAuth()
   const params = useParams()
   const workspaceId = params?.workspaceId as string
   const [showMobileChat, setShowMobileChat] = useState(false)
+  const [analyzingCompetitors, setAnalyzingCompetitors] = useState<string[]>([])
 
   const { data, isLoading, isRefetching } = useQuery({
     queryKey: ["context", workspaceId],
@@ -33,6 +35,33 @@ export default function ContextPage() {
     refetchOnWindowFocus: true,
     refetchInterval: 5000, // Poll every 5 seconds to check for background analysis updates
   })
+
+
+
+  // Effect to clear analyzing state when data actually updates
+  useEffect(() => {
+      if (data?.competitors) {
+          // Clear "analyzing" state for any competitor that now has data
+          setAnalyzingCompetitors(prev => {
+              if (prev.length === 0) return prev;
+              const next = prev.filter(name => {
+                  if (name === "ALL") return false; 
+                  const comp = data.competitors.find((c: any) => c.name === name);
+                  return !comp?.analysis; // Keep analyzing if no analysis yet
+              });
+              
+              if (prev.includes("ALL")) {
+                  return []; 
+              }
+              
+              return next;
+          });
+      }
+  }, [data?.competitors]);
+
+  const handleAnalysisStart = (targets: string[]) => {
+      setAnalyzingCompetitors(prev => [...prev, ...targets]);
+  }
 
   if (isLoading) {
     return (
@@ -51,20 +80,26 @@ export default function ContextPage() {
           </div>
       )}
       {/* Left: Knowledge Base */}
-      <div className="h-full min-h-0 lg:col-span-2">
+      <LenisScroll className="lg:col-span-2 pr-2">
         <ContextKnowledge 
             initialContext={data?.businessContext || ""} 
             documents={data?.documents || []} 
             workspaceId={workspaceId}
             competitors={data?.competitors || []}
             lastAnalysisSummary={data?.lastAnalysisSummary}
+            lastAnalysisSummary={data?.lastAnalysisSummary}
             gapAnalysis={data?.gapAnalysis}
+            analyzingCompetitors={analyzingCompetitors}
         />
-      </div>
+      </LenisScroll>
 
       {/* Right: Brain Chat - Desktop */}
       <div className="hidden lg:block h-full min-h-0">
-        <BrainChat context={data?.businessContext || ""} workspaceId={workspaceId} />
+        <BrainChat 
+            context={data?.businessContext || ""} 
+            workspaceId={workspaceId} 
+            onAnalysisStart={handleAnalysisStart}
+        />
       </div>
 
       {/* Mobile Chat FAB */}
@@ -106,7 +141,12 @@ export default function ContextPage() {
                         </Button>
                     </div>
                     <div className="flex-1 min-h-0">
-                        <BrainChat context={data?.businessContext || ""} workspaceId={workspaceId} hideHeader={true} />
+                        <BrainChat 
+                            context={data?.businessContext || ""} 
+                            workspaceId={workspaceId} 
+                            hideHeader={true} 
+                            onAnalysisStart={handleAnalysisStart}
+                        />
                     </div>
                 </motion.div>
             </>

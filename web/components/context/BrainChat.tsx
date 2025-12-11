@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { LenisScroll } from "@/components/ui/lenis-scroll"
 import { Send, Bot, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
@@ -51,15 +51,15 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
-  const scrollViewportRef = useRef<HTMLDivElement>(null)
+  const lenisRef = useRef<any>(null)
 
   const [memoryUpdate, setMemoryUpdate] = useState<string | null>(null)
 
   // Auto-scroll to bottom
   useEffect(() => {
-    const scrollContainer = document.querySelector('[data-radix-scroll-area-viewport]');
-    if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    if (lenisRef.current) {
+        // Use immediate scroll for typing, smooth for new messages
+        lenisRef.current.scrollTo('bottom', { immediate: isTyping })
     }
   }, [messages, streamingMessageId, isTyping]) 
 
@@ -140,7 +140,7 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
         )}
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1">
+        <LenisScroll className="flex-1 min-h-0" onInit={(lenis) => lenisRef.current = lenis}>
           <div className="space-y-4 p-4 pb-4">
             {messages.map((msg) => (
                 <div
@@ -192,7 +192,7 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
                 </div>
             )}
           </div>
-        </ScrollArea>
+        </LenisScroll>
 
 
         {/* Input Area */}
