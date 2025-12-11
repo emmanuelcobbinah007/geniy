@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import { MessageCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -44,23 +45,45 @@ export default function ContextPage() {
           // Clear "analyzing" state for any competitor that now has data
           setAnalyzingCompetitors(prev => {
               if (prev.length === 0) return prev;
+              // Refined logic: If "ALL" was active, we transition to tracking specific unanalyzed competitors
+              // preventing the loaders from stopping prematurely when one finishes.
+              
+              if (prev.includes("ALL")) {
+                  const stillUnanalyzed = data.competitors
+                      .filter((c: any) => !c.analysis)
+                      .map((c: any) => c.name);
+                  
+                  // If all are analyzed, clear the state.
+                  // Otherwise, return the specific names of those still pending.
+                  return stillUnanalyzed;
+              }
+
               const next = prev.filter(name => {
-                  if (name === "ALL") return false; 
                   const comp = data.competitors.find((c: any) => c.name === name);
                   return !comp?.analysis; // Keep analyzing if no analysis yet
               });
-              
-              if (prev.includes("ALL")) {
-                  return []; 
-              }
               
               return next;
           });
       }
   }, [data?.competitors]);
 
-  const handleAnalysisStart = (targets: string[]) => {
-      setAnalyzingCompetitors(prev => [...prev, ...targets]);
+  // Toast notification on completion
+  const wasAnalyzing = useRef(false);
+  useEffect(() => {
+      if (analyzingCompetitors.length > 0) {
+          wasAnalyzing.current = true;
+      } else if (wasAnalyzing.current && analyzingCompetitors.length === 0) {
+          wasAnalyzing.current = false;
+          // Simple completion message
+          toast.success("Competitor Deep Dive Complete", {
+              description: "Geniy has finished analyzing all selected competitors."
+          });
+      }
+  }, [analyzingCompetitors]);
+
+  const handleAnalysisStart = (target: string) => {
+      setAnalyzingCompetitors(prev => [...prev, target]);
   }
 
   if (isLoading) {
@@ -87,7 +110,7 @@ export default function ContextPage() {
             workspaceId={workspaceId}
             competitors={data?.competitors || []}
             lastAnalysisSummary={data?.lastAnalysisSummary}
-            lastAnalysisSummary={data?.lastAnalysisSummary}
+
             gapAnalysis={data?.gapAnalysis}
             analyzingCompetitors={analyzingCompetitors}
         />

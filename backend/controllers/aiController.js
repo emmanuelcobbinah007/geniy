@@ -205,6 +205,8 @@ exports.chatWithContext = async (req, res) => {
             });
 
             if (workspace && workspace.competitors) {
+                console.log(`[Agent Action] Found ${workspace.competitors.length} competitors in DB.`);
+
                 let targets = [];
                 if (result.actionTarget === 'ALL') {
                     targets = workspace.competitors.map(c => c.name);
@@ -215,16 +217,55 @@ exports.chatWithContext = async (req, res) => {
                     if (match) targets.push(match.name);
                 }
 
+                // FALLBACK: If DB is empty, try to parse from context (Just-in-Time Discovery)
+                // This matches frontend logic to ensure we don't miss "detected" but unsaved competitors
+                if (targets.length === 0 && result.actionTarget === 'ALL') {
+                    // Need decryption for context
+                    const { decrypt } = require('../utils/encryption');
+                    const decryptedContext = workspace.businessContext ? decrypt(workspace.businessContext) : "";
+
+                    const competitorsSplit = decryptedContext.split("Competitors:");
+                    if (competitorsSplit.length > 1) {
+                        const competitorsSection = competitorsSplit[1].split("\n\n")[0];
+                        const lines = competitorsSection.split('\n');
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (trimmed.startsWith('- ')) {
+                                targets.push(trimmed.substring(2));
+                            } else if (trimmed.length > 0 && !trimmed.startsWith('Competitors')) {
+                                // Attempt to catch lines that might not have dash but look like names (heuristic)
+                                // Skipping purely empty lines
+                            }
+                        }
+                    }
+                    console.log(`[Agent Action] Fallback discovery found ${targets.length} targets from text.`);
+                }
+
+                // If STILL no targets, cancel the action to prevent UI hanging
+                if (targets.length === 0) {
+                    console.log("[Agent Action] No targets found. Cancelling action.");
+                    result.action = null;
+                    result.actionTarget = null;
+                    result.message += " (I couldn't find any competitors listed in your context to analyze. Please ensure they are listed under 'Competitors:' in the Context tab.)";
+                }
+
+                console.log(`[Agent Action] Identified targets:`, targets);
+
                 // Trigger background analysis for each target
                 // Run sequentially to avoid rate limits
                 (async () => {
                     const results = [];
+                    // Need decryption for context
+                    const { decrypt } = require('../utils/encryption');
+                    const decryptedContext = workspace.businessContext ? decrypt(workspace.businessContext) : "";
+
                     for (const compName of targets) {
                         try {
-                            console.log(`Starting background analysis for ${compName}...`);
+                            console.log(`[Agent Action] Starting background analysis for ${compName}...`);
                             // Extract industry from businessContext if possible, or default
-                            const industryMatch = workspace.businessContext ? workspace.businessContext.match(/Industry:\s*(.+?)(\n|$)/) : null;
+                            const industryMatch = decryptedContext ? decryptedContext.match(/Industry:\s*(.+?)(\n|$)/) : null;
                             const industry = industryMatch ? industryMatch[1].trim() : "General";
+                            console.log(`[Agent Action] Detected Industry: ${industry}`);
 
                             const analysis = await genesisAgent.analyzeCompetitor(compName, industry);
 
@@ -232,12 +273,14 @@ exports.chatWithContext = async (req, res) => {
                                 // Update the specific competitor in the array
                                 const freshWorkspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
                                 if (freshWorkspace && freshWorkspace.competitors) {
-                                    const updatedCompetitors = freshWorkspace.competitors.map(c => {
-                                        if (c.name === compName) {
-                                            return { ...c, analysis: analysis };
-                                        }
-                                        return c;
-                                    });
+                                    const existingIndex = freshWorkspace.competitors.findIndex(c => c.name === compName);
+                                    let updatedCompetitors = [...freshWorkspace.competitors];
+
+                                    if (existingIndex >= 0) {
+                                        updatedCompetitors[existingIndex] = { ...updatedCompetitors[existingIndex], analysis: analysis };
+                                    } else {
+                                        updatedCompetitors.push({ name: compName, analysis: analysis, pricingModel: "Unknown" }); // Default props
+                                    }
 
                                     await prisma.workspace.update({
                                         where: { id: workspaceId },
@@ -252,15 +295,51 @@ exports.chatWithContext = async (req, res) => {
                             await new Promise(resolve => setTimeout(resolve, 2000));
 
                         } catch (err) {
-                            console.error(`Failed background analysis for ${compName}:`, err);
+                            console.error(`[Agent Action] Failed background analysis for ${compName}:`, err);
+
+                            // Save error state to DB so UI stops loading
+                            try {
+                                const errorAnalysis = {
+                                    error: true,
+                                    strengths: ["Analysis Failed: " + (err.message || "Unknown Error")], // Fallback for UI that expects arrays
+                                    weaknesses: ["Please try again later."],
+                                    pricingModel: "Error",
+                                    uniqueSellingPoint: "Analysis Failed"
+                                };
+
+                                const freshWorkspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+                                if (freshWorkspace && freshWorkspace.competitors) {
+                                    const existingIndex = freshWorkspace.competitors.findIndex(c => c.name === compName);
+                                    let updatedCompetitors = [...freshWorkspace.competitors];
+
+                                    if (existingIndex >= 0) {
+                                        updatedCompetitors[existingIndex] = { ...updatedCompetitors[existingIndex], analysis: errorAnalysis };
+                                    } else {
+                                        updatedCompetitors.push({ name: compName, analysis: errorAnalysis, pricingModel: "Error" });
+                                    }
+
+                                    await prisma.workspace.update({
+                                        where: { id: workspaceId },
+                                        data: { competitors: updatedCompetitors }
+                                    });
+                                    console.log(`[Agent Action] Saved error state for ${compName}`);
+                                }
+                            } catch (saveErr) {
+                                console.error("Critical: Failed to save error state to DB", saveErr);
+                            }
                         }
                     }
 
-                })();
+                })().catch(err => console.error("[Agent Action] Background task failed:", err));
             }
         }
 
-        res.json({ reply: result.message, memory: result.memory });
+        res.json({
+            reply: result.message,
+            memory: result.memory,
+            action: result.action,
+            actionTarget: result.actionTarget
+        });
     } catch (error) {
         console.error("Chat Error:", error);
         res.status(500).json({ error: "Failed to chat" });
@@ -353,6 +432,36 @@ exports.generateGapAnalysis = async (req, res) => {
     } catch (error) {
         console.error("Gap Analysis Error:", error);
         res.status(500).json({ message: "Failed to generate gap analysis" });
+    }
+};
+
+exports.deleteCompetitor = async (req, res) => {
+    try {
+        const { workspaceId, competitorName } = req.body;
+        if (!workspaceId || !competitorName) {
+            return res.status(400).json({ error: "Workspace ID and competitor name are required" });
+        }
+
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId }
+        });
+
+        if (!workspace) {
+            return res.status(404).json({ error: "Workspace not found" });
+        }
+
+        const competitors = workspace.competitors || [];
+        const updatedCompetitors = competitors.filter(c => c.name.toLowerCase() !== competitorName.toLowerCase());
+
+        await prisma.workspace.update({
+            where: { id: workspaceId },
+            data: { competitors: updatedCompetitors }
+        });
+
+        res.json({ message: "Competitor deleted successfully", competitors: updatedCompetitors });
+    } catch (error) {
+        console.error("Delete Competitor Error:", error);
+        res.status(500).json({ error: "Failed to delete competitor" });
     }
 };
 

@@ -38,16 +38,42 @@ function TypingEffect({ text, onComplete }: { text: string, onComplete?: () => v
   return <div className="prose dark:prose-invert prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{displayedText}</ReactMarkdown></div>
 }
 
-export function BrainChat({ context, workspaceId, hideHeader = false }: { context: string; workspaceId: string; hideHeader?: boolean }) {
+export function BrainChat({ context, workspaceId, hideHeader = false, onAnalysisStart }: { context: string; workspaceId: string; hideHeader?: boolean; onAnalysisStart?: (target: string) => void }) {
   const { token } = useAuth()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "Hello! I'm your campaign brain. I have access to all your business context and documents. Ask me anything about your strategy, competitors, or customer personas.",
-      timestamp: new Date("2024-01-01")
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+  /* Persistence Logic */
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load from local storage
+  useEffect(() => {
+    const saved = localStorage.getItem(`geniy_chat_${workspaceId}`);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            parsed.forEach((m: any) => m.timestamp = new Date(m.timestamp));
+            setMessages(parsed);
+        } catch (e) {
+            console.error("Failed to load chat history", e);
+        }
+    } else {
+        // Reset to default only if nothing saved (and we are switching workspaces)
+        setMessages([{
+            id: "welcome",
+            role: "assistant",
+            content: "Hello! I'm your campaign brain. I have access to all your business context and documents. Ask me anything about your strategy, competitors, or customer personas.",
+            timestamp: new Date()
+        }]);
     }
-  ])
+    setIsLoaded(true);
+  }, [workspaceId]);
+
+  // Save to local storage
+  useEffect(() => {
+      if (isLoaded && messages.length > 0) {
+          localStorage.setItem(`geniy_chat_${workspaceId}`, JSON.stringify(messages));
+      }
+  }, [messages, workspaceId, isLoaded]);
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
@@ -92,6 +118,10 @@ export function BrainChat({ context, workspaceId, hideHeader = false }: { contex
         
         if (response.memory) {
             setMemoryUpdate("Geniy learned something new!")
+        }
+
+        if (response.action === 'ANALYZE_COMPETITOR' && response.actionTarget) {
+            onAnalysisStart?.(response.actionTarget);
         }
 
         const aiMessageId = (Date.now() + 1).toString()

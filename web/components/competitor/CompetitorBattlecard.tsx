@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp } from "lucide-react"
+import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
@@ -18,9 +18,10 @@ interface CompetitorAnalysis {
 interface CompetitorBattlecardProps {
   name: string
   analysis: CompetitorAnalysis
+  onDelete?: () => void
 }
 
-export function CompetitorBattlecard({ name, analysis }: CompetitorBattlecardProps) {
+export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBattlecardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Helper to truncate text
@@ -35,9 +36,24 @@ export function CompetitorBattlecard({ name, analysis }: CompetitorBattlecardPro
         <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
                 <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{name}</CardTitle>
-                <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 max-w-[50%] truncate block">
-                    {analysis.pricingModel}
-                </Badge>
+                <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 max-w-[120px] truncate">
+                        {analysis.pricingModel}
+                    </Badge>
+                    {onDelete && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete competitor "${name}"?`)) onDelete();
+                            }}
+                            className="h-6 w-6 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                    )}
+                </div>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-zinc-400" /> 

@@ -13,5 +13,6 @@ router.post('/chat', aiController.chatWithContext);
 router.post('/analyze-competitor', aiController.analyzeCompetitor);
 router.post('/generate-theme', aiController.generateTheme);
 router.post('/generate-gap-analysis', aiController.generateGapAnalysis);
+router.post('/delete-competitor', aiController.deleteCompetitor);
 
 module.exports = router;

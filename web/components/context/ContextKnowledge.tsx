@@ -373,6 +373,26 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       }
   })
 
+  // Delete Competitor Mutation
+  const deleteCompetitorMutation = useMutation({
+      mutationFn: async (competitorName: string) => {
+          if (!token) return
+          return api.deleteCompetitor(workspaceId, competitorName, token)
+      },
+      onSuccess: (data, competitorName) => {
+          setCompetitorData(prev => {
+              const newData = { ...prev };
+              delete newData[competitorName];
+              return newData;
+          });
+          queryClient.invalidateQueries({ queryKey: ["context", workspaceId] });
+          toast.success(`Deleted ${competitorName}`);
+      },
+      onError: () => {
+          toast.error("Failed to delete competitor");
+      }
+  })
+
   const handleAnalyzeCompetitor = (name: string) => {
       setAnalyzingCompetitor(name)
       analyzeCompetitorMutation.mutate(name)
@@ -381,22 +401,23 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
   return (
     <div className="space-y-6 flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">Geniy's Brain</h2>
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <h2 className="text-lg md:text-xl font-semibold">Geniy's Brain</h2>
+        <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
             <Button 
                 variant="destructive"
                 size="sm"
                 onClick={handleClearMemory}
                 disabled={clearMutation.isPending || (!context && documents.length === 0)}
-                className="flex-1 md:flex-none bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
+                className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
             >
                 {clearMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                 Clear Memory
             </Button>
             <Button 
+                size="sm"
                 onClick={() => analyzeMutation.mutate()} 
                 disabled={analyzeMutation.isPending || !context}
-                className="flex-1 md:flex-none bg-violet-600 hover:bg-violet-700 text-white"
+                className="bg-violet-600 hover:bg-violet-700 text-white"
             >
             {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
             {analyzeMutation.isPending ? "Analyzing..." : "Analyze Context"}
@@ -406,17 +427,19 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
 
       <div className="flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-            <TabsList className="w-full justify-start border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 h-auto rounded-none mb-4">
-                <TabsTrigger value="context" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
-                    Context & Documents
-                </TabsTrigger>
-                <TabsTrigger value="competitors" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
-                    Competitor Intel
-                </TabsTrigger>
-                <TabsTrigger value="strategy" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
-                    Strategy & Gaps
-                </TabsTrigger>
-            </TabsList>
+            <div className="w-full overflow-x-auto pb-1 -mb-1 hide-scrollbar">
+                <TabsList className="w-full inline-flex justify-start border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 h-auto rounded-none mb-4 min-w-full">
+                    <TabsTrigger value="context" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
+                        Context & Documents
+                    </TabsTrigger>
+                    <TabsTrigger value="competitors" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
+                        Competitor Intel
+                    </TabsTrigger>
+                    <TabsTrigger value="strategy" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
+                        Strategy & Gaps
+                    </TabsTrigger>
+                </TabsList>
+            </div>
 
             <TabsContent value="context" className="flex flex-col gap-6 pb-4 data-[state=inactive]:hidden">
                 {/* Text Context */}
@@ -522,18 +545,36 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             displayCompetitors.map((comp: string) => (
                                 <div key={comp} className="space-y-4">
                                     {competitorData[comp] ? (
-                                        <CompetitorBattlecard name={comp} analysis={competitorData[comp]} />
+                                        <CompetitorBattlecard 
+                                            name={comp} 
+                                            analysis={competitorData[comp]} 
+                                            onDelete={() => deleteCompetitorMutation.mutate(comp)}
+                                        />
                                     ) : (
-                                        <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-between">
+                                        <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                                             <div>
-                                                <h3 className="text-lg font-semibold">{comp}</h3>
+                                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                                    {comp}
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm(`Delete competitor "${comp}"?`)) deleteCompetitorMutation.mutate(comp);
+                                                        }}
+                                                        className="h-6 w-6 text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </h3>
                                                 <p className="text-sm text-zinc-500">Competitor detected from context</p>
                                             </div>
                                             <Button 
                                                 onClick={() => handleAnalyzeCompetitor(comp)}
-                                                disabled={analyzingCompetitor === comp}
+                                                disabled={analyzingCompetitor === comp || analyzingCompetitors.includes(comp) || analyzingCompetitors.includes("ALL")}
+                                                className="w-full md:w-auto"
                                             >
-                                                {analyzingCompetitor === comp ? (
+                                                {analyzingCompetitor === comp || analyzingCompetitors.includes(comp) || analyzingCompetitors.includes("ALL") ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                         Researching...
