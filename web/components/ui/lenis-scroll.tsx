@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode, useEffect, useRef } from "react"
+import { ReactNode, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface LenisScrollProps {
@@ -13,8 +13,15 @@ interface LenisScrollProps {
 export function LenisScroll({ children, className, orientation = "vertical", onInit }: LenisScrollProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const [isTouch, setIsTouch] = useState(false)
 
   useEffect(() => {
+    setIsTouch(window.matchMedia("(pointer: coarse)").matches)
+  }, [])
+
+  useEffect(() => {
+    if (isTouch) return; // Skip Lenis on touch devices
+
     let lenisInstance: any = null;
     const wrapper = wrapperRef.current
     const content = contentRef.current
@@ -50,12 +57,16 @@ export function LenisScroll({ children, className, orientation = "vertical", onI
         lenisInstance?.destroy()
       }
     }
-  }, [orientation])
+  }, [orientation, isTouch, onInit])
 
   return (
     <div 
         ref={wrapperRef} 
-        className={cn("h-full overflow-hidden overscroll-contain", className)}
+        className={cn(
+            "h-full overscroll-contain", 
+            isTouch ? "overflow-y-auto" : "overflow-hidden",
+            className
+        )}
         data-lenis-prevent
     >
       <div ref={contentRef}>
