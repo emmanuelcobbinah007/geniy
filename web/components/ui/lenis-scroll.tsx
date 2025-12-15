@@ -55,7 +55,8 @@ export function LenisScroll({ children, className, orientation = "vertical", onI
   return (
     <div 
         ref={wrapperRef} 
-        className={cn("h-full overflow-hidden", className)}
+        className={cn("h-full overflow-hidden overscroll-contain", className)}
+        data-lenis-prevent
     >
       <div ref={contentRef}>
         {children}
