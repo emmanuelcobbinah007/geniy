@@ -5,10 +5,12 @@ import { Features } from "@/components/landing/Features";
 import { Comparison } from "@/components/landing/Comparison";
 import { Pricing } from "@/components/landing/Pricing";
 import { Footer } from "@/components/layout/Footer";
+import { MeshBackground } from "@/components/ui/mesh-background";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-zinc-950 selection:bg-violet-500/30 selection:text-violet-200">
+    <main className="min-h-screen dark:bg-zinc-950 selection:bg-violet-500/30 selection:text-violet-200 relative">
+      <MeshBackground />
       <Navbar />
       <Hero />
       <Features />

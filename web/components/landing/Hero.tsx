@@ -6,10 +6,57 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, Sparkles, FileText, LineChart, Search } from "lucide-react"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
+
+function Typewriter({ words }: { words: string[] }) {
+  const [index, setIndex] = useState(0)
+  const [subIndex, setSubIndex] = useState(0)
+  const [reverse, setReverse] = useState(false)
+  const [blink, setBlink] = useState(true)
+
+  // blinker
+  useEffect(() => {
+    const timeout2 = setTimeout(() => {
+      setBlink((prev) => !prev)
+    }, 500)
+    return () => clearTimeout(timeout2)
+  }, [blink])
+
+  // typing
+  useEffect(() => {
+    if (index >= words.length) {
+      setIndex(0) // Safety
+      return 
+    }
+
+    if (subIndex === words[index].length + 1 && !reverse) {
+      setReverse(true)
+      return
+    }
+
+    if (subIndex === 0 && reverse) {
+      setReverse(false)
+      setIndex((prev) => (prev + 1) % words.length)
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      setSubIndex((prev) => prev + (reverse ? -1 : 1))
+    }, Math.max(reverse ? 50 : subIndex === words[index].length ? 1200 : 100, Math.random() * 100))
+
+    return () => clearTimeout(timeout)
+  }, [subIndex, index, reverse, words])
+
+  return (
+    <span className="relative">
+      {`${words[index].substring(0, subIndex)}`}
+      <span className={`inline-block ml-1 w-[3px] h-[0.8em] align-middle bg-zinc-900 dark:bg-white ${blink ? "opacity-100" : "opacity-0"}`} />
+    </span>
+  )
+}
 
 export function Hero() {
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -37,16 +84,18 @@ export function Hero() {
         onSuccess={handleAuthSuccess}
       />
 
-      {/* Background Image */}
+      {/* Background Image & Effects */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-white/90 dark:bg-black/40 z-10 transition-colors duration-300" /> {/* Overlay: White in light mode, Dark in dark mode */}
+        <div className="absolute inset-0 bg-white/60 dark:bg-black/40 z-10 transition-colors duration-300" /> {/* Overlay: lighter in light mode for mesh visibility */}
+        
         <div 
             className="absolute inset-0 bg-no-repeat z-0 bg-[length:210%_auto] bg-[position:65%_15%] md:bg-cover md:bg-[position:center_20%]"
             style={{ 
                 backgroundImage: `url('/hero_concept_visionary_1764767464824.png')`,
+                opacity: 0.8
             }} 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent dark:from-zinc-950 dark:via-zinc-950/50 z-10 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent dark:from-zinc-950 dark:via-zinc-950/20 z-10 transition-colors duration-300" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4 md:px-6">
@@ -73,7 +122,19 @@ export function Hero() {
             className="max-w-5xl"
           >
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-semibold font-display tracking-tight text-zinc-900 dark:text-white mb-6 drop-shadow-sm dark:drop-shadow-2xl transition-colors duration-300">
-              Market research in <br />
+              <span className="inline-flex min-w-[280px] md:min-w-[450px]">
+                <Typewriter 
+                  words={[
+                    "Market Research",
+                    "Idea Validation",
+                    "Customer Discovery",
+                    "User Surveys",
+                    "Competitor Analysis",
+                    "Market Tracking",
+                    "Customer Feedback"
+                  ]}
+                />
+              </span> in <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-violet-400 animate-gradient-x">
                 minutes, not months.
               </span>

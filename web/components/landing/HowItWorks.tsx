@@ -30,7 +30,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 bg-zinc-50/50">
+    <section id="how-it-works" className="py-24 relative">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">
@@ -53,7 +53,7 @@ export function HowItWorks() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.2 }}
             >
-              <Card className="relative h-full border-zinc-200/60 bg-white hover:shadow-lg transition-shadow duration-300">
+              <Card className="relative h-full border-zinc-200/50 dark:border-zinc-800/50 glass-card hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-2">
                   <div className={`w-12 h-12 rounded-xl ${step.bg} ${step.color} flex items-center justify-center mb-4`}>
                     <step.icon className="w-6 h-6" />

@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 
 export function Features() {
   return (
-    <section id="features" className="py-24 bg-background relative overflow-hidden transition-colors duration-300">
+    <section id="features" className="py-24 relative overflow-hidden transition-colors duration-300">
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <Badge variant="outline" className="mb-4 text-violet-600 border-violet-500/30 bg-violet-500/10 dark:text-violet-400">
@@ -32,7 +32,7 @@ export function Features() {
             transition={{ duration: 0.5 }}
             className="md:col-span-7"
           >
-            <Card className="h-full overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:shadow-lg dark:hover:bg-zinc-900 transition-all group">
+            <Card className="h-full overflow-hidden glass-card shadow-sm hover:shadow-lg transition-all group border-zinc-200/50 dark:border-zinc-800/50">
               <div className="p-8 h-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="p-3 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
@@ -78,7 +78,7 @@ export function Features() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="md:col-span-5"
           >
-            <Card className="h-full overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:shadow-lg dark:hover:bg-zinc-900 transition-all group">
+            <Card className="h-full overflow-hidden glass-card shadow-sm hover:shadow-lg transition-all group border-zinc-200/50 dark:border-zinc-800/50">
               <div className="p-8 h-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
@@ -118,7 +118,7 @@ export function Features() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="md:col-span-5"
           >
-            <Card className="h-full overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:shadow-lg dark:hover:bg-zinc-900 transition-all group">
+            <Card className="h-full overflow-hidden glass-card shadow-sm hover:shadow-lg transition-all group border-zinc-200/50 dark:border-zinc-800/50">
               <div className="p-8 h-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="p-3 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
@@ -156,7 +156,7 @@ export function Features() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="md:col-span-7"
           >
-            <Card className="h-full overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:shadow-lg dark:hover:bg-zinc-900 transition-all group">
+            <Card className="h-full overflow-hidden glass-card shadow-sm hover:shadow-lg transition-all group border-zinc-200/50 dark:border-zinc-800/50">
               <div className="p-8 h-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">

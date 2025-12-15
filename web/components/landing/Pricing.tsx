@@ -134,7 +134,7 @@ export function Pricing() {
   const [selectedTier, setSelectedTier] = useState<typeof tiers[0] | null>(null)
 
   return (
-    <section id="pricing" className="py-24 bg-background text-foreground border-t border-zinc-200 dark:border-zinc-900 transition-colors duration-300">
+    <section id="pricing" className="py-24 border-t border-zinc-200/50 dark:border-zinc-800/50 transition-colors duration-300">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground mb-6">

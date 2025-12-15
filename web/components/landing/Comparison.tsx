@@ -38,7 +38,7 @@ const comparisonData = [
 
 export function Comparison() {
   return (
-    <section id="comparison" className="py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300">
+    <section id="comparison" className="py-24 relative transition-colors duration-300">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <Badge variant="outline" className="mb-4 text-violet-600 border-violet-500/30 bg-violet-500/10 dark:text-violet-400">
