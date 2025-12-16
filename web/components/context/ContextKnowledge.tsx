@@ -16,6 +16,7 @@ import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { LenisScroll } from "@/components/ui/lenis-scroll"
+import { useSearchParams } from "next/navigation"
 
 interface ContextDocument {
   id: string
@@ -336,7 +337,9 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
     }
   }
 
-  const [activeTab, setActiveTab] = useState("context")
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState(initialTab || "context")
   const [analyzingCompetitor, setAnalyzingCompetitor] = useState<string | null>(null)
   const [competitorData, setCompetitorData] = useState<Record<string, any>>({})
 
@@ -542,25 +545,27 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                 <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
                             </div>
                         ) : (
-                            displayCompetitors.map((comp: string) => (
-                                <div key={comp} className="space-y-4">
-                                    {competitorData[comp] ? (
+                            displayCompetitors.map((comp: any) => {
+                                const name = typeof comp === 'string' ? comp : comp.name;
+                                return (
+                                <div key={name} className="space-y-4">
+                                    {competitorData[name] ? (
                                         <CompetitorBattlecard 
-                                            name={comp} 
-                                            analysis={competitorData[comp]} 
-                                            onDelete={() => deleteCompetitorMutation.mutate(comp)}
+                                            name={name} 
+                                            analysis={competitorData[name]} 
+                                            onDelete={() => deleteCompetitorMutation.mutate(name)}
                                         />
                                     ) : (
                                         <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                                             <div>
                                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                                    {comp}
+                                                    {name}
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (confirm(`Delete competitor "${comp}"?`)) deleteCompetitorMutation.mutate(comp);
+                                                            if (confirm(`Delete competitor "${name}"?`)) deleteCompetitorMutation.mutate(name);
                                                         }}
                                                         className="h-6 w-6 text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 opacity-0 group-hover:opacity-100 transition-opacity"
                                                     >
@@ -570,11 +575,11 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                                 <p className="text-sm text-zinc-500">Competitor detected from context</p>
                                             </div>
                                             <Button 
-                                                onClick={() => handleAnalyzeCompetitor(comp)}
-                                                disabled={analyzingCompetitor === comp || analyzingCompetitors.includes(comp) || analyzingCompetitors.includes("ALL")}
+                                                onClick={() => handleAnalyzeCompetitor(name)}
+                                                disabled={analyzingCompetitor === name || analyzingCompetitors.includes(name) || analyzingCompetitors.includes("ALL")}
                                                 className="w-full md:w-auto"
                                             >
-                                                {analyzingCompetitor === comp || analyzingCompetitors.includes(comp) || analyzingCompetitors.includes("ALL") ? (
+                                                {analyzingCompetitor === name || analyzingCompetitors.includes(name) || analyzingCompetitors.includes("ALL") ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                         Researching...
@@ -589,7 +594,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                         </Card>
                                     )}
                                 </div>
-                            ))
+                            )}) 
                         )}
                     </div>
 

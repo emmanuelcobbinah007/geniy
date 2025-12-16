@@ -165,7 +165,11 @@ export default function DashboardPage() {
           
           {/* Competitor Radar */}
           <motion.div variants={item} className="relative">
-            <CompetitorRadar workspaceId={workspaceId} competitors={dashboard?.competitors || []} />
+            <CompetitorRadar 
+                workspaceId={workspaceId} 
+                competitors={dashboard?.competitors || []}
+                integrations={dashboard?.integrations}
+            />
           </motion.div>
 
           {/* Recent Activity */}

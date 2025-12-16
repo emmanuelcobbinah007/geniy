@@ -5,7 +5,8 @@ import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Radar, RefreshCw, Globe, AlertTriangle, CheckCircle2, XCircle } from "lucide-react"
+import { Radar, RefreshCw, Globe, AlertTriangle, CheckCircle2, XCircle, Bell } from "lucide-react"
+import { LivePulseSettings } from "./LivePulseSettings"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
@@ -24,12 +25,14 @@ interface Competitor {
 interface CompetitorRadarProps {
   workspaceId: string
   competitors: (Competitor | string)[]
+  integrations?: any
 }
 
-export function CompetitorRadar({ workspaceId, competitors }: CompetitorRadarProps) {
+export function CompetitorRadar({ workspaceId, competitors, integrations }: CompetitorRadarProps) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const [scanning, setScanning] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const scanMutation = useMutation({
     mutationFn: async (competitorName: string) => {
@@ -62,14 +65,26 @@ export function CompetitorRadar({ workspaceId, competitors }: CompetitorRadarPro
 
   return (
     <Card className="p-0 overflow-hidden border-zinc-200 dark:border-zinc-800">
+      <LivePulseSettings 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen} 
+        workspaceId={workspaceId} 
+        initialIntegrations={integrations}
+      />
+
       <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-between items-center">
         <h3 className="font-semibold flex items-center gap-2">
           <Radar className="w-4 h-4 text-violet-500" />
           Competitor Radar
         </h3>
-        <Badge variant="outline" className="text-xs bg-white dark:bg-zinc-900">
-            {normalizedCompetitors.length} Tracked
-        </Badge>
+        <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSettingsOpen(true)}>
+                <Bell className="w-3.5 h-3.5 text-zinc-400 hover:text-violet-500" />
+            </Button>
+            <Badge variant="outline" className="text-xs bg-white dark:bg-zinc-900">
+                {normalizedCompetitors.length} Tracked
+            </Badge>
+        </div>
       </div>
 
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">

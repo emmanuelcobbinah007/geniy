@@ -223,10 +223,42 @@ const addMember = async (req, res) => {
     }
 };
 
+const saveIntegrations = async (req, res) => {
+    const { id } = req.params;
+    const { integrations } = req.body;
+
+    try {
+        // Check if user is owner/admin
+        const requester = await prisma.workspaceMember.findFirst({
+            where: {
+                workspaceId: id,
+                userId: req.user.id,
+                role: { in: ['OWNER', 'ADMIN'] }
+            }
+        });
+
+        if (!requester) {
+            return res.status(403).json({ message: 'Not authorized to configure integrations' });
+        }
+
+        const workspace = await prisma.workspace.update({
+            where: { id },
+            data: { integrations }
+        });
+
+        res.json({ message: "Integrations updated", integrations: workspace.integrations });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     updateWorkspace,
     getWorkspace,
     getWorkspaceMembers,
     createWorkspace,
-    addMember
+    addMember,
+    saveIntegrations
 };

@@ -37,6 +37,7 @@ model Workspace {
   earlyAdopterJoinedAt DateTime?
   lastAnalysisSummary String?       // Stores the summary of the last completed analysis batch
   gapAnalysis     Json?             // Stores the latest gap analysis result
+  integrations    Json?             // Stores webhook URLs and notification settings
   domains         Domain[]
 }
 

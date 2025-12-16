@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 const scraperService = require('./scraperService');
 const genesisAgent = require('./ai/genesis');
 const auditService = require('./auditService');
+const notificationService = require('./notificationService');
 
 class RadarService {
 
@@ -116,7 +117,16 @@ class RadarService {
                         url: url
                     }
                 });
-                console.log(`📢 Logged activity for ${competitorName}`);
+
+                // LIVE PULSE: Send Webhook Notification
+                await notificationService.send(workspaceId, {
+                    title: `Competitor Update: ${competitorName}`,
+                    message: insight || "Website content has changed.",
+                    link: url,
+                    type: 'warning'
+                });
+
+                console.log(`📢 Logged activity and notified for ${competitorName}`);
             }
 
             return { status: changeDetected ? "changed" : "stable", insight, competitor: updatedCompetitor };
