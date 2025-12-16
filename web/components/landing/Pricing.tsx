@@ -30,6 +30,7 @@ const tiers = [
     detailedFeatures: [
       "3 AI-generated forms",
       "50 responses limit",
+      "Basic Context Interviewer",
       "Basic analytics dashboard",
       "Simple themes",
       "CSV export"
@@ -50,17 +51,18 @@ const tiers = [
     description: "For founders who need speed.",
     icon: Zap,
     features: [
-      "Unlimited surveys",
+      "Socratic Genesis Agent",
       "Real-time Market Trends",
-      "Basic Competitor Tracking",
-      "AI analysis & insights",
+      "Competitor Radar (Lite)",
+      "Magic Link Distribution",
     ],
     detailedFeatures: [
-      "Unlimited surveys & responses",
+      "Socratic Genesis Agent (Vagueness Detection)",
+      "Competitor Radar Lite (Monthly Competitor Diff)",
+      "Magic Link (Auto-drafted Reddit/Social posts)",
       "Real-time Market Trends (Powered by Perplexity)",
       "Track 3 Competitors (Basic Stats)",
-      "AI Analysis & Insights",
-      "Advanced Themes",
+      "Unlimited surveys & responses",
       "Shareable Live Reports"
     ],
     scenarios: [
@@ -81,18 +83,19 @@ const tiers = [
     popular: true,
     icon: Sparkles,
     features: [
-      "Deep Intelligence Agent",
+      "Competitor Radar (Pro)",
+      "Live Pulse Integrations",
+      "Inbound Intelligence",
       "Track 10 Competitors",
-      "Detailed Strategy Reports",
-      "Multi-user teams",
     ],
     detailedFeatures: [
+      "Competitor Radar Pro (Weekly Active Monitoring & Alerts)",
+      "Live Pulse (Slack/Discord Webhooks)",
+      "Inbound Intelligence (Email Forwarding)",
       "Deep Intelligence Agent (Powered by Manus)",
       "Track up to 10 Competitors",
-      "Detailed Strategy Reports (SWOT, Pricing)",
       "5 Team Seats (Confined to this workspace)",
-      "API Access",
-      "AI Persona Generation"
+      "Detailed Strategy Reports (SWOT, Pricing)"
     ],
     scenarios: [
       "You are a serious startup or agency.",

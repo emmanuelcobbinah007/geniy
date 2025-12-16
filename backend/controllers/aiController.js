@@ -1,6 +1,7 @@
 const genesisAgent = require('../services/ai/genesis');
 const { PrismaClient } = require('@prisma/client');
 const auditService = require('../services/auditService');
+const radarService = require('../services/radarService');
 const prisma = new PrismaClient();
 
 exports.analyzeContext = async (req, res) => {
@@ -92,6 +93,17 @@ async function runBackgroundCompetitorAnalysis(contextSummary, workspaceId) {
                         }
                     });
                     console.log(`Persisted ${newCompetitors.length} new competitors for workspace ${workspaceId}`);
+
+                    // AUTOMATION: Trigger Initial Radar Scan
+                    console.log(`⚡ Triggering initial radar scan for ${newCompetitors.length} new competitors...`);
+                    for (const comp of newCompetitors) {
+                        try {
+                            radarService.scanCompetitor(workspaceId, comp.name)
+                                .catch(err => console.error(`Failed initial scan for ${comp.name}`, err));
+                            // We don't await here to keep it fire-and-forget
+                        } catch (e) { console.error(e); }
+                    }
+
                 } else {
                     console.log("No new competitors to persist.");
                 }
@@ -462,6 +474,24 @@ exports.deleteCompetitor = async (req, res) => {
     } catch (error) {
         console.error("Delete Competitor Error:", error);
         res.status(500).json({ error: "Failed to delete competitor" });
+    }
+};
+
+
+exports.scanCompetitor = async (req, res) => {
+    try {
+        const { workspaceId, competitorName } = req.body;
+
+        if (!workspaceId || !competitorName) {
+            return res.status(400).json({ error: "Workspace ID and competitor name required." });
+        }
+
+        const result = await radarService.scanCompetitor(workspaceId, competitorName);
+        res.json(result);
+
+    } catch (error) {
+        console.error("Radar Scan Error:", error);
+        res.status(500).json({ error: "Failed to scan competitor: " + error.message });
     }
 };
 

@@ -14,5 +14,6 @@ router.post('/analyze-competitor', aiController.analyzeCompetitor);
 router.post('/generate-theme', aiController.generateTheme);
 router.post('/generate-gap-analysis', aiController.generateGapAnalysis);
 router.post('/delete-competitor', aiController.deleteCompetitor);
+router.post('/scan-competitor', aiController.scanCompetitor);
 
 module.exports = router;

@@ -13,6 +13,7 @@ import { useParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { KnowledgeHealthWidget } from "@/components/dashboard/KnowledgeHealthWidget"
+import { CompetitorRadar } from "@/components/dashboard/CompetitorRadar"
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
@@ -162,47 +163,9 @@ export default function DashboardPage() {
         {/* Right Column: Pulse & Metrics (1/3 width) */}
         <div className="space-y-8">
           
-          {/* Competitor Pulse */}
+          {/* Competitor Radar */}
           <motion.div variants={item} className="relative">
-            <Card className="p-0 overflow-hidden">
-              <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-zinc-500" />
-                  Competitor Pulse
-                </h3>
-              </div>
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {(!dashboard?.competitors || dashboard.competitors.length === 0) ? (
-                    <div className="p-4 text-center text-sm text-zinc-500">
-                        No competitors tracked yet.
-                    </div>
-                ) : (
-                    dashboard.competitors.slice(0, 5).map((comp: any, i: number) => {
-                        const isObject = typeof comp !== 'string';
-                        const name = isObject ? comp.name : comp;
-                        const details = isObject ? comp : null;
-
-                        return (
-                            <div key={i} className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="font-medium">{name}</span>
-                                    <span className="text-xs text-zinc-400">Tracking</span>
-                                </div>
-                                {details && (
-                                    <div className="mt-2 text-xs text-zinc-500 space-y-1 pl-2 border-l-2 border-zinc-100 dark:border-zinc-800 hidden group-hover:block transition-all">
-                                        {details.pricingModel && <div><span className="font-semibold">Pricing:</span> {details.pricingModel}</div>}
-                                        {details.strengths && details.strengths.length > 0 && <div><span className="font-semibold">Strength:</span> {details.strengths[0]}</div>}
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })
-                )}
-              </div>
-              <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 text-center">
-                <Button variant="link" size="sm" className="text-xs text-zinc-500">View all competitors</Button>
-              </div>
-            </Card>
+            <CompetitorRadar workspaceId={workspaceId} competitors={dashboard?.competitors || []} />
           </motion.div>
 
           {/* Recent Activity */}

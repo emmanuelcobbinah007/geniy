@@ -233,6 +233,10 @@ export const api = {
     return this.post('/ai/delete-competitor', { workspaceId, competitorName }, token);
   },
 
+  async scanCompetitor(workspaceId: string, competitorName: string, token: string) {
+    return this.post('/ai/scan-competitor', { workspaceId, competitorName }, token);
+  },
+
   async updateSurvey(campaignId: string, data: any, token: string) {
     return this.put(`/campaigns/${campaignId}/survey`, data, token);
   },
