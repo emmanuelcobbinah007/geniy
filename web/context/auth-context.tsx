@@ -24,7 +24,7 @@ interface AuthContextType {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
-  googleLogin: (token: string) => Promise<void>
+  googleLogin: (code: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
   updateUser: (data: any) => Promise<void>
@@ -68,8 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
-  const googleLogin = async (token: string) => {
-    const data = await api.post("/auth/google", { token })
+  const googleLogin = async (code: string) => {
+    const data = await api.post("/auth/google", { code })
     localStorage.setItem("token", data.token)
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }

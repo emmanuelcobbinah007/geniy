@@ -69,11 +69,12 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
   }
 
   const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+    flow: 'auth-code',
+    onSuccess: async (codeResponse) => {
       setIsLoading(true)
       setError(null)
       try {
-        await googleLogin(tokenResponse.access_token)
+        await googleLogin(codeResponse.code)
         if (onSuccess) {
           onSuccess()
         } else {

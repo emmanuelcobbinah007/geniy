@@ -5,7 +5,11 @@ const axios = require('axios');
 const { PrismaClient, MemberRole } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'postmessage'
+);
 
 // Generate JWT
 const generateToken = (id) => {
@@ -170,27 +174,46 @@ const signin = async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const googleAuth = async (req, res) => {
-    const { token } = req.body;
+    const { code } = req.body;
+
+    console.log("GOOGLE AUTH ATTEMPT");
+    console.log("Code received:", code ? "YES (Length: " + code.length + ")" : "NO");
+    console.log("Client ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Missing");
+    console.log("Client Secret:", process.env.GOOGLE_CLIENT_SECRET ? "Set" : "Missing");
 
     try {
-        // Verify Access Token by fetching user info
-        const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+        console.time("GoogleAuth_Total");
+
+        console.time("GoogleAuth_TokenExchange");
+        // Exchange code for tokens
+        const { tokens } = await client.getToken({
+            code,
+            redirect_uri: 'postmessage'
         });
+        console.timeEnd("GoogleAuth_TokenExchange");
 
-        const { name, email, sub } = response.data;
+        console.log("Tokens received");
 
+        console.time("GoogleAuth_VerifyIdToken");
+        // Verify ID Token
+        const ticket = await client.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        console.timeEnd("GoogleAuth_VerifyIdToken");
+
+        const { name, email, sub } = ticket.getPayload();
+        // ... rest of logic
+        console.time("GoogleAuth_UserLookup");
         // Check if user exists
         let user = await prisma.user.findUnique({
             where: { email },
         });
+        console.timeEnd("GoogleAuth_UserLookup");
 
         if (!user) {
+            console.time("GoogleAuth_CreateUser");
             // Create new user
-            // OPTIMIZATION: Do not hash random password. Use placeholder.
-            // Saves ~200-300ms of CPU time.
             const hashedPassword = "GOOGLE_AUTH_USER_NO_PASSWORD";
 
             user = await prisma.$transaction(async (prisma) => {
@@ -222,9 +245,14 @@ const googleAuth = async (req, res) => {
 
                 return newUser;
             });
+            console.timeEnd("GoogleAuth_CreateUser");
         }
 
+        console.time("GoogleAuth_FetchWorkspaces");
         const userData = await getUserWithWorkspaces(user.id);
+        console.timeEnd("GoogleAuth_FetchWorkspaces");
+
+        console.timeEnd("GoogleAuth_Total");
 
         res.json({
             _id: user.id,
@@ -235,10 +263,13 @@ const googleAuth = async (req, res) => {
             token: generateToken(user.id),
         });
     } catch (error) {
-        console.error('Google Auth Error:', error.response?.data || error.message);
+        console.error('Google Auth Generic Error:', error.message);
+        if (error.response) {
+            console.error('Google Auth Response Error Data:', JSON.stringify(error.response.data, null, 2));
+        }
         res.status(400).json({
             message: 'Google authentication failed',
-            details: error.response?.data || error.message
+            details: error.message
         });
     }
 };
