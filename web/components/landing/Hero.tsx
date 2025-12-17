@@ -10,8 +10,15 @@ import { useState, useEffect } from "react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
+import Image from "next/image"
 
-function Typewriter({ words }: { words: string[] }) {
+// Update Typewriter props
+interface TypewriterPhrase {
+  text: string;
+  className?: string;
+}
+
+function Typewriter({ words }: { words: TypewriterPhrase[] }) {
   const [index, setIndex] = useState(0)
   const [subIndex, setSubIndex] = useState(0)
   const [reverse, setReverse] = useState(false)
@@ -32,7 +39,7 @@ function Typewriter({ words }: { words: string[] }) {
       return 
     }
 
-    if (subIndex === words[index].length + 1 && !reverse) {
+    if (subIndex === words[index].text.length + 1 && !reverse) {
       setReverse(true)
       return
     }
@@ -45,14 +52,14 @@ function Typewriter({ words }: { words: string[] }) {
 
     const timeout = setTimeout(() => {
       setSubIndex((prev) => prev + (reverse ? -1 : 1))
-    }, Math.max(reverse ? 50 : subIndex === words[index].length ? 1200 : 100, Math.random() * 100))
+    }, Math.max(reverse ? 50 : subIndex === words[index].text.length ? 1200 : 100, Math.random() * 100))
 
     return () => clearTimeout(timeout)
   }, [subIndex, index, reverse, words])
 
   return (
-    <span className="relative">
-      {`${words[index].substring(0, subIndex)}`}
+    <span className={`relative ${words[index].className || ""}`}>
+      {`${words[index].text.substring(0, subIndex)}`}
       <span className={`inline-block ml-1 w-[3px] h-[0.8em] align-middle bg-zinc-900 dark:bg-white ${blink ? "opacity-100" : "opacity-0"}`} />
     </span>
   )
@@ -107,9 +114,8 @@ export function Hero() {
             transition={{ duration: 0.5 }}
           >
             <Badge variant="secondary" className="px-4 py-1.5 text-sm rounded-full border-zinc-200 bg-white/50 text-zinc-600 backdrop-blur-md hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 transition-colors">
-              <Sparkles className="w-3.5 h-3.5 mr-2 text-violet-500" />
               <span className="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent font-semibold">
-                AI-Powered Market Intelligence
+                Powered by<Image src="/aws.png" alt="AWS Startups" width={50} height={50} className="inline-block" />Startups
               </span>
             </Badge>
           </motion.div>
@@ -125,13 +131,13 @@ export function Hero() {
               <span className="inline-flex min-w-[280px] md:min-w-[450px]">
                 <Typewriter 
                   words={[
-                    "Market Research",
-                    "Idea Validation",
-                    "Customer Discovery",
-                    "User Surveys",
-                    "Competitor Analysis",
-                    "Market Tracking",
-                    "Customer Feedback"
+                    { text: "Market Research", className: "font-sans" }, // Outfit (Default)
+                    { text: "Idea Validation", className: "font-handwriting text-[1.1em]" }, // Caveat
+                    { text: "Customer Discovery", className: "font-sketch" }, // Indie Flower
+                    { text: "User Surveys", className: "font-melodrama tracking-wide" }, // DM Serif
+                    { text: "Competitor Analysis", className: "font-serif font-black" }, // Playfair Black
+                    { text: "Market Tracking", className: "font-sketch" }, // Indie Flower
+                    { text: "Customer Feedback", className: "font-handwriting text-[1.1em]" } // Caveat
                   ]}
                 />
               </span> in <br />

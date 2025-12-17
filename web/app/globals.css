@@ -36,8 +36,14 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --font-sans: var(--font-poppins);
-  --font-display: var(--font-outfit);
+  
+  /* Font Families (Tailwind v4) */
+  --font-sans: var(--font-outfit), sans-serif;
+  --font-display: var(--font-poppins), sans-serif;
+  --font-serif: var(--font-playfair), serif;
+  --font-handwriting: var(--font-caveat), cursive;
+  --font-sketch: var(--font-indie), cursive;
+  --font-melodrama: var(--font-dm-serif), serif;
 }
 
 :root {

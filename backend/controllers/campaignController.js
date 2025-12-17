@@ -52,6 +52,15 @@ exports.createCampaign = async (req, res) => {
                     competitors: analysis.competitors || []
                 }
             });
+
+            // Trigger Background Competitor Analysis (Deferred until Publish)
+            try {
+                const competitorDiscoveryService = require('../services/competitorDiscoveryService');
+                // Use the contextData.analysis or contextString as the seed
+                competitorDiscoveryService.run(contextData.analysis, workspaceId);
+            } catch (e) {
+                console.error("Failed to trigger background analysis:", e);
+            }
         }
 
         const result = { campaign, survey };
