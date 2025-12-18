@@ -19,7 +19,7 @@ import {
 const tiers = [
   {
     name: "Free",
-    price: "GH₵0",
+    price: "$0",
     description: "For testing the waters.",
     icon: User,
     features: [
@@ -45,10 +45,10 @@ const tiers = [
   },
   {
     name: "Starter",
-    price: "GH₵150",
+    price: "$29",
     period: "/mo",
     unit: "per workspace",
-    description: "For founders who need speed.",
+    description: "For founders who need speed. (Billed in GHS equivalent)",
     icon: Zap,
     features: [
       "Socratic Genesis Agent",
@@ -76,10 +76,10 @@ const tiers = [
   },
   {
     name: "Pro",
-    price: "GH₵450",
+    price: "$79",
     period: "/mo",
     unit: "per workspace",
-    description: "For teams who need deep intel.",
+    description: "For teams who need deep intel. (Billed in GHS equivalent)",
     popular: true,
     icon: Sparkles,
     features: [

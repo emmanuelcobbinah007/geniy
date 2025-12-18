@@ -34,7 +34,7 @@ export default function EarlyAdopterPage() {
   const [loading, setLoading] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
 
-  const amount = 100000 // 1000 GHS in pesewas
+  const amount = 250000 // 2500 GHS in pesewas
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || ""
 
   const onSuccess = async (reference: any) => {
@@ -215,11 +215,14 @@ export default function EarlyAdopterPage() {
                   
                   <div className="pt-8 border-t border-white/10">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold text-white">GH₵1,000</span>
+                      <span className="text-4xl font-bold text-white">$149</span>
                       <span className="text-zinc-500 font-medium">One-Time Payment</span>
                     </div>
                     <p className="text-sm text-zinc-500 mt-2">
-                      Get Lifetime Access (Value: GH₵5,400/year)
+                       (Billed as GH₵2,500)
+                    </p>
+                    <p className="text-sm text-green-500 font-medium mt-1">
+                      Lifetime Value: $948/year
                     </p>
                   </div>
 
