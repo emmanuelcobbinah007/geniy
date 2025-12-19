@@ -3,8 +3,11 @@ import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
 import { Comparison } from "@/components/landing/Comparison";
+
 import { Pricing } from "@/components/landing/Pricing";
 import { Footer } from "@/components/layout/Footer";
+import { Waitlist } from "@/components/landing/Waitlist";
+import { DemoVideo } from "@/components/landing/DemoVideo";
 import { MeshBackground } from "@/components/ui/mesh-background";
 
 export default function Home() {
@@ -13,9 +16,11 @@ export default function Home() {
       <MeshBackground />
       <Navbar />
       <Hero />
+      <DemoVideo />
       <Features />
       <Comparison />
       <Pricing />
+      <Waitlist />
       <Footer />
     </main>
   );
