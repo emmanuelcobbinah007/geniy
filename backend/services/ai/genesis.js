@@ -213,7 +213,7 @@ class GenesisAgent {
       }
     `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2500);
+        return this.completeWithRetry(prompt, "openai/gpt-4o", true, 2500);
     }
 
     /**
