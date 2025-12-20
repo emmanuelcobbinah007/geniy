@@ -203,7 +203,11 @@ exports.chatWithContext = async (req, res) => {
                             const industry = industryMatch ? industryMatch[1].trim() : "General";
                             console.log(`[Agent Action] Detected Industry: ${industry}`);
 
-                            const analysis = await genesisAgent.analyzeCompetitor(compName, industry);
+                            // Use the goal from the chat result if available
+                            const goal = result.actionGoal || "";
+                            if (goal) console.log(`[Agent Action] Using Focus Goal: "${goal}"`);
+
+                            const analysis = await genesisAgent.analyzeCompetitor(compName, industry, goal);
 
                             if (analysis) {
                                 // Update the specific competitor in the array

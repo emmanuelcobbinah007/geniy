@@ -44,18 +44,21 @@ class GenesisAgent {
       ${focusInstruction}
 
       **CRITICAL INSTRUCTION:**
-      If the context does not explicitly state the company's goals or value proposition, you MUST **INFER** them based on the product description, industry, and typical business needs. Do not return "Unknown" unless absolutely impossible to guess.
-      - Example: If it's a "drug kit delivery system", infer that speed, privacy, and reliability are key values.
+      Determine if this is a **BUSINESS** context (a specific company/product) or a **GENERAL RESEARCH** context (a topic/question).
+      
+      - **If BUSINESS:** Extract Company Name, Industry, Value Prop. Infer missing business goals.
+      - **If GENERAL:** Set "contextType" to "GENERAL". "companyName" can be "General Research". Focus on the "Topic" as the Industry.
 
       Output JSON Schema:
       {
-        "companyName": "string",
-        "industry": "string",
+        "contextType": "BUSINESS" | "GENERAL",
+        "companyName": "string", // or "General Research" if general
+        "industry": "string", // Topic or Industry
         "targetAudience": ["string"],
-        "valueProposition": "string", // Infer if missing
-        "goals": ["string"], // Infer if missing (e.g., "Increase user retention", "Validate pricing")
-        "businessModel": "string", // Infer if missing (e.g., "SaaS", "Freemium", "Direct Sales")
-        "competitors": ["string"] // List any mentioned competitors
+        "valueProposition": "string", // Value of the product OR importance of the topic
+        "goals": ["string"], 
+        "businessModel": "string", // or "N/A" if general
+        "competitors": ["string"] // List competitors OR key entities/sub-topics
       }
     `;
 
@@ -202,6 +205,8 @@ class GenesisAgent {
       1. **BE SPECIFIC:** Do NOT generalize the target audience. If the context says "18-30 year old Ghanaians", do NOT say "18-65 year olds". Use the EXACT demographics provided.
       2. **BE RELEVANT:** Ensure the objectives and hypotheses are directly tied to the specific industry and value proposition mentioned.
       3. **NO FLUFF:** Keep the output concise and actionable.
+      4. **FACTUALITY CHECK:** If the input context does not mention a specific budget, timeline, or constraint, DO NOT INVENT ONE. Use "To be determined" or generalized assumptions marked as such.
+         - *Example:* Do not say "Targeting users with $100k+ income" if the context only said "Affluent users". Say "High-income individuals (Income TBD)".
 
       Output JSON Schema:
       {
@@ -233,10 +238,11 @@ class GenesisAgent {
       1. **Conversational & Human:** Write like a friendly researcher, not a robot. Use "I" and "We".
          - BAD: "Rate your satisfaction with the delivery speed."
          - GOOD: "How was the delivery speed? Did it arrive when you expected?"
-      2. **Engaging:** People hate surveys. Make this one feel like a chat.
-      3. **Strict Relevance:** Every question MUST be directly related to the provided context. 
-         - **DO NOT** ask generic market research questions (e.g., "What is your age?") unless specifically relevant to the product.
-         - If the product is a "drug kit delivery", ask about privacy, speed, and packaging. Do NOT ask about "shopping habits" in general.
+      2. **Hyper-Specific Context:** You are NOT a general researcher. You are a specialist in the "${contextSummary.industry}" industry.
+         - **RULE:** Every single question must contain at least one specific keyword related to "${contextSummary.companyName}" or "${contextSummary.valueProposition}".
+         - If the company sells "Organic Coffee", you must use words like "Roast", "Bean", "Brew", "Morning Routine".
+         - **BAN:** Do NOT ask generic questions like "How likely are you to recommend us?" without tying it to the specific product value.
+      3. **Engaging:** People hate surveys. Make this one feel like a chat.
 
       **QUESTION RULES:**
       1. **Rating Scales:** ALWAYS use a **1-5 scale** (1=Low, 5=High). NEVER use 1-10.
@@ -274,26 +280,76 @@ class GenesisAgent {
      * Step 6: Analyze Competitor (Deep Dive)
      * Uses Manus to get detailed intel.
      */
-    async analyzeCompetitor(competitorName, industry) {
-        const instruction = `
+    async analyzeCompetitor(competitorName, industry, goal = "") {
+        let instruction = "";
+        const lowerGoal = goal.toLowerCase();
+
+        // --- SPECIALIZED PROMPTS (FINE-TUNING) ---
+
+        if (lowerGoal.includes('pric') || lowerGoal.includes('cost') || lowerGoal.includes('subscription')) {
+            // STRATEGY: PRICING HUNTER
+            instruction = `
+            ACT AS: A Competitor Pricing Analyst.
+            TASK: Find the EXACT pricing model for "${competitorName}" (${industry}).
+            
+            **EXECUTION STEPS:**
+            1.  Navigate directly to their Pricing page (usually /pricing).
+            2.  If hidden, look for "FAQ" or "Support" pages mentioning costs.
+            3.  Extract: Free Tier limits, Pro Plan cost, Enterprise triggers.
+            
+            **OUTPUT JSON (Strict):**
+            {
+                "pricingModel": "Detailed breakdown of tiers and costs",
+                "uniqueSellingPoint": "What is their 'value metric'? (e.g. per user, per GB)",
+                "strengths": ["List standard pricing features"],
+                "weaknesses": ["Hidden fees, rigid contracts, expensive add-ons"]
+            }
+            `;
+        } else if (lowerGoal.includes('review') || lowerGoal.includes('sentiment') || lowerGoal.includes('hate') || lowerGoal.includes('love')) {
+            // STRATEGY: SENTIMENT ANALYST
+            instruction = `
+            ACT AS: A UX Researcher.
+            TASK: Find what real users think about "${competitorName}".
+            
+            **EXECUTION STEPS:**
+            1.  Ignore their landing page.
+            2.  Search Reddit, G2, Capterra, and Twitter for "${competitorName} reviews".
+            3.  Synthesize the "Emotional Sentiment".
+            
+            **OUTPUT JSON (Strict):**
+            {
+                "customerSentiment": "Summary of user vibes (Angry? Delighted? Frustrated?)",
+                "strengths": ["Top 3 things users praise"],
+                "weaknesses": ["Top 3 complaints (e.g. 'Bad support', 'Buggy mobile app')"],
+                "keyFeatures": ["Features users mention most"]
+            }
+            `;
+        } else {
+            // STRATEGY: GENERAL DEEP DIVE (Default)
+            instruction = `
             Perform a deep-dive market analysis on "${competitorName}" in the "${industry}" sector.
             
+            ${goal ? `**FOCUS GOAL:** The user specifically wants to: "${goal}". Prioritize finding this info.` : ""}
+
             I need a structured report focusing on actionable intelligence.
             
             Return a JSON object with the following fields:
-            - pricingModel: string (Detailed pricing strategy, e.g., "Freemium with aggressive upsell to Enterprise at $500/mo")
-            - keyFeatures: array of strings (Top 3-5 distinct features)
-            - targetAudience: string (Who are they really selling to?)
-            - marketingChannels: array of strings (Where are they most active? e.g., "LinkedIn Ads", "SEO", "TikTok")
-            - customerSentiment: string (What do users hate/love? e.g., "Users love the UI but hate the support")
+            - pricingModel: string
+            - keyFeatures: array of strings
+            - targetAudience: string
+            - marketingChannels: array of strings
+            - customerSentiment: string
             - strengths: array of strings (SWOT)
             - weaknesses: array of strings (SWOT)
-            - uniqueSellingPoint: string (What is their "moat"?)
-            
+            - uniqueSellingPoint: string
+            `;
+        }
+
+        instruction += `
             CRITICAL INSTRUCTIONS:
             1. OUTPUT THE JSON DIRECTLY IN THE CHAT.
             2. DO NOT CREATE A FILE.
-            3. DO NOT INCLUDE CONVERSATIONAL FILLER (e.g., "Here is the report").
+            3. DO NOT INCLUDE CONVERSATIONAL FILLER.
             4. START AND END WITH BRACES { }.
         `;
 
@@ -515,7 +571,8 @@ class GenesisAgent {
             "message": "string",
             "memory": "string | null", 
             "action": "CHAT" | "ANALYZE_COMPETITOR",
-            "actionTarget": "string | null"
+            "actionTarget": "string | null",
+            "actionGoal": "string | null" // e.g. "Find pricing model", "Check feature list"
         }
 
         Conversation History:
