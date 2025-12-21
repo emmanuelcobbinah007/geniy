@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sparkles, Send, Upload, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { api } from "@/lib/api"
+import { userFriendlyError } from "@/lib/error-utils"
 import { useAuth } from "@/context/auth-context"
 import { CompetitorCard } from "./CompetitorCard"
 import { ResearchStrategyCard } from "./ResearchStrategyCard"
@@ -39,6 +40,12 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
   const [input, setInput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom on new message
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isProcessing]);
 
   // Initialize messages based on context
   useEffect(() => {
@@ -131,59 +138,28 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
         // 3. Analyze Context
         const analysis = await api.analyzeContext(fullContext, token, workspaceId)
-        addMessage("assistant", `I've analyzed ${analysis.companyName}. Generating a research strategy... 📝`)
-
-        const strategy = await api.generateStrategy(analysis, token, workspaceId)
-        addMessage("assistant", `Strategy created! I've outlined the core objectives and hypotheses below. Generating survey questions... ✍️`, { strategy })
-
-        const surveySchema = await api.generateSurvey(analysis, strategy, "", token)
         
-        // Update Parent State
-        setTitle(surveySchema.title)
-        setDescription(surveySchema.description || "")
-        setContextData({ analysis, strategy })
+        // STOP HERE: Present findings and ask for confirmation
+        const analysisSummary = `
+**I've analyzed your document! Here's what I learned:** 🧠
+
+*   **Company:** ${analysis.companyName}
+*   **Industry:** ${analysis.industry}
+*   **Target Audience:** ${analysis.targetAudience?.join(", ") || "General Public"}
+*   **Key Value:** ${analysis.valueProposition || "Not explicitly stated"}
+
+**Does this look correct?** 
+If yes, just say "Yes" or "Go ahead", and I'll build the research strategy and survey! 🚀
+        `.trim();
+
+        addMessage("assistant", analysisSummary)
         
-        // CRITICAL FIX: Update local chat context so follow-up messages know about this document!
+        // Update updated context in state so the next chat message has it
         setChatContext(fullContext)
-        
-        // Handle questions whether they are an array or object
-        const questionsData = surveySchema.questions;
-        const questionsArray = Array.isArray(questionsData) 
-            ? questionsData 
-            : Object.values(questionsData);
-
-        // Transform schema questions to our editor format
-        // Transform schema questions to our editor format
-        const editorQuestions = questionsArray.map((q: any, i: number) => {
-            const branches = q.branches ? q.branches.map((b: any) => ({
-                if: b.if,
-                then: b.next.replace(/^Q/, '')
-            })) : []
-
-            // Handle "next" (Default Jump / Merge)
-            const nextId = q.next ? q.next.replace(/^Q/, '') : null;
-            const currentId = i + 1;
-            
-            if (nextId && parseInt(nextId) !== currentId + 1 && q.type !== "multiple_choice") {
-                 branches.push({ if: true, then: nextId });
-            }
-
-            return {
-                id: currentId,
-                type: q.type,
-                title: q.question,
-                required: q.required !== false,
-                options: q.options || [],
-                logic: branches
-            }
-        })
-        setQuestions(editorQuestions)
-
-        addMessage("assistant", "Done! I've generated the survey based on your new context. Check it out on the right! 👉")
 
     } catch (error: any) {
         console.error(error)
-        const errorMessage = error.message || "Sorry, I encountered an error while processing your document."
+        const errorMessage = userFriendlyError(error)
         addMessage("assistant", errorMessage)
     } finally {
         setIsProcessing(false)
@@ -244,7 +220,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
     } catch (error) {
         console.error(error)
-        addMessage("assistant", "Sorry, something went wrong while generating the survey.")
+        addMessage("assistant", userFriendlyError(error))
     }
   }
 
@@ -346,7 +322,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
 
     } catch (error) {
         console.error(error)
-        addMessage("assistant", "Sorry, something went wrong.")
+        addMessage("assistant", userFriendlyError(error))
     } finally {
         setIsProcessing(false)
     }
@@ -412,6 +388,7 @@ export function GeniyChat({ setQuestions, setTitle, setDescription, setContextDa
                 </div>
             </motion.div>
           )}
+          <div ref={bottomRef} className="h-1" />
         </div>
       </ScrollArea>
 

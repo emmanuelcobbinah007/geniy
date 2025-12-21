@@ -13,6 +13,7 @@ import * as Yup from "yup"
 
 import { useAuth } from "@/context/auth-context"
 import { useGoogleLogin } from "@react-oauth/google"
+import { userFriendlyError } from "@/lib/error-utils"
 
 export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; onSuccess?: () => void }) {
   const [isLogin, setIsLogin] = useState(true)
@@ -55,7 +56,7 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
           router.push("/dashboard")
         }
       } catch (err: any) {
-        setError(err.message || "Authentication failed")
+        setError(userFriendlyError(err))
       } finally {
         setIsLoading(false)
       }
@@ -81,7 +82,7 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
           router.push("/dashboard")
         }
       } catch (err: any) {
-        setError(err.message || "Google authentication failed")
+        setError(userFriendlyError(err))
       } finally {
         setIsLoading(false)
       }

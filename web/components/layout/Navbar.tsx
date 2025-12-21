@@ -153,8 +153,8 @@ export function Navbar() {
                     transition={{ delay: 1.0, duration: 0.5 }}
                   >
                   <Link href="/auth">
-                    <Button variant="ghost" className="text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 hover:bg-transparent">
-                      Login
+                    <Button variant="ghost" className="text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 hover:bg-transparent hidden md:inline-flex">
+                      Sign In
                     </Button>
                   </Link>
                   </motion.div>
@@ -163,11 +163,13 @@ export function Navbar() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 1.1, duration: 0.5 }}
                   >
-                  <Link href="/auth">
-                    <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6 h-9 text-sm">
-                      Get Started
-                    </Button>
-                  </Link>
+                    <Link href="/auth?mode=signup">
+                      <Button 
+                        className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6 h-9 text-sm"
+                      >
+                        Get Started
+                      </Button>
+                    </Link>
                   </motion.div>
                 </>
               )}
@@ -242,10 +244,12 @@ export function Navbar() {
                 ) : (
                   <>
                     <Link href="/auth" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
-                      Login
+                      Sign In
                     </Link>
-                    <Link href="/auth" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Button className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl h-12 text-base">
+                    <Link href="/auth?mode=signup" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button 
+                        className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl h-12 text-base"
+                      >
                         Get Started
                       </Button>
                     </Link>

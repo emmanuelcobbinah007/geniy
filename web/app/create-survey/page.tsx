@@ -8,6 +8,7 @@ import { ArrowLeft, Eye, Play, Sparkles, X, ChevronLeft, ChevronRight, GripVerti
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { userFriendlyError } from "@/lib/error-utils"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { useAuth } from "@/context/auth-context"
 import { GeniyChat } from "@/components/create-survey/GeniyChat"
@@ -216,7 +217,7 @@ function CreateSurveyContent() {
 
     } catch (error) {
       console.error("Failed to publish:", error)
-      alert("Failed to publish survey. Please try again.")
+      alert(userFriendlyError(error))
     } finally {
       setIsPublishing(false)
     }
