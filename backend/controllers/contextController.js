@@ -58,7 +58,8 @@ const getContext = async (req, res) => {
             businessContext: decryptedContext,
             documents: workspace.documents,
             competitors: workspace.competitors,
-            gapAnalysis: workspace.gapAnalysis
+            gapAnalysis: workspace.gapAnalysis,
+            chatHistory: workspace.chatHistory // Return saved chat history
         });
     } catch (error) {
         console.error(error);

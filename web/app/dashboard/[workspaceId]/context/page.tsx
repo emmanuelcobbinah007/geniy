@@ -122,6 +122,7 @@ export default function ContextPage() {
             context={data?.businessContext || ""} 
             workspaceId={workspaceId} 
             onAnalysisStart={handleAnalysisStart}
+            initialMessages={data?.chatHistory}
         />
       </div>
 
@@ -169,6 +170,7 @@ export default function ContextPage() {
                             workspaceId={workspaceId} 
                             hideHeader={true} 
                             onAnalysisStart={handleAnalysisStart}
+                            initialMessages={data?.chatHistory}
                         />
                     </div>
                 </motion.div>

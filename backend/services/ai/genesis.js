@@ -1,5 +1,6 @@
 const openRouter = require('./openrouter');
 const manus = require('./manus');
+const trainingLogger = require('../logging/trainingLogger');
 
 class GenesisAgent {
     /**
@@ -218,7 +219,14 @@ class GenesisAgent {
       }
     `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o", true, 2500);
+        const result = await this.completeWithRetry(prompt, "openai/gpt-4o", true, 2500);
+
+        // Log for proprietary training data
+        if (result) {
+            trainingLogger.log("GENERATE_STRATEGY", { contextSummary }, result, "openai/gpt-4o");
+        }
+
+        return result;
     }
 
     /**
@@ -273,7 +281,14 @@ class GenesisAgent {
       }
     `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 4000);
+        const result = await this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 4000);
+
+        // Log for proprietary training data
+        if (result) {
+            trainingLogger.log("GENERATE_SURVEY", { contextSummary, strategy, userInstruction }, result, "openai/gpt-4o-mini");
+        }
+
+        return result;
     }
 
     /**

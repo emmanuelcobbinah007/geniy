@@ -38,42 +38,29 @@ function TypingEffect({ text, onComplete }: { text: string, onComplete?: () => v
   return <div className="prose dark:prose-invert prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{displayedText}</ReactMarkdown></div>
 }
 
-export function BrainChat({ context, workspaceId, hideHeader = false, onAnalysisStart }: { context: string; workspaceId: string; hideHeader?: boolean; onAnalysisStart?: (target: string) => void }) {
+export function BrainChat({ context, workspaceId, hideHeader = false, onAnalysisStart, initialMessages = [] }: { context: string; workspaceId: string; hideHeader?: boolean; onAnalysisStart?: (target: string) => void; initialMessages?: Message[] }) {
   const { token } = useAuth()
   const [messages, setMessages] = useState<Message[]>([]);
-  
-  /* Persistence Logic */
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from local storage
+  // Hydrate from props when available, otherwise default
   useEffect(() => {
-    const saved = localStorage.getItem(`geniy_chat_${workspaceId}`);
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            parsed.forEach((m: any) => m.timestamp = new Date(m.timestamp));
-            setMessages(parsed);
-        } catch (e) {
-            console.error("Failed to load chat history", e);
-        }
+    if (initialMessages && initialMessages.length > 0) {
+        // Convert timestamp strings back to Date objects if needed
+        const processed = initialMessages.map(m => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+        }));
+        setMessages(processed);
     } else {
-        // Reset to default only if nothing saved (and we are switching workspaces)
-        setMessages([{
+         setMessages([{
             id: "welcome",
             role: "assistant",
             content: "Hello! I'm your campaign brain. I have access to all your business context and documents. Ask me anything about your strategy, competitors, or customer personas.",
             timestamp: new Date()
         }]);
     }
-    setIsLoaded(true);
-  }, [workspaceId]);
+  }, [initialMessages]); // Runs when initialMessages loads from parent
 
-  // Save to local storage
-  useEffect(() => {
-      if (isLoaded && messages.length > 0) {
-          localStorage.setItem(`geniy_chat_${workspaceId}`, JSON.stringify(messages));
-      }
-  }, [messages, workspaceId, isLoaded]);
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)

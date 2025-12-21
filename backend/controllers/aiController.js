@@ -131,6 +131,41 @@ exports.chatWithContext = async (req, res) => {
             console.log(`[Memory] Appended new insight to workspace ${workspaceId}:`, result.memory);
         }
 
+        // SAVE CHAT HISTORY
+        try {
+            // Append new interactions to DB
+            const userMsg = messages[messages.length - 1]; // Last user message
+            const aiMsg = { role: "assistant", content: result.message, timestamp: new Date() }; // New AI message
+
+            // We need to fetch current history, append, and save
+            // Optimization: We could just append to a JSON array if Prisma supported atomic updates well, 
+            // but reading and writing is safer for JSON types ensuring structure.
+            const currentWorkspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+            let history = currentWorkspace.chatHistory || [];
+
+            // Add ID and Timestamp to user message if missing (frontend sends it, but ensuring consistency)
+            const userMsgToSave = {
+                ...userMsg,
+                timestamp: userMsg.timestamp || new Date(),
+                id: userMsg.id || Date.now().toString()
+            };
+            // Add ID to AI message
+            const aiMsgToSave = {
+                ...aiMsg,
+                id: (Date.now() + 1).toString()
+            };
+
+            // Limit history size? Let's keep last 50 messages for now to prevent massive JSON blobs
+            const newHistory = [...history, userMsgToSave, aiMsgToSave].slice(-50);
+
+            await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: { chatHistory: newHistory }
+            });
+        } catch (saveErr) {
+            console.error("Failed to save chat history:", saveErr);
+        }
+
         // Handle Agentic Actions
         if (result.action === 'ANALYZE_COMPETITOR' && workspaceId) {
             console.log(`[Agent Action] Triggering competitor analysis. Target: ${result.actionTarget}`);
