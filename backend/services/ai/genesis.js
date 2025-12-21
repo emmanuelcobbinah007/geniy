@@ -94,15 +94,27 @@ class GenesisAgent {
      * Uses Perplexity for fast discovery.
      */
     async discoverCompetitors(contextSummary) {
-        if (contextSummary.competitors && contextSummary.competitors.length >= 3) {
-            return contextSummary.competitors;
+        // Check if existing competitors are specific or generic
+        const currentCompetitors = contextSummary.competitors || [];
+        const genericKeywords = ['service', 'system', 'provider', 'traditional', 'existing', 'general', 'other', 'unknown', 'various'];
+
+        const hasGenericCompetitors = currentCompetitors.some(c =>
+            genericKeywords.some(keyword => c.toLowerCase().includes(keyword))
+        );
+
+        // Only skip if we have enough SPECIFIC competitors
+        if (currentCompetitors.length >= 3 && !hasGenericCompetitors) {
+            return currentCompetitors;
         }
 
         const instruction = `
-            Find the top 5 direct competitors for:
+            Find the top 5 REAL, SPECIFIC direct competitors for:
             Company: "${contextSummary.companyName}"
             Industry: "${contextSummary.industry}"
             Value Prop: "${contextSummary.valueProposition || "Unknown"}"
+            
+            CRITICAL: Return ONLY specific brand names (e.g. "FedEx", "DHL", "Amazon Hub").
+            DO NOT return generic categories like "Traditional couriers" or "Local shops".
             
             Return ONLY a raw JSON array of strings. Example: ["Competitor A", "Competitor B"]
         `;

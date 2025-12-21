@@ -23,7 +23,12 @@ exports.analyzeContext = async (req, res) => {
         // Step 1: Analyze Context (Fast)
         const contextSummary = await genesisAgent.analyzeContext(unifiedContext, recommendations);
 
-        // Step 2: Send Response Immediately
+        // Step 2: Discover/Refine Competitors (Perplexity)
+        // We now enforce quality check here
+        const improvedCompetitors = await genesisAgent.discoverCompetitors(contextSummary);
+        contextSummary.competitors = improvedCompetitors;
+
+        // Step 3: Send Response
         res.json(contextSummary);
 
         // NOTE: Background Competitor Analysis is now deferred until Strategy/Campaign creation.
