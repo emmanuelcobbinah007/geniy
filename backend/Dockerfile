@@ -37,4 +37,4 @@ EXPOSE 5000
 
 # Start the application
 # We use dumb-init (included in the base image) to handle signals correctly
-CMD ["dumb-init", "node", "server.js"]
+CMD ["node", "server.js"]
