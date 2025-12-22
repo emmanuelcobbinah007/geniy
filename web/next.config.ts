@@ -3,9 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: any = {
   /* config options here */
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  output: "standalone",
 };
 
 export default nextConfig;
