@@ -2,6 +2,10 @@ import { Metadata } from "next"
 import { api } from "@/lib/api"
 import { SurveyPageClient } from "./SurveyPageClient"
 
+export async function generateStaticParams() {
+  return [] 
+}
+
 interface PageProps {
   params: Promise<{
     slug: string
