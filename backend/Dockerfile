@@ -18,7 +18,10 @@ COPY package*.json ./
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-RUN npm ci --omit=dev
+# Copy prisma schema so postinstall can find it
+COPY prisma ./prisma/
+
+RUN npm ci
 
 # Copy app source
 COPY . .
