@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: any = {
   /* config options here */
 
-  output: "export",
   images: {
-    unoptimized: true,
+    unoptimized: true, // Keep this if you want to avoid Image Optimization costs/complexity, or remove for default optimization
   },
 };
 
