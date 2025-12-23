@@ -139,7 +139,8 @@ const uploadDocument = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to access this workspace' });
         }
 
-        const { originalname, mimetype, size, path, filename } = req.file;
+        const { originalname, mimetype, size, path, filename, location } = req.file;
+        const fileUrl = location || path; // S3 uses 'location', Cloudinary uses 'path'
 
         // 1. Save Document record
         const document = await prisma.document.create({
@@ -148,7 +149,7 @@ const uploadDocument = async (req, res) => {
                 name: originalname,
                 type: mimetype,
                 size: size,
-                url: path // Cloudinary URL
+                url: fileUrl // Cloudinary/S3 URL
             }
         });
 
@@ -157,9 +158,9 @@ const uploadDocument = async (req, res) => {
 
         if (mimetype === 'application/pdf') {
             try {
-                console.log(`Downloading PDF from: ${path}`);
-                // Download file from Cloudinary
-                const response = await axios.get(path, { responseType: 'arraybuffer' });
+                console.log(`Downloading PDF from: ${fileUrl}`);
+                // Download file from Cloudinary/S3
+                const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
                 const buffer = Buffer.from(response.data);
                 console.log(`PDF downloaded, buffer size: ${buffer.length}`);
 
