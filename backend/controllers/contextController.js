@@ -158,10 +158,38 @@ const uploadDocument = async (req, res) => {
 
         if (mimetype === 'application/pdf') {
             try {
-                console.log(`Downloading PDF from: ${fileUrl}`);
-                // Download file from Cloudinary/S3
-                const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-                const buffer = Buffer.from(response.data);
+                let buffer;
+
+                // Check if this is an S3 upload (has bucket and key)
+                if (req.file.bucket && req.file.key) {
+                    console.log(`Downloading PDF from S3: ${req.file.bucket}/${req.file.key}`);
+                    const { GetObjectCommand } = require('@aws-sdk/client-s3');
+                    const { s3Client } = require('../services/uploadService');
+
+                    const command = new GetObjectCommand({
+                        Bucket: req.file.bucket,
+                        Key: req.file.key
+                    });
+
+                    const s3Response = await s3Client.send(command);
+
+                    // Convert stream to buffer
+                    const streamToBuffer = (stream) =>
+                        new Promise((resolve, reject) => {
+                            const chunks = [];
+                            stream.on("data", (chunk) => chunks.push(chunk));
+                            stream.on("error", reject);
+                            stream.on("end", () => resolve(Buffer.concat(chunks)));
+                        });
+
+                    buffer = await streamToBuffer(s3Response.Body);
+                } else {
+                    // Fallback: Cloudinary or Public URL
+                    console.log(`Downloading PDF from URL: ${fileUrl}`);
+                    const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+                    buffer = Buffer.from(response.data);
+                }
+
                 console.log(`PDF downloaded, buffer size: ${buffer.length}`);
 
                 // Parse PDF

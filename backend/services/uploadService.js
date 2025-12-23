@@ -67,5 +67,6 @@ const getUploadMiddleware = () => {
 };
 
 module.exports = {
-    upload: getUploadMiddleware()
+    upload: getUploadMiddleware(),
+    s3Client: s3Client
 };
