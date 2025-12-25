@@ -92,7 +92,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
         
         // Merge DB and Text competitors (Unique) with DB taking precedence on name casing
         if (initialContext || (competitors && competitors.length > 0)) {
-            const dbNames = competitors && competitors.length > 0 ? competitors.map(c => c.name) : [];
+            const dbNames = competitors && competitors.length > 0 ? competitors.filter(c => c && typeof c === 'object' && c.name).map(c => c.name) : [];
             const textNames = [];
             
              // Fallback: Extract competitors from text if not in DB
@@ -543,7 +543,10 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             </div>
                         ) : (
                             displayCompetitors.map((comp: any) => {
-                                const name = typeof comp === 'string' ? comp : comp.name;
+                                // Safe check for string or object
+                                const name = typeof comp === 'string' ? comp : (comp && comp.name ? comp.name : null);
+                                if (!name) return null; // Skip invalid entries
+
                                 return (
                                 <div key={name} className="space-y-4">
                                     {competitorData[name] ? (

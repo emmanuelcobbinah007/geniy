@@ -30,6 +30,16 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
     return text.substring(0, length) + "..."
   }
 
+  // Ensure analysis object and arrays exist to prevent crashes
+  const safeAnalysis = {
+      pricingModel: analysis?.pricingModel || "Unknown",
+      targetAudience: analysis?.targetAudience || "Unknown",
+      uniqueSellingPoint: analysis?.uniqueSellingPoint || "Not analyzed yet",
+      strengths: Array.isArray(analysis?.strengths) ? analysis.strengths : [],
+      weaknesses: Array.isArray(analysis?.weaknesses) ? analysis.weaknesses : [],
+      keyFeatures: Array.isArray(analysis?.keyFeatures) ? analysis.keyFeatures : []
+  };
+
   return (
     <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
       <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -38,7 +48,7 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
                 <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{name}</CardTitle>
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 max-w-[120px] truncate">
-                        {analysis.pricingModel}
+                        {safeAnalysis.pricingModel}
                     </Badge>
                     {onDelete && (
                         <Button
@@ -57,7 +67,7 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-zinc-400" /> 
-                <span className="truncate">{analysis.targetAudience}</span>
+                <span className="truncate">{safeAnalysis.targetAudience}</span>
             </p>
         </div>
       </CardHeader>
@@ -68,7 +78,7 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
         <div className="bg-violet-50/50 dark:bg-violet-900/10 p-3 rounded-md border border-violet-100 dark:border-violet-900/20">
             <p className="text-sm text-violet-700 dark:text-violet-300 leading-relaxed">
                 <Zap className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" /> 
-                <span className="font-medium">USP:</span> {truncate(analysis.uniqueSellingPoint, isExpanded ? 500 : 120)}
+                <span className="font-medium">USP:</span> {truncate(safeAnalysis.uniqueSellingPoint, isExpanded ? 500 : 120)}
             </p>
         </div>
 
@@ -79,11 +89,15 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
                     <Check className="w-3.5 h-3.5" /> Strengths
                 </h4>
                 <ul className="space-y-2">
-                    {analysis.strengths.slice(0, isExpanded ? undefined : 2).map((s, i) => (
-                        <li key={i} className={`text-sm text-zinc-600 dark:text-zinc-400 leading-snug pl-2 border-l-2 border-emerald-100 dark:border-emerald-900/30 ${!isExpanded ? 'truncate' : ''}`}>
-                            {s}
-                        </li>
-                    ))}
+                    {safeAnalysis.strengths.length > 0 ? (
+                        safeAnalysis.strengths.slice(0, isExpanded ? undefined : 2).map((s: string, i: number) => (
+                            <li key={i} className={`text-sm text-zinc-600 dark:text-zinc-400 leading-snug pl-2 border-l-2 border-emerald-100 dark:border-emerald-900/30 ${!isExpanded ? 'truncate' : ''}`}>
+                                {s}
+                            </li>
+                        ))
+                    ) : (
+                        <li className="text-xs text-zinc-400 italic">No data yet</li>
+                    )}
                 </ul>
             </div>
 
@@ -93,11 +107,15 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
                     <X className="w-3.5 h-3.5" /> Weaknesses
                 </h4>
                 <ul className="space-y-2">
-                    {analysis.weaknesses.slice(0, isExpanded ? undefined : 2).map((w, i) => (
-                        <li key={i} className={`text-sm text-zinc-600 dark:text-zinc-400 leading-snug pl-2 border-l-2 border-rose-100 dark:border-rose-900/30 ${!isExpanded ? 'truncate' : ''}`}>
-                            {w}
-                        </li>
-                    ))}
+                    {safeAnalysis.weaknesses.length > 0 ? (
+                        safeAnalysis.weaknesses.slice(0, isExpanded ? undefined : 2).map((w: string, i: number) => (
+                            <li key={i} className={`text-sm text-zinc-600 dark:text-zinc-400 leading-snug pl-2 border-l-2 border-rose-100 dark:border-rose-900/30 ${!isExpanded ? 'truncate' : ''}`}>
+                                {w}
+                            </li>
+                        ))
+                    ) : (
+                        <li className="text-xs text-zinc-400 italic">No data yet</li>
+                    )}
                 </ul>
             </div>
         </div>
@@ -106,11 +124,18 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
         {isExpanded && (
             <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="flex flex-wrap gap-1.5">
-                    {analysis.keyFeatures.map((f, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                            {f}
-                        </span>
-                    ))}
+                    {safeAnalysis.keyFeatures.length > 0 ? (
+                        safeAnalysis.keyFeatures.map((f: string, i: number) => (
+                            <span key={i} className="inline-flex items-center px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                {f}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="text-xs text-zinc-400 italic">No key features identified</span>
+                    )} // Close map
+                </div>
+            </div>
+        )}                    ))}
                 </div>
             </div>
         )}
