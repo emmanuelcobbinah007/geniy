@@ -24,16 +24,28 @@ class GenesisAgent {
      * Step 1: Analyze Context
      * Extracts key entities from the raw BCD text.
      */
-    async analyzeContext(rawText, recommendations = []) {
+    async analyzeContext(rawText, recommendations = [], missingDimensions = []) {
         let focusInstruction = "";
         if (recommendations && recommendations.length > 0) {
             focusInstruction = `
-            **FOCUS AREAS (Based on previous analysis):**
+            **PRIORITY FOCUS AREAS:**
             The user has been advised to:
             ${recommendations.map(r => `- ${r}`).join('\n')}
-            
-            **INSTRUCTION:** Pay EXTRA attention to inferring details related to these recommendations. If the context is vague, make a reasonable professional inference for these specific areas.
-             `;
+            `;
+        }
+
+        if (missingDimensions && missingDimensions.length > 0) {
+            focusInstruction += `
+            **MISSING INTELLIGENCE (AUTO-FILL MODE):**
+            The following sections are currently MISSING from the knowledge base:
+            ${missingDimensions.map(d => `- ${d}`).join('\n')}
+
+            **INSTRUCTION:** 
+            For these SPECIFIC missing dimensions, if the explicit answer is not in the context, you MUST **PROPOSE A PROFESSIONAL SUGGESTION** based on the Industry and Company Name.
+            - Do NOT leave them as "Unknown".
+            - Do NOT make them generic. Use your knowledge of the industry to draft high-quality placeholders.
+            - Example: If "Value Proposition" is missing for a "Coffee Shop", suggest: "Artisanal, fair-trade coffee experience focusing on community connection."
+            `;
         }
 
         const prompt = `

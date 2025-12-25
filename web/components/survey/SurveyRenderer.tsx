@@ -95,6 +95,8 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
   const startTime = useRef<number>(Date.now())
 
+  const isSubmittingRef = useRef(false)
+
   const submitSurvey = async (finalAnswers: any) => {
     if (isPreview) {
       setIsCompleted(true)
@@ -103,6 +105,10 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     }
 
     if (!slug) return
+    
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
 
     setIsSubmitting(true)
     try {
@@ -119,6 +125,9 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
       if (onComplete) onComplete()
     } catch (err) {
       alert("Failed to submit response. Please try again.")
+      // Only unlock on error to allow retry. 
+      // On success, we stay locked to prevent post-completion submissions.
+      isSubmittingRef.current = false 
     } finally {
       setIsSubmitting(false)
     }

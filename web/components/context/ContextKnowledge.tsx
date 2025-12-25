@@ -162,10 +162,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
             let hasNewAnalysis = false;
             
             competitors.forEach(c => {
-                if (c.analysis && !prev[c.name]) {
-                    newData[c.name] = c.analysis;
-                    hasNewAnalysis = true;
-                } else if (c.analysis && JSON.stringify(prev[c.name]) !== JSON.stringify(c.analysis)) {
+                if (c && c.name && c.analysis && (!prev[c.name] || JSON.stringify(prev[c.name]) !== JSON.stringify(c.analysis))) {
                      newData[c.name] = c.analysis;
                      hasNewAnalysis = true;
                 }
@@ -539,7 +536,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             </div>
                         )}
 
-                        {!displayCompetitors || displayCompetitors.length === 0 ? (
+                        {!displayCompetitors || !Array.isArray(displayCompetitors) || displayCompetitors.length === 0 ? (
                             <div className="text-center py-12 text-zinc-500">
                                 <p>No competitors discovered yet.</p>
                                 <p className="text-sm">Run "Analyze Context" to identify competitors.</p>
@@ -661,19 +658,22 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     {/* Gap Analysis Section */}
                     {gapAnalysisData ? (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                             {/* Market Gaps */}
+                            {/* Market Gaps */}
                              <section>
                                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
                                     <img src="/gen_states/gen_thinking.png" alt="Gaps" width={50} height={0} />
                                     Unmet Market Needs (Gaps)
                                 </h3>
                                 <div className="grid md:grid-cols-3 gap-4">
-                                    {gapAnalysisData.gaps.map((gap: any, i: number) => (
+                                    {gapAnalysisData.gaps && Array.isArray(gapAnalysisData.gaps) && gapAnalysisData.gaps.map((gap: any, i: number) => (
                                         <Card key={i} className="p-5 bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/20 dark:to-zinc-900 border-rose-100 dark:border-rose-900/50 shadow-sm hover:shadow-md transition-shadow">
                                             <h4 className="font-semibold text-rose-900 dark:text-rose-100 mb-2">{gap.title}</h4>
                                             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{gap.description}</p>
                                         </Card>
                                     ))}
+                                    {(!gapAnalysisData.gaps || !Array.isArray(gapAnalysisData.gaps) || gapAnalysisData.gaps.length === 0) && (
+                                        <p className="text-sm text-zinc-400 col-span-3 text-center italic">No gaps identified yet.</p>
+                                    )}
                                 </div>
                             </section>
 
@@ -684,12 +684,15 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                     Strategic Opportunities
                                 </h3>
                                 <div className="grid md:grid-cols-3 gap-4">
-                                    {gapAnalysisData.opportunities.map((opp: any, i: number) => (
+                                    {gapAnalysisData.opportunities && Array.isArray(gapAnalysisData.opportunities) && gapAnalysisData.opportunities.map((opp: any, i: number) => (
                                         <Card key={i} className="p-5 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-zinc-900 border-violet-100 dark:border-violet-900/50 shadow-sm hover:shadow-md transition-shadow">
                                             <h4 className="font-semibold text-violet-900 dark:text-violet-100 mb-2">{opp.title}</h4>
                                             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{opp.description}</p>
                                         </Card>
                                     ))}
+                                    {(!gapAnalysisData.opportunities || !Array.isArray(gapAnalysisData.opportunities) || gapAnalysisData.opportunities.length === 0) && (
+                                        <p className="text-sm text-zinc-400 col-span-3 text-center italic">No opportunities identified yet.</p>
+                                    )}
                                 </div>
                             </section>
 
@@ -700,7 +703,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                     Actionable Recommendations
                                 </h3>
                                 <div className="space-y-4">
-                                    {gapAnalysisData.recommendations.map((rec: string, i: number) => (
+                                    {gapAnalysisData.recommendations && Array.isArray(gapAnalysisData.recommendations) && gapAnalysisData.recommendations.map((rec: string, i: number) => (
                                         <div key={i} className="flex items-start gap-4 p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all group">
                                             <div className="flex flex-col items-center gap-2">
                                                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 h-8 w-8 flex items-center justify-center rounded-full text-sm">
@@ -719,6 +722,9 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                             </div>
                                         </div>
                                     ))}
+                                    {(!gapAnalysisData.recommendations || !Array.isArray(gapAnalysisData.recommendations) || gapAnalysisData.recommendations.length === 0) && (
+                                        <p className="text-sm text-zinc-400 text-center italic">No recommendations identified yet.</p>
+                                    )}
                                 </div>
                             </section>
                         </div>

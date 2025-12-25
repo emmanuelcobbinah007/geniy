@@ -57,9 +57,9 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
           // HACK: We will use the analyzeContext endpoint but we need to provide the context string.
           // Since we don't have it here, let's fetch the workspace first.
           const ws = await api.getWorkspace(workspaceId, token)
-          // Pass the current recommendations to help the agent
           const recommendations = health?.recommendations || [];
-          return api.analyzeContext(ws.businessContext || "", token, workspaceId, recommendations)
+          const missingDimensions = health?.missingDimensions || [];
+          return api.analyzeContext(ws.businessContext || "", token, workspaceId, recommendations, missingDimensions)
       },
       onSuccess: (data) => {
           setSuggestions(data)

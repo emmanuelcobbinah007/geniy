@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 exports.analyzeContext = async (req, res) => {
     try {
 
-        const { workspaceId, recommendations } = req.body;
+        const { workspaceId, recommendations, missingDimensions } = req.body;
 
         if (!workspaceId) {
             return res.status(400).json({ error: "Workspace ID is required for unified analysis" });
@@ -21,7 +21,7 @@ exports.analyzeContext = async (req, res) => {
         }
 
         // Step 1: Analyze Context (Fast)
-        const contextSummary = await genesisAgent.analyzeContext(unifiedContext, recommendations);
+        const contextSummary = await genesisAgent.analyzeContext(unifiedContext, recommendations, missingDimensions);
 
         // Step 2: Discover/Refine Competitors (Perplexity)
         // We now enforce quality check here

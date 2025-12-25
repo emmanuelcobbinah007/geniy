@@ -200,8 +200,8 @@ export const api = {
   },
 
   // AI Integration
-  async analyzeContext(contextText: string, token: string, workspaceId?: string, recommendations?: string[]) {
-    return this.post('/ai/analyze-context', { contextText, workspaceId, recommendations }, token);
+  async analyzeContext(contextText: string, token: string, workspaceId?: string, recommendations?: string[], missingDimensions?: string[]) {
+    return this.post('/ai/analyze-context', { contextText, workspaceId, recommendations, missingDimensions }, token);
   },
 
   async chat(message: string | any[], context: string, token: string) {
