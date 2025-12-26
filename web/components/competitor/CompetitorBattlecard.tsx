@@ -132,10 +132,7 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
                         ))
                     ) : (
                         <span className="text-xs text-zinc-400 italic">No key features identified</span>
-                    )} // Close map
-                </div>
-            </div>
-        )}                    ))}
+                    )}
                 </div>
             </div>
         )}
