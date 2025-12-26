@@ -3,8 +3,36 @@ const genesisAgent = require('./ai/genesis');
 const radarService = require('./radarService');
 
 class CompetitorDiscoveryService {
-    async run(contextSummary, workspaceId) {
+    async run(contextOrSummary, workspaceId) {
         console.log(`Starting background competitor analysis for workspace ${workspaceId}...`);
+
+        let contextSummary = contextOrSummary;
+
+        // 1. Adapter: If input is raw string (business context), parse it
+        if (typeof contextOrSummary === 'string') {
+            const companyMatch = contextOrSummary.match(/Company:\s*(.+?)(\n|$)/);
+            const industryMatch = contextOrSummary.match(/Industry:\s*(.+?)(\n|$)/);
+            const valuePropMatch = contextOrSummary.match(/Value Proposition:\s*(.+?)(\n|$)/);
+
+            // Extract competitors from list
+            let competitors = [];
+            const competitorsSplit = contextOrSummary.split("Competitors:");
+            if (competitorsSplit.length > 1) {
+                const list = competitorsSplit[1].split("\n\n")[0]; // Get the block
+                competitors = list.split('\n')
+                    .map(l => l.trim())
+                    .filter(l => l.startsWith('- '))
+                    .map(l => l.substring(2));
+            }
+
+            contextSummary = {
+                companyName: companyMatch ? companyMatch[1].trim() : "Unknown",
+                industry: industryMatch ? industryMatch[1].trim() : "General",
+                valueProposition: valuePropMatch ? valuePropMatch[1].trim() : "Unknown",
+                competitors: competitors
+            };
+            console.log(`Parsed context string into summary. Found ${competitors.length} initial competitors.`);
+        }
 
         try {
             // Discover Competitors (Agentic - Slow)
@@ -47,10 +75,18 @@ class CompetitorDiscoveryService {
                         console.log(`⚡ Triggering initial radar scan for ${newCompetitors.length} new competitors...`);
 
                         // We run this without awaiting to return quickly, but we catch errors logs
-                        Promise.allSettled(newCompetitors.map(comp =>
-                            radarService.scanCompetitor(workspaceId, comp.name)
-                                .catch(err => console.error(`Failed initial scan for ${comp.name}`, err))
-                        ));
+                        // OPTIMIZATION: Run sequentially to prevent server resource spike (Puppeteer is heavy)
+                        (async () => {
+                            for (const comp of newCompetitors) {
+                                try {
+                                    await radarService.scanCompetitor(workspaceId, comp.name);
+                                    // Small breathing room between scans
+                                    await new Promise(r => setTimeout(r, 1000));
+                                } catch (err) {
+                                    console.error(`Failed initial scan for ${comp.name}`, err);
+                                }
+                            }
+                        })();
 
                     } else {
                         console.log("No new competitors to persist.");

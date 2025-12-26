@@ -8,6 +8,7 @@ const prisma = require('../config/db');
 // @access  Private
 const { encrypt, decrypt } = require('../utils/encryption');
 const auditService = require('../services/auditService');
+const competitorDiscoveryService = require('../services/competitorDiscoveryService');
 
 // @desc    Get workspace context and documents
 // @route   GET /api/context
@@ -106,6 +107,12 @@ const updateContext = async (req, res) => {
         });
 
         res.json(workspace);
+
+        // TRIGGER: Run competitor discovery/sync in background
+        if (businessContext && businessContext.length > 20) {
+            competitorDiscoveryService.run(businessContext, workspaceId)
+                .catch(err => console.error("Background discovery trigger failed:", err));
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
