@@ -327,12 +327,47 @@ exports.chatWithContext = async (req, res) => {
 
 exports.analyzeCompetitor = async (req, res) => {
     try {
-        const { competitorName, industry } = req.body;
+        const { competitorName, industry, workspaceId } = req.body;
         if (!competitorName || !industry) {
             return res.status(400).json({ error: "Competitor name and industry are required" });
         }
 
+        console.log(`🧠 Analyzing ${competitorName} for workspace ${workspaceId}...`);
+
         const analysis = await genesisAgent.analyzeCompetitor(competitorName, industry);
+
+        // Persist analysis if workspaceId provided
+        if (workspaceId && analysis) {
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { competitors: true }
+            });
+
+            if (workspace) {
+                let competitors = workspace.competitors || [];
+                const index = competitors.findIndex(c => c && c.name === competitorName);
+
+                if (index !== -1) {
+                    // Update existing
+                    competitors[index] = { ...competitors[index], analysis };
+                } else {
+                    // Add new (unlikely if called from UI list, but robust)
+                    competitors.push({
+                        name: competitorName,
+                        analysis,
+                        radarStatus: 'stable',
+                        lastScrapedAt: null // Will trigger scan later
+                    });
+                }
+
+                await prisma.workspace.update({
+                    where: { id: workspaceId },
+                    data: { competitors }
+                });
+                console.log(`💾 Saved deep dive analysis for ${competitorName}`);
+            }
+        }
+
         res.json(analysis);
     } catch (error) {
         console.error("Competitor Analysis Error:", error);

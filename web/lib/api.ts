@@ -225,8 +225,8 @@ export const api = {
     return this.post('/ai/chat', { context, messages, workspaceId }, token);
   },
 
-  async analyzeCompetitor(competitorName: string, industry: string, token: string) {
-    return this.post('/ai/analyze-competitor', { competitorName, industry }, token);
+  async analyzeCompetitor(competitorName: string, industry: string, workspaceId: string, token: string) {
+    return this.post('/ai/analyze-competitor', { competitorName, industry, workspaceId }, token);
   },
 
   async generateTheme(prompt: string, token: string) {

@@ -343,7 +343,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
   const analyzeCompetitorMutation = useMutation({
       mutationFn: async (competitorName: string) => {
           if (!token || !analysisResult) return
-          return api.analyzeCompetitor(competitorName, analysisResult.industry, token)
+          return api.analyzeCompetitor(competitorName, analysisResult.industry, workspaceId, token)
       },
       onSuccess: (data, competitorName) => {
           setCompetitorData(prev => ({ ...prev, [competitorName]: data }))
