@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 const scraperService = require('./scraperService');
 const genesisAgent = require('./ai/genesis');
 const auditService = require('./auditService');
@@ -15,140 +14,215 @@ class RadarService {
     async scanCompetitor(workspaceId, competitorName) {
         console.log(`📡 RADAR: Scanning ${competitorName} for workspace ${workspaceId}...`);
 
-        const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-        if (!workspace || !workspace.competitors) {
-            throw new Error("Workspace or competitors not found");
-        }
-
-        const competitors = workspace.competitors;
-        const targetIndex = competitors.findIndex(c => c.name.toLowerCase() === competitorName.toLowerCase());
-
-        if (targetIndex === -1) {
-            throw new Error(`Competitor ${competitorName} not found in tracking list.`);
-        }
-
-        const target = competitors[targetIndex];
-
-        // 1. Get URL (If missing, use AI/Search to find it - mocked for now or use Perplexity in future)
-        let url = target.url || target.website;
-
-        // AUTO-DISCOVERY: If no URL, ask Genesis/Perplexity
-        if (!url) {
-            console.log(`🔍 URL missing for ${competitorName}. Attempting auto-discovery...`);
-            try {
-                const discoveryPrompt = `Find the official website homepage URL for the company "${competitorName}". Return ONLY the raw URL string (e.g., https://example.com). Do not include any text.`;
-                const discoveredUrl = await genesisAgent.research(discoveryPrompt);
-
-                // Simple validation: check if looks like a URL
-                if (discoveredUrl && discoveredUrl.includes('http')) {
-                    // Clean up potential markdown or whitespace
-                    url = discoveredUrl.replace(/```/g, '').trim();
-                    console.log(`✅ Discovered URL for ${competitorName}: ${url}`);
-
-                    // Save it immediately so we don't have to look it up next time
-                    target.url = url;
-                    // Note: We don't save to DB here yet, we save at the end of the function successfully
-                } else {
-                    console.log(`❌ Could not discover URL for ${competitorName}. Result: ${discoveredUrl}`);
-                    throw new Error("Could not find competitor website URL.");
-                }
-            } catch (err) {
-                console.log(`⚠️ Auto-discovery failed for ${competitorName}. Skipping Radar.`);
-                return { status: "skipped", reason: "no_url_found" };
-            }
-        }
-
         try {
-            // 2. Scrape
-            const scrapeResult = await scraperService.scrape(url);
-
-            // 3. Compare Hash
-            const oldHash = target.contentHash;
-            const newHash = scrapeResult.hash;
-            let changeDetected = false;
-            let insight = null;
-
-            if (oldHash && oldHash !== newHash) {
-                changeDetected = true;
-                console.log(`🚨 CHANGE DETECTED for ${competitorName}!`);
-
-                // 4. Generate Insight (AI Diff)
-                // We ask Genesis to compare old text vs new text? 
-                // Or just analyze the NEW text for "Updates".
-                // Saving full old text might be too heavy. 
-                // Let's just say "Content Changed" for v1.
-                insight = "Website content has changed significantly.";
-            } else if (!oldHash) {
-                console.log(`✨ First scan for ${competitorName}. Content baseline established.`);
-                changeDetected = true; // Technically a "change" from null
-                insight = "Initial baseline established.";
-            } else {
-                console.log(`✅ No change detected for ${competitorName}.`);
+            const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+            if (!workspace || !workspace.competitors) {
+                // If we can't find the workspace, we can't really log error to it, but we should not crash.
+                console.error(`Workspace ${workspaceId} not found during scan.`);
+                return { status: "error", error: "Workspace not found" };
             }
 
-            // 5. Update DB
-            const updatedCompetitor = {
-                ...target,
-                url: url,
-                lastScrapedAt: new Date().toISOString(),
-                contentHash: newHash,
-                // Add to history log (keep last 5 entries to save space)
-                radarHistory: [
-                    { date: new Date().toISOString(), status: changeDetected ? "changed" : "stable", insight },
-                    ...(target.radarHistory || [])
-                ].slice(0, 5)
-            };
+            const competitors = workspace.competitors;
+            const targetIndex = competitors.findIndex(c => c && c.name && c.name.toLowerCase() === competitorName.toLowerCase());
 
-            competitors[targetIndex] = updatedCompetitor;
+            if (targetIndex === -1) {
+                throw new Error(`Competitor ${competitorName} not found in tracking list.`);
+            }
 
-            await prisma.workspace.update({
-                where: { id: workspaceId },
-                data: { competitors: competitors }
-            });
+            const target = competitors[targetIndex];
 
-            // 6. Notify / Audit Log (Active Notification)
-            if (changeDetected && insight !== "Initial baseline established.") {
-                await auditService.log({
-                    workspaceId: workspaceId,
-                    action: 'COMPETITOR_UPDATE',
-                    metadata: {
-                        competitorName: competitorName,
-                        insight: insight,
-                        url: url
+            // 1. Get URL (If missing, use AI/Search to find it - mocked for now or use Perplexity in future)
+            let url = target.url || target.website;
+
+            // AUTO-DISCOVERY: If no URL, ask Genesis/Perplexity
+            if (!url) {
+                console.log(`🔍 URL missing for ${competitorName}. Attempting auto-discovery...`);
+                try {
+                    const discoveryPrompt = `Find the official website homepage URL for the company "${competitorName}". 
+                    
+                    Return a JSON object with the field "url".
+                    Example: { "url": "https://www.example.com" }
+                    
+                    DO NOT return just text. Return JSON.`;
+
+                    const discoveredText = await genesisAgent.research(discoveryPrompt);
+
+                    // 1. Try JSON Parse
+                    try {
+                        const jsonMatch = discoveredText.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            const parsed = JSON.parse(jsonMatch[0]);
+                            if (parsed.url) url = parsed.url;
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    // 2. Fallback: Regex Extraction
+                    if (!url) {
+                        // Match markdown bolding first: **example.com**
+                        const boldMatch = discoveredText.match(/\*\*([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\*\*/);
+                        if (boldMatch) {
+                            url = boldMatch[1];
+                        } else {
+                            // Match standard URLs
+                            const urlMatch = discoveredText.match(/https?:\/\/[^\s\)]+|www\.[^\s\)]+/);
+                            if (urlMatch) {
+                                url = urlMatch[0];
+                            }
+                        }
                     }
-                });
 
-                // LIVE PULSE: Send Webhook Notification
-                await notificationService.send(workspaceId, {
-                    title: `Competitor Update: ${competitorName}`,
-                    message: insight || "Website content has changed.",
-                    link: url,
-                    type: 'warning'
-                });
+                    // 3. Normalize
+                    if (url) {
+                        // Remove common markdown artifacts (bolding **, citations [1], etc)
+                        url = url.replace(/\*\*/g, '');
+                        url = url.replace(/\[.*?\]/g, '');
 
-                console.log(`📢 Logged activity and notified for ${competitorName}`);
+                        // Prepend https if missing
+                        if (url.startsWith('www.')) url = 'https://' + url;
+
+                        // Clean trailing punctuation
+                        url = url.replace(/['";,.\)]+$/, '');
+
+                        console.log(`✅ Discovered URL for ${competitorName}: ${url}`);
+
+                        // Save it immediately so we don't have to look it up next time
+                        target.url = url;
+                    } else {
+                        console.log(`❌ Could not discover URL for ${competitorName}. Result: ${discoveredText}`);
+                        throw new Error("Could not find competitor website URL.");
+                    }
+                } catch (err) {
+                    console.log(`⚠️ Auto-discovery failed for ${competitorName}. Skipping Radar.`);
+                    return { status: "skipped", reason: "no_url_found" };
+                }
             }
 
-            return { status: changeDetected ? "changed" : "stable", insight, competitor: updatedCompetitor };
 
-        } catch (error) {
-            console.error(`Radar scan failed for ${competitorName}:`, error);
-            // Log error in history
-            const updatedCompetitor = {
-                ...target,
-                lastScrapedAt: new Date().toISOString(),
-                radarStatus: "error",
-                radarHistory: [
-                    { date: new Date().toISOString(), status: "error", error: error.message },
-                    ...(target.radarHistory || [])
-                ].slice(0, 5)
-            };
-            competitors[targetIndex] = updatedCompetitor;
-            await prisma.workspace.update({
-                where: { id: workspaceId },
-                data: { competitors: competitors }
-            });
-            throw error;
+            // --- FINAL URL SANITIZATION & VALIDATION ---
+            // Ensure that whether the URL came from DB or new discovery, it is clean.
+            if (url) {
+                // Remove markdown artifacts
+                url = url.replace(/\*\*/g, '').replace(/\[.*?\]/g, '');
+                // Clean trailing chars
+                url = url.replace(/['";,.\)]+$/, '');
+                // Ensure protocol
+                if (!url.startsWith('http') && !url.startsWith('https')) {
+                    url = 'https://' + url;
+                }
+
+                // Update the target object in memory so we verify against the clean URL
+                console.log(`🧹 Sanitized URL for ${competitorName}: ${url}`);
+            }
+
+            if (!url || (!url.startsWith('http') && !url.startsWith('https'))) {
+                console.log(`❌ Invalid URL for ${competitorName}: ${url}. Skipping scrape.`);
+                return { status: "skipped", reason: "invalid_url" };
+            }
+
+            try {
+                // 2. Scrape
+                const scrapeResult = await scraperService.scrape(url);
+
+                // 3. Compare Hash
+                const oldHash = target.contentHash;
+                const newHash = scrapeResult.hash;
+                let changeDetected = false;
+                let insight = null;
+
+                if (oldHash && oldHash !== newHash) {
+                    changeDetected = true;
+                    console.log(`🚨 CHANGE DETECTED for ${competitorName}!`);
+
+                    // 4. Generate Insight (AI Diff)
+                    // We ask Genesis to compare old text vs new text? 
+                    // Or just analyze the NEW text for "Updates".
+                    // Saving full old text might be too heavy. 
+                    // Let's just say "Content Changed" for v1.
+                    insight = "Website content has changed significantly.";
+                } else if (!oldHash) {
+                    console.log(`✨ First scan for ${competitorName}. Content baseline established.`);
+                    changeDetected = true; // Technically a "change" from null
+                    insight = "Initial baseline established.";
+                } else {
+                    console.log(`✅ No change detected for ${competitorName}.`);
+                }
+
+                // 5. Update DB
+                const updatedCompetitor = {
+                    ...target,
+                    url: url,
+                    lastScrapedAt: new Date().toISOString(),
+                    contentHash: newHash,
+                    // Add to history log (keep last 5 entries to save space)
+                    radarHistory: [
+                        { date: new Date().toISOString(), status: changeDetected ? "changed" : "stable", insight },
+                        ...(target.radarHistory || [])
+                    ].slice(0, 5)
+                };
+
+                competitors[targetIndex] = updatedCompetitor;
+
+                await prisma.workspace.update({
+                    where: { id: workspaceId },
+                    data: { competitors: competitors }
+                });
+
+                // 6. Notify / Audit Log (Active Notification)
+                if (changeDetected && insight !== "Initial baseline established.") {
+                    await auditService.log({
+                        workspaceId: workspaceId,
+                        action: 'COMPETITOR_UPDATE',
+                        metadata: {
+                            competitorName: competitorName,
+                            insight: insight,
+                            url: url
+                        }
+                    });
+
+                    // LIVE PULSE: Send Webhook Notification
+                    await notificationService.send(workspaceId, {
+                        title: `Competitor Update: ${competitorName}`,
+                        message: insight || "Website content has changed.",
+                        link: url,
+                        type: 'warning'
+                    });
+
+                    console.log(`📢 Logged activity and notified for ${competitorName}`);
+                }
+
+                return { status: changeDetected ? "changed" : "stable", insight, competitor: updatedCompetitor };
+
+            } catch (error) {
+                console.error(`Radar scan failed during scrape/update for ${competitorName}:`, error);
+
+                // Try to log error to DB if possible (we have the index)
+                const errorCompetitor = {
+                    ...target,
+                    lastScrapedAt: new Date().toISOString(),
+                    radarStatus: "error",
+                    radarHistory: [
+                        { date: new Date().toISOString(), status: "error", error: error.message },
+                        ...(target.radarHistory || [])
+                    ].slice(0, 5)
+                };
+                competitors[targetIndex] = errorCompetitor;
+
+                // Optimistically try to save the error state state
+                try {
+                    await prisma.workspace.update({
+                        where: { id: workspaceId },
+                        data: { competitors: competitors }
+                    });
+                } catch (dbErr) {
+                    console.error("Critical: Could not save error state to DB", dbErr);
+                }
+
+                throw error;
+            }
+
+        } catch (initialError) {
+            console.error(`Radar scan failed completely for ${competitorName}:`, initialError);
+            return { status: "error", error: initialError.message };
         }
     }
 }

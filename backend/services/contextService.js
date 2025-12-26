@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 // We will require genesisAgent later to avoid circular dependencies if possible, 
 // or we can inject it. For now, let's assume we can require it.
 // If circular dependency becomes an issue, we'll refactor.

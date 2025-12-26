@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
-const { PrismaClient, MemberRole } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { MemberRole } = require('@prisma/client'); // Keep MemberRole
+const prisma = require('../config/db'); // Use singleton Prisma client
 
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,

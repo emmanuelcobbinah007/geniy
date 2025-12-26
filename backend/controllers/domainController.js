@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 const axios = require('axios');
 
 const VERCEL_API_URL = 'https://api.vercel.com';

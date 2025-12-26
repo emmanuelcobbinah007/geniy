@@ -45,6 +45,10 @@ app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/', require('./routes/index'));
 
 // Start server
+const cronService = require('./services/cronService');
+cronService.init();
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`✅ Server restarted at ${new Date().toISOString()}`);
 });

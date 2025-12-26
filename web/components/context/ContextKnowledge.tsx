@@ -545,6 +545,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                             displayCompetitors.map((comp: any) => {
                                 // Safe check for string or object
                                 const name = typeof comp === 'string' ? comp : (comp && comp.name ? comp.name : null);
+                                const lastScrapedAt = typeof comp !== 'string' && comp.lastScrapedAt ? comp.lastScrapedAt : null;
+
                                 if (!name) return null; // Skip invalid entries
 
                                 return (
@@ -554,12 +556,22 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                             name={name} 
                                             analysis={competitorData[name]} 
                                             onDelete={() => deleteCompetitorMutation.mutate(name)}
+                                            lastScrapedAt={lastScrapedAt}
                                         />
                                     ) : (
                                         <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
                                             <div>
                                                 <h3 className="text-lg font-semibold flex items-center gap-2">
                                                     {name}
+                                                    {lastScrapedAt && (
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50" title={`Last scanned: ${new Date(lastScrapedAt).toLocaleString()}`}>
+                                                            <span className="relative flex h-2 w-2">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                            </span>
+                                                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live</span>
+                                                        </div>
+                                                    )}
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon"

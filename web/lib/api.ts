@@ -171,6 +171,10 @@ export const api = {
     return this.put(`/workspaces/${workspaceId}/integrations`, data, token);
   },
 
+  async testIntegrations(workspaceId: string, token: string) {
+      return this.post(`/workspaces/${workspaceId}/integrations/test`, {}, token);
+  },
+
   async getWorkspaceHealth(workspaceId: string, token: string) {
     return this.get(`/workspaces/${workspaceId}/health`, token);
   },

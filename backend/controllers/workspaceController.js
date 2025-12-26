@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 const { decrypt } = require('../utils/encryption');
 
 // @desc    Update workspace details
@@ -254,11 +253,43 @@ const saveIntegrations = async (req, res) => {
     }
 };
 
+const testIntegrations = async (req, res) => {
+    const { id } = req.params;
+    const notificationService = require('../services/notificationService');
+
+    try {
+        // Check permissions
+        const requester = await prisma.workspaceMember.findFirst({
+            where: {
+                workspaceId: id,
+                userId: req.user.id
+            }
+        });
+
+        if (!requester) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        await notificationService.send(id, {
+            title: "Geniy Integration Test",
+            message: "Success! Your integration is working correctly. You will receive alerts here when competitors change.",
+            link: "https://geniy.aurorasoftwarelabs.io",
+            type: "success"
+        });
+
+        res.json({ message: "Test notification sent" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to send test notification' });
+    }
+};
+
 module.exports = {
     updateWorkspace,
     getWorkspace,
     getWorkspaceMembers,
     createWorkspace,
     addMember,
-    saveIntegrations
+    saveIntegrations,
+    testIntegrations
 };

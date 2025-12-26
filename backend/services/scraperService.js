@@ -35,8 +35,19 @@ class ScraperService {
             // Set User Agent to avoid detection
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-            // Navigate
-            await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+            // Enable Request Interception to block images/fonts
+            await page.setRequestInterception(true);
+            page.on('request', (req) => {
+                if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+                    req.abort();
+                } else {
+                    req.continue();
+                }
+            });
+
+            // Navigate (Optimized)
+            // 'domcontentloaded' is much faster than 'networkidle2' for heavy sites
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
             // extract main content
             const content = await page.evaluate(() => {

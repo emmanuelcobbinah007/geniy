@@ -19,9 +19,10 @@ interface CompetitorBattlecardProps {
   name: string
   analysis: CompetitorAnalysis
   onDelete?: () => void
+  lastScrapedAt?: string | null
 }
 
-export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBattlecardProps) {
+export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt }: CompetitorBattlecardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Helper to truncate text
@@ -45,7 +46,18 @@ export function CompetitorBattlecard({ name, analysis, onDelete }: CompetitorBat
       <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800 pb-4">
         <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
-                <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{name}</CardTitle>
+                <div className="flex items-center gap-3">
+                    <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{name}</CardTitle>
+                    {lastScrapedAt && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50" title={`Last scanned: ${new Date(lastScrapedAt).toLocaleString()}`}>
+                            <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live</span>
+                        </div>
+                    )}
+                </div>
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 max-w-[120px] truncate">
                         {safeAnalysis.pricingModel}

@@ -98,7 +98,7 @@ class GenesisAgent {
 
         // Using prompt-only completions often works better for "search" style queries with Sonar
         // But OpenRouter standard is chat.
-        return this.completeWithRetry(researchPrompt, "perplexity/sonar-reasoning", false, 1500);
+        return this.completeWithRetry(researchPrompt, "perplexity/sonar-reasoning-pro", false, 1500);
     }
 
     /**

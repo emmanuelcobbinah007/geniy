@@ -7,7 +7,8 @@ const {
     getWorkspaceMembers,
     createWorkspace,
     addMember,
-    saveIntegrations
+    saveIntegrations,
+    testIntegrations
 } = require('../controllers/workspaceController');
 const { getDashboardStats, getWorkspaceHealth } = require('../controllers/dashboardController');
 const { initializeTransaction, verifyTransaction } = require('../controllers/paymentController');
@@ -21,6 +22,7 @@ router.get('/dashboard', protect, getDashboardStats);
 router.get('/:id/health', protect, getWorkspaceHealth);
 router.get('/:id', protect, getWorkspace);
 router.put('/:id/integrations', protect, saveIntegrations);
+router.post('/:id/integrations/test', protect, testIntegrations);
 router.post('/paystack/initialize', protect, initializeTransaction);
 router.post('/paystack/verify', protect, verifyTransaction);
 

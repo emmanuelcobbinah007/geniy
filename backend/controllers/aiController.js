@@ -1,8 +1,7 @@
 const genesisAgent = require('../services/ai/genesis');
-const { PrismaClient } = require('@prisma/client');
 const auditService = require('../services/auditService');
 const radarService = require('../services/radarService');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 
 exports.analyzeContext = async (req, res) => {
     try {
@@ -57,11 +56,11 @@ exports.generateStrategy = async (req, res) => {
             if (unifiedContext) {
                 // We append the unified context to the summary to give the AI the full picture
                 fullContext = `
-                Summary: ${JSON.stringify(contextSummary)}
+Summary: ${JSON.stringify(contextSummary)}
                 
-                Full Unified Context (Includes Chat History & PDFs):
+                Full Unified Context(Includes Chat History & PDFs):
                 ${unifiedContext}
-                `;
+`;
 
                 // Audit Log
                 auditService.log({
@@ -98,11 +97,11 @@ exports.generateSurvey = async (req, res) => {
             if (unifiedContext) {
                 // We append the unified context to the summary to give the AI the full picture
                 fullContext = `
-                Summary: ${JSON.stringify(contextSummary)}
+Summary: ${JSON.stringify(contextSummary)}
                 
-                Full Unified Context (Includes Chat History & PDFs):
+                Full Unified Context(Includes Chat History & PDFs):
                 ${unifiedContext}
-                `;
+`;
             }
         }
 
@@ -133,7 +132,7 @@ exports.chatWithContext = async (req, res) => {
         // Handle Memory (If the agent flagged something to remember)
         if (result.memory && workspaceId) {
             await contextService.appendContext(workspaceId, result.memory);
-            console.log(`[Memory] Appended new insight to workspace ${workspaceId}:`, result.memory);
+            console.log(`[Memory] Appended new insight to workspace ${workspaceId}: `, result.memory);
         }
 
         // SAVE CHAT HISTORY
@@ -173,7 +172,7 @@ exports.chatWithContext = async (req, res) => {
 
         // Handle Agentic Actions
         if (result.action === 'ANALYZE_COMPETITOR' && workspaceId) {
-            console.log(`[Agent Action] Triggering competitor analysis. Target: ${result.actionTarget}`);
+            console.log(`[Agent Action] Triggering competitor analysis.Target: ${result.actionTarget} `);
 
             // Fetch workspace to get competitors
             const workspace = await prisma.workspace.findUnique({
@@ -225,7 +224,7 @@ exports.chatWithContext = async (req, res) => {
                     result.message += " (I couldn't find any competitors listed in your context to analyze. Please ensure they are listed under 'Competitors:' in the Context tab.)";
                 }
 
-                console.log(`[Agent Action] Identified targets:`, targets);
+                console.log(`[Agent Action] Identified targets: `, targets);
 
                 // Trigger background analysis for each target
                 // Run sequentially to avoid rate limits
@@ -241,7 +240,7 @@ exports.chatWithContext = async (req, res) => {
                             // Extract industry from businessContext if possible, or default
                             const industryMatch = decryptedContext ? decryptedContext.match(/Industry:\s*(.+?)(\n|$)/) : null;
                             const industry = industryMatch ? industryMatch[1].trim() : "General";
-                            console.log(`[Agent Action] Detected Industry: ${industry}`);
+                            console.log(`[Agent Action] Detected Industry: ${industry} `);
 
                             // Use the goal from the chat result if available
                             const goal = result.actionGoal || "";
@@ -275,7 +274,7 @@ exports.chatWithContext = async (req, res) => {
                             await new Promise(resolve => setTimeout(resolve, 2000));
 
                         } catch (err) {
-                            console.error(`[Agent Action] Failed background analysis for ${compName}:`, err);
+                            console.error(`[Agent Action] Failed background analysis for ${compName}: `, err);
 
                             // Save error state to DB so UI stops loading
                             try {

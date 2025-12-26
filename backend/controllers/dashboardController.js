@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../config/db');
 
 const gapAgent = require('../services/ai/gapAgent');
 const { decrypt } = require('../utils/encryption');
@@ -85,6 +84,35 @@ exports.getDashboardStats = async (req, res) => {
             });
         }
 
+        // SELF-HEALING: Normalize competitors if they are strings (legacy data)
+        let competitors = workspace.competitors || [];
+        let modified = false;
+
+        const normalizedCompetitors = competitors.map(c => {
+            if (typeof c === 'string') {
+                console.log(`⚠️  Auto-fixing string competitor: "${c}"`);
+                modified = true;
+                return {
+                    name: c,
+                    url: '', // Empty URL will trigger auto-discovery next scan
+                    radarStatus: 'stable',
+                    lastScrapedAt: null,
+                    contentHash: null
+                };
+            }
+            return c;
+        });
+
+        if (modified) {
+            await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: { competitors: normalizedCompetitors }
+            });
+            console.log("✅ Competitors data normalized and saved to DB.");
+        }
+
+        console.log(`📊 Dashboard sending ${normalizedCompetitors.length} competitors.`);
+
         res.json({
             stats: {
                 totalResponses,
@@ -99,7 +127,7 @@ exports.getDashboardStats = async (req, res) => {
                 timeAgo: getTimeAgo(r.submittedAt)
             })),
             strategyFeed,
-            competitors: workspace.competitors || []
+            competitors: normalizedCompetitors
         });
 
     } catch (error) {

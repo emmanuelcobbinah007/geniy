@@ -1,7 +1,6 @@
 const cron = require('node-cron');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../config/db');
 const radarService = require('./radarService');
-const prisma = new PrismaClient();
 
 class SchedulerService {
     constructor() {
@@ -54,7 +53,7 @@ class SchedulerService {
                         await new Promise(r => setTimeout(r, 5000));
                         await radarService.scanCompetitor(workspace.id, comp.name);
                     } catch (err) {
-                        console.error(`   ❌ Failed to scan ${comp.name}:`, err.message);
+                        console.error(`   ❌ Failed to scan ${comp.name}: `, err.message);
                     }
                 }
             }

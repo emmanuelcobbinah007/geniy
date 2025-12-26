@@ -63,6 +63,10 @@ export function CompetitorRadar({ workspaceId, competitors, integrations }: Comp
       return c
   })
 
+  // DEBUG: Check what we are receiving
+  // console.log("Radar received:", competitors);
+  // console.log("Normalized:", normalizedCompetitors);
+
   return (
     <Card className="p-0 overflow-hidden border-zinc-200 dark:border-zinc-800">
       <LivePulseSettings 
@@ -112,7 +116,7 @@ export function CompetitorRadar({ workspaceId, competitors, integrations }: Comp
                             </div>
                             <div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
                                 {comp.lastScrapedAt ? (
-                                    <span>Last scan: {new Date(comp.lastScrapedAt).toLocaleDateString()}</span>
+                                    <span>Last scan: {new Date(comp.lastScrapedAt).toLocaleString()}</span>
                                 ) : (
                                     <span>Not scanned yet</span>
                                 )}
