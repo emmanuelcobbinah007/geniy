@@ -127,7 +127,8 @@ exports.getDashboardStats = async (req, res) => {
                 timeAgo: getTimeAgo(r.submittedAt)
             })),
             strategyFeed,
-            competitors: normalizedCompetitors
+            competitors: normalizedCompetitors,
+            integrations: workspace.integrations
         });
 
     } catch (error) {

@@ -147,6 +147,14 @@ class RadarService {
                     // Saving full old text might be too heavy. 
                     // Let's just say "Content Changed" for v1.
                     insight = "Website content has changed significantly.";
+
+                    // NOTIFICATION: Alert workspace
+                    await notificationService.send(workspaceId, {
+                        title: `Competitor Update: ${competitorName}`,
+                        message: `Significant changes detected on ${competitorName}'s website. Click to review.`,
+                        type: 'info',
+                        link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`
+                    });
                 } else if (!oldHash) {
                     console.log(`✨ First scan for ${competitorName}. Content baseline established.`);
                     changeDetected = true; // Technically a "change" from null
@@ -188,14 +196,40 @@ class RadarService {
                     });
 
                     // LIVE PULSE: Send Webhook Notification
+                    const changeMessages = [
+                        insight || "Website content has changed.",
+                        `Heads up! I detected some updates on ${competitorName}.`,
+                        `Looks like ${competitorName} made some tweaks.`,
+                        `New activity detected on ${competitorName}'s site.`
+                    ];
+                    // Prefer the actual insight if it's descriptive, otherwise pick a random alert
+                    const message = (insight && insight !== "Website content has changed significantly.")
+                        ? insight
+                        : changeMessages[Math.floor(Math.random() * changeMessages.length)];
+
                     await notificationService.send(workspaceId, {
                         title: `Competitor Update: ${competitorName}`,
-                        message: insight || "Website content has changed.",
+                        message: message,
                         link: url,
                         type: 'warning'
                     });
 
                     console.log(`📢 Logged activity and notified for ${competitorName}`);
+                } else if (!changeDetected) {
+                    const stableMessages = [
+                        `Daily scan complete for ${competitorName}. No significant changes detected.`,
+                        `Everything looks quiet on ${competitorName}'s front today.`,
+                        `Checked ${competitorName} just now. All stable.`,
+                        `No major moves from ${competitorName} in the last 24h.`
+                    ];
+                    const message = stableMessages[Math.floor(Math.random() * stableMessages.length)];
+
+                    await notificationService.send(workspaceId, {
+                        title: `System Status: Stable`,
+                        message: message,
+                        link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`,
+                        type: 'success'
+                    });
                 }
 
                 return { status: changeDetected ? "changed" : "stable", insight, competitor: updatedCompetitor };

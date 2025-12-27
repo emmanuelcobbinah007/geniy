@@ -92,6 +92,7 @@ export function LivePulseSettings({ open, onOpenChange, workspaceId, initialInte
                             placeholder="https://hooks.slack.com/services/..." 
                             value={slackWebhook}
                             onChange={(e) => setSlackWebhook(e.target.value)}
+                            disabled={!!initialIntegrations?.slackWebhook}
                         />
                     </div>
                     <div className="grid gap-2">
@@ -114,20 +115,11 @@ export function LivePulseSettings({ open, onOpenChange, workspaceId, initialInte
                             placeholder="https://discord.com/api/webhooks/..." 
                             value={discordWebhook}
                             onChange={(e) => setDiscordWebhook(e.target.value)}
+                            disabled={!!initialIntegrations?.discordWebhook}
                         />
                     </div>
                 </div>
                 <DialogFooter className="flex justify-between sm:justify-between w-full">
-                    {/* Test Button - Only show if webhooks are present or saved? Let's just show it */}
-                     <Button 
-                        type="button" 
-                        variant="secondary" 
-                        onClick={handleTest} 
-                        disabled={testing || (!slackWebhook && !discordWebhook)}
-                        className="mr-auto"
-                    >
-                        {testing ? "Testing..." : "Test Connection"}
-                    </Button>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button onClick={handleSave} disabled={saving} className="bg-violet-600 hover:bg-violet-700">

@@ -82,10 +82,13 @@ export function CompetitorRadar({ workspaceId, competitors, integrations }: Comp
           Competitor Radar
         </h3>
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSettingsOpen(true)}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 relative" onClick={() => setSettingsOpen(true)}>
                 <Bell className="w-3.5 h-3.5 text-zinc-400 hover:text-violet-500" />
+                {(integrations?.slackWebhook || integrations?.discordWebhook) && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white dark:border-zinc-950 rounded-full" />
+                )}
             </Button>
-            <Badge variant="outline" className="text-xs bg-white dark:bg-zinc-900">
+            <Badge variant="outline" className="text-xs bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">
                 {normalizedCompetitors.length} Tracked
             </Badge>
         </div>

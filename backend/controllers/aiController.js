@@ -443,9 +443,34 @@ exports.generateGapAnalysis = async (req, res) => {
         });
 
         // NOTIFICATION: Alert workspace owner
+        // NOTIFICATION: Alert workspace owner with rich insights
+        // NOTIFICATION: Alert workspace owner with rich insights
+        let insightHighlights = [];
+        if (analysis.gaps && analysis.gaps.length > 0) {
+            insightHighlights.push({
+                title: `Gap: ${analysis.gaps[0].title}`,
+                context: analysis.gaps[0].description
+            });
+        }
+        if (analysis.opportunities && analysis.opportunities.length > 0) {
+            insightHighlights.push({
+                title: `Opportunity: ${analysis.opportunities[0].title}`,
+                context: analysis.opportunities[0].description
+            });
+        }
+
+        const insightsMessages = [
+            "I've just finished analyzing the market. Here are a couple of key things I found:",
+            "Comparison complete. Here are the most important takeaways:",
+            "I dug into the latest data and found some interesting gaps:",
+            "Strategy update: Here's where we can win right now:"
+        ];
+        const message = insightsMessages[Math.floor(Math.random() * insightsMessages.length)];
+
         await notificationService.send(workspaceId, {
             title: "Strategic Gap Analysis Ready",
-            message: "Geniy has identified new gaps and opportunities for your business.",
+            message: message,
+            data: insightHighlights,
             type: "info",
             link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`
         });

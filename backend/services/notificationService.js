@@ -40,20 +40,72 @@ class NotificationService {
     async sendToSlack(webhookUrl, event) {
         try {
             const color = event.type === 'warning' ? '#f59e0b' : (event.type === 'success' ? '#10b981' : '#3b82f6');
+
+            // Personality Injection 🤖✨
+            const intros = [
+                "Hey team, just spotted this:",
+                "Quick update for you:",
+                "Heads up, new intel just dropped:",
+                "Keeping you in the loop:"
+            ];
+            const intro = intros[Math.floor(Math.random() * intros.length)];
+
+            // Build Blocks for Rich Layout
+            let blocks = [
+                {
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: `*${event.title}*\n${intro} ${event.message}`
+                    }
+                }
+            ];
+
+            // If we have specific data insights (e.g., gap analysis points), add them as list items
+            if (event.data && Array.isArray(event.data)) {
+                const points = event.data.map(d => {
+                    if (typeof d === 'string') return `• ${d}`;
+                    // Rich object handling
+                    return `*${d.title}*\n_${d.context}_`;
+                }).join('\n\n');
+
+                blocks.push({
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: points
+                    }
+                });
+            }
+
+            // Button/Link
+            blocks.push({
+                type: "actions",
+                elements: [
+                    {
+                        type: "button",
+                        text: {
+                            type: "plain_text",
+                            text: "View Details"
+                        },
+                        url: event.link,
+                        style: "primary"
+                    }
+                ]
+            });
+
             const payload = {
+                blocks: blocks,
                 attachments: [
                     {
                         color: color,
-                        title: event.title,
-                        title_link: event.link,
-                        text: event.message,
-                        footer: "Geniy Competitor Radar",
-                        ts: Math.floor(Date.now() / 1000)
+                        fallback: event.message
                     }
                 ]
             };
+
             await axios.post(webhookUrl, payload);
-            console.log("✅ Sent Slack notification");
+            console.log("✅ Sent Slack notification (Rich)");
         } catch (err) {
             console.error("Failed to send to Slack:", err.message);
         }
@@ -62,18 +114,39 @@ class NotificationService {
     async sendToDiscord(webhookUrl, event) {
         try {
             const color = event.type === 'warning' ? 16098066 : (event.type === 'success' ? 1096193 : 3901686);
+
+            // Personality Injection 🤖✨
+            const intros = [
+                "Hey team, just spotted this:",
+                "Quick update for you:",
+                "Heads up, new intel just dropped:",
+                "Geniy here with an update:"
+            ];
+            const intro = intros[Math.floor(Math.random() * intros.length)];
+
+            let description = `${intro} ${event.message}`;
+
+            // Add rich data points if available
+            if (event.data && Array.isArray(event.data)) {
+                const points = event.data.map(d => {
+                    if (typeof d === 'string') return `• ${d}`;
+                    return `**${d.title}**\n*${d.context}*`;
+                }).join('\n\n');
+                description += "\n\n**Top Insights:**\n" + points;
+            }
+
             const payload = {
                 embeds: [{
                     title: event.title,
                     url: event.link,
-                    description: event.message,
+                    description: description,
                     color: color,
-                    footer: { text: "Geniy Competitor Radar" },
+                    footer: { text: "Geniy Competitor Radar • " + new Date().toLocaleTimeString() },
                     timestamp: new Date().toISOString()
                 }]
             };
             await axios.post(webhookUrl, payload);
-            console.log("✅ Sent Discord notification");
+            console.log("✅ Sent Discord notification (Rich)");
         } catch (err) {
             console.error("Failed to send to Discord:", err.message);
         }

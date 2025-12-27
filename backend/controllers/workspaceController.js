@@ -224,7 +224,7 @@ const addMember = async (req, res) => {
 
 const saveIntegrations = async (req, res) => {
     const { id } = req.params;
-    const { integrations } = req.body;
+    const { slackWebhook, discordWebhook } = req.body;
 
     try {
         // Check if user is owner/admin
@@ -239,6 +239,8 @@ const saveIntegrations = async (req, res) => {
         if (!requester) {
             return res.status(403).json({ message: 'Not authorized to configure integrations' });
         }
+
+        const integrations = { slackWebhook, discordWebhook };
 
         const workspace = await prisma.workspace.update({
             where: { id },
