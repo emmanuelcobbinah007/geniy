@@ -30,9 +30,15 @@ const comparisonData = [
   },
   {
     feature: "Competitor Research",
-    geniy: "Automated & Ongoing",
-    agency: "Expensive Add-on",
+    geniy: "Real-time & 24/7 Monitoring",
+    agency: "One-off PDF Report",
     typeform: "Not Available",
+  },
+  {
+    feature: "Live Alerts",
+    geniy: "Slack & Discord Integration",
+    agency: "Weekly Emails",
+    typeform: "Zapier Required",
   },
 ]
 
@@ -78,7 +84,7 @@ export function Comparison() {
                 </tr>
               ))}
               <tr className="border-b border-zinc-200 dark:border-zinc-800/50">
-                 <td className="py-3 md:py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">Strategic Recommendations</td>
+                 <td className="py-3 md:py-6 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">Gap Analysis & Strategy</td>
                  <td className="py-3 md:py-6 px-4 bg-violet-50 dark:bg-zinc-900 border-x border-violet-100 dark:border-zinc-800 rounded-b-xl transition-colors duration-300">
                     <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-bold text-sm">
                        <Check className="w-5 h-5" /> Included

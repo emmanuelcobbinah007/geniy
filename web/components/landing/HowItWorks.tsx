@@ -7,22 +7,22 @@ import { motion } from "framer-motion"
 const steps = [
   {
     icon: FileText,
-    title: "1. Upload Context",
-    description: "Simply upload a PDF, Doc, or paste text about your business, product idea, or research goals.",
+    title: "1. Tell Us Your Idea",
+    description: "Upload your business plan, pitch deck, or just a few sentences about what you're building. That's it.",
     color: "text-blue-600",
     bg: "bg-blue-100",
   },
   {
     icon: Sparkles,
-    title: "2. AI Generation",
-    description: "Geniy analyzes your context and instantly builds a dynamic, branched survey tailored to your needs.",
+    title: "2. We Scan The Market",
+    description: "Geniy identifies your competitors, analyzes their pricing and features, and finds the gaps you should target.",
     color: "text-violet-600",
     bg: "bg-violet-100",
   },
   {
     icon: BarChart3,
-    title: "3. Get Insights",
-    description: "Share the link. Watch as responses flow in and AI summarizes key themes and pain points in real-time.",
+    title: "3. You Stay Ahead",
+    description: "Get real-time Slack or Discord alerts when competitors move, so you can react immediately.",
     color: "text-fuchsia-600",
     bg: "bg-fuchsia-100",
   },

@@ -52,16 +52,16 @@ const tiers = [
     icon: Zap,
     features: [
       "Socratic Genesis Agent",
-      "Real-time Market Trends",
-      "Competitor Radar (Lite)",
+      "Daily Market Monitoring",
+      "Basic Gap Analysis",
       "Magic Link Distribution",
     ],
     detailedFeatures: [
       "Socratic Genesis Agent (Vagueness Detection)",
-      "Competitor Radar Lite (Monthly Competitor Diff)",
+      "Daily Competitor Scans (Passive)",
+      "Basic Gap Analysis (1 Insight/Competitor)",
       "Magic Link (Auto-drafted Reddit/Social posts)",
-      "Real-time Market Trends (Powered by Perplexity)",
-      "Track 3 Competitors (Basic Stats)",
+      "Track 3 Competitors",
       "Unlimited surveys & responses",
       "Shareable Live Reports"
     ],
@@ -83,19 +83,19 @@ const tiers = [
     popular: true,
     icon: Sparkles,
     features: [
-      "Competitor Radar (Pro)",
-      "Live Pulse Integrations",
-      "Inbound Intelligence",
+      "Real-time Competitor Alerts",
+      "Live Pulse (Slack/Discord)",
+      "Deep Strategic Gap Analysis",
       "Track 10 Competitors",
     ],
     detailedFeatures: [
-      "Competitor Radar Pro (Weekly Active Monitoring & Alerts)",
-      "Live Pulse (Slack/Discord Webhooks)",
+      "Real-time Competitor Alerts (Instant Notifications)",
+      "Live Pulse Integration (Slack & Discord Webhooks)",
+      "Deep Strategic Gap Analysis (Full SWOT & Opportunities)",
       "Inbound Intelligence (Email Forwarding)",
-      "Deep Intelligence Agent (Powered by Manus)",
       "Track up to 10 Competitors",
       "5 Team Seats (Confined to this workspace)",
-      "Detailed Strategy Reports (SWOT, Pricing)"
+      "Detailed Strategy Reports"
     ],
     scenarios: [
       "You are a serious startup or agency.",

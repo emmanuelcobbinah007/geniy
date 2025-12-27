@@ -148,7 +148,7 @@ export function Features() {
             </Card>
           </motion.div>
 
-          {/* Feature 4: Insight Dashboard (The Analyst) - Spans 7 cols */}
+          {/* Feature 4: Live Market Pulse (Integrations) - Spans 7 cols */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -160,30 +160,55 @@ export function Features() {
               <div className="p-8 h-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <LineChart className="w-6 h-6" />
+                    <Zap className="w-6 h-6" />
                   </div>
-                  <Badge variant="secondary" className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700">The Analyst</Badge>
+                  <Badge variant="secondary" className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700">Live Pulse</Badge>
                 </div>
-                <CardTitle className="text-2xl text-foreground mb-3">Automated Insights</CardTitle>
+                <CardTitle className="text-2xl text-foreground mb-3">We Watch Your Competitors 24/7</CardTitle>
                 <CardDescription className="text-zinc-500 dark:text-zinc-400 text-base mb-8">
-                  "You received 124 responses. Here are the 4 customer profiles that emerged." Geniy clusters data and spots patterns automatically.
+                  Get notified the moment a competitor changes their pricing or launches a new feature. We send the alerts where you work—Slack or Discord.
                 </CardDescription>
                 
-                {/* Visual: Dashboard Cards */}
-                <div className="mt-auto grid grid-cols-2 gap-4">
-                   <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                      <div className="text-xs text-zinc-500 mb-2">Top Pain Point</div>
-                      <div className="text-lg font-semibold text-foreground">Pricing Complexity</div>
-                      <div className="mt-2 h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full w-[78%] bg-emerald-500 rounded-full" />
+                {/* Visual: Integration Notification */}
+                <div className="mt-auto flex flex-col gap-4 relative">
+                   {/* Background Glow Effect */}
+                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
+
+                   {/* Slack Notification */}
+                   <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-start gap-3 z-10 transition-transform hover:scale-[1.02] duration-300">
+                      <div className="w-8 h-8 rounded-lg bg-[#4A154B] flex items-center justify-center shrink-0">
+                         {/* Slack Icon SVG */}
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.52 2.52 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.527 2.527 0 0 1 8.835 24a2.527 2.527 0 0 1-2.521-2.522v-6.313zM8.835 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.835 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.835zM8.835 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.835a2.528 2.528 0 0 1 2.522-2.521h6.313zM18.956 8.835a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.835a2.528 2.528 0 0 1-2.522 2.521h-2.52v-2.52zM17.688 8.835a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.313zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.52h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="#fff"/>
+                         </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <div className="flex justify-between items-baseline mb-1">
+                            <span className="text-xs font-bold text-foreground">Geniy Bot</span>
+                            <span className="text-[10px] text-zinc-400">Just now</span>
+                         </div>
+                         <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                            Heads up! <span className="text-emerald-600 dark:text-emerald-400 font-medium">Acme Corp</span> just changed their pricing page.
+                         </p>
                       </div>
                    </div>
-                   <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                      <div className="text-xs text-zinc-500 mb-2">Emerging Segment</div>
-                      <div className="text-lg font-semibold text-foreground">Agency Owners</div>
-                      <div className="flex items-center gap-2 mt-2">
-                         <Users className="w-4 h-4 text-emerald-500" />
-                         <span className="text-sm text-zinc-600 dark:text-zinc-300">+24% this week</span>
+
+                   {/* Discord Notification */}
+                   <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-start gap-3 z-10 transition-transform hover:scale-[1.02] duration-300 ml-4">
+                       <div className="w-8 h-8 rounded-lg bg-[#5865F2] flex items-center justify-center shrink-0">
+                         {/* Discord Icon SVG */}
+                         <svg width="20" height="16" viewBox="0 0 127 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.07 72.07 0 0 0-3.36 6.83 97.9 97.9 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.2 105.2 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.74 105.74 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.23.6.6 0 0 1-.05-1 .59.59 0 0 1 .23-.09 50.11 50.11 0 0 0 2.06 1.05 73.1 73.1 0 0 0 65 0 54 54 0 0 0 2.1-1.05c.09 0 .18 0 .24.08a.59.59 0 0 1-.05 1 69.93 69.93 0 0 1-10.89 5.24 76.88 76.88 0 0 0 6.94 11.09 105.71 105.71 0 0 0 32.19-16.14c2.65-27.39-4.83-51.4-14.73-72.13Zm-65.7 61.35c-6.63 0-12-6.08-12-13.56s5.29-13.56 12-13.56c6.71 0 12 6.13 11.91 13.56 0 7.48-5.24 13.56-11.91 13.56Zm43 0c-6.63 0-12-6.08-12-13.56s5.29-13.56 12-13.56c6.71 0 12 6.13 11.91 13.56 0 7.48-5.24 13.56-11.91 13.56Z" fill="#fff"/>
+                         </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <div className="flex justify-between items-baseline mb-1">
+                            <span className="text-xs font-bold text-foreground">Geniy</span>
+                            <span className="text-[10px] text-zinc-400">2m ago</span>
+                         </div>
+                         <div className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                            <span className="font-semibold text-violet-500 dark:text-violet-400">Strategic Gap:</span> They still don't offer an API. Feature Opportunity?
+                         </div>
                       </div>
                    </div>
                 </div>
