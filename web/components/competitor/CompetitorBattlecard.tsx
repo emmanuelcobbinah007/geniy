@@ -20,9 +20,10 @@ interface CompetitorBattlecardProps {
   analysis: CompetitorAnalysis
   onDelete?: () => void
   lastScrapedAt?: string | null
+  radarStatus?: string
 }
 
-export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt }: CompetitorBattlecardProps) {
+export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, radarStatus }: CompetitorBattlecardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Helper to truncate text
@@ -42,13 +43,23 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt }
   };
 
   return (
-    <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+    <Card className={`border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700 ${radarStatus === 'scanning' ? 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-400 dark:ring-amber-600' : ''}`}>
       <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800 pb-4">
         <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{name}</CardTitle>
-                    {lastScrapedAt && (
+                    
+                    {/* STATUS INDICATOR */}
+                    {radarStatus === 'scanning' ? (
+                       <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                            </span>
+                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Scanning...</span>
+                       </div>
+                    ) : lastScrapedAt && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50" title={`Last scanned: ${new Date(lastScrapedAt).toLocaleString()}`}>
                             <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

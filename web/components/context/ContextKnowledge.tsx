@@ -16,7 +16,7 @@ import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { LenisScroll } from "@/components/ui/lenis-scroll"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 
 interface ContextDocument {
   id: string
@@ -334,9 +334,10 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
     }
   }
 
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const initialTab = searchParams.get("tab")
-  const [activeTab, setActiveTab] = useState(initialTab || "context")
+  const activeTab = searchParams.get("tab") || "context"
+  // const [activeTab, setActiveTab] = useState(initialTab || "context") -- Removed local state
   const [analyzingCompetitor, setAnalyzingCompetitor] = useState<string | null>(null)
   const [competitorData, setCompetitorData] = useState<Record<string, any>>({})
 
@@ -363,7 +364,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       },
       onSuccess: (data) => {
           setGapAnalysisData(data)
-          setActiveTab("strategy")
+          // Update URL to switch tab
+          router.push(`/dashboard/${workspaceId}/context?tab=strategy`)
           // Invalidate query to fetch updated workspace with persisted analysis
           queryClient.invalidateQueries({ queryKey: ["context", workspaceId] })
           toast.success("Gap Analysis Generated!")
@@ -426,20 +428,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       </div>
 
       <div className="flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-            <div className="w-full overflow-x-auto pb-1 -mb-1 hide-scrollbar">
-                <TabsList className="w-full inline-flex justify-start border-b border-zinc-200 dark:border-zinc-800 bg-transparent p-0 h-auto rounded-none mb-4 min-w-full">
-                    <TabsTrigger value="context" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
-                        Context & Documents
-                    </TabsTrigger>
-                    <TabsTrigger value="competitors" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-violet-600 data-[state=active]:text-violet-600 dark:data-[state=active]:text-violet-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
-                        Competitor Intel
-                    </TabsTrigger>
-                    <TabsTrigger value="strategy" className="rounded-none border-b-2 border-transparent text-zinc-500 dark:text-zinc-400 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:bg-transparent px-4 py-2 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors whitespace-nowrap">
-                        Strategy & Gaps
-                    </TabsTrigger>
-                </TabsList>
-            </div>
+        <Tabs value={activeTab} className="flex flex-col">
+            {/* TabsList Removed */}
 
             <TabsContent value="context" className="flex flex-col gap-6 pb-4 data-[state=inactive]:hidden">
                 {/* Text Context */}
@@ -557,6 +547,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                             analysis={competitorData[name]} 
                                             onDelete={() => deleteCompetitorMutation.mutate(name)}
                                             lastScrapedAt={lastScrapedAt}
+                                            radarStatus={typeof comp !== 'string' ? comp.radarStatus : undefined}
                                         />
                                     ) : (
                                         <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">

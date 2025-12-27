@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const crypto = require('crypto');
 const genesisAgent = require('../services/ai/genesis');
+const notificationService = require('../services/notificationService');
 
 // Create a new Campaign and Survey
 exports.createCampaign = async (req, res) => {
@@ -174,7 +175,12 @@ exports.submitResponse = async (req, res) => {
         const { answers, metadata } = req.body;
 
         const survey = await prisma.survey.findUnique({
-            where: { publicSlug: slug }
+            where: { publicSlug: slug },
+            include: {
+                campaign: {
+                    select: { workspaceId: true, name: true }
+                }
+            }
         });
 
         if (!survey) {
@@ -188,6 +194,16 @@ exports.submitResponse = async (req, res) => {
                 metadata: metadata || {}
             }
         });
+
+        // NOTIFICATION: Alert workspace owner
+        if (survey.campaign && survey.campaign.workspaceId) {
+            await notificationService.send(survey.campaign.workspaceId, {
+                title: `New Response: ${survey.campaign.name}`,
+                message: `New submission received for survey "${survey.title}".`,
+                type: 'success',
+                link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${survey.campaign.workspaceId}/campaigns/${survey.campaignId}/responses`
+            });
+        }
 
         res.status(201).json(response);
     } catch (error) {

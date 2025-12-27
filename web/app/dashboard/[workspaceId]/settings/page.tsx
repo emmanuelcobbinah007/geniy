@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTheme } from "next-themes"
-import { Moon, Sun, User, Building, Users, Plus, Check, CreditCard, Sparkles, Globe } from "lucide-react"
+import { Moon, Sun, User, Building, Users, Plus, Check, CreditCard, Sparkles, Globe, Activity } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog"
 import { DomainsSettings } from "@/components/settings/DomainsSettings"
+import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings"
 
 const PLANS = [
     {
@@ -55,14 +56,16 @@ const PLANS = [
     }
 ]
 
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 
 export default function SettingsPage() {
   const { user, token } = useAuth()
   const { setTheme, theme } = useTheme()
   const queryClient = useQueryClient()
   const params = useParams()
+  const searchParams = useSearchParams()
   const workspaceId = params?.workspaceId as string
+  const activeTab = searchParams.get("tab") || "general"
 
   // Find current workspace
   const currentWorkspace = user?.workspaces?.find((w: any) => w.id === workspaceId) || 
@@ -138,6 +141,16 @@ export default function SettingsPage() {
     enabled: !!token && !!workspaceId
   })
 
+  // Fetch Full Workspace (for Integrations)
+  const { data: workspace } = useQuery({
+      queryKey: ["workspace", workspaceId],
+      queryFn: async () => {
+          if (!token || !workspaceId) return null
+          return api.getWorkspace(workspaceId, token)
+      },
+      enabled: !!token && !!workspaceId
+  })
+
   const fadeIn = {
     initial: { opacity: 0, y: 10, scale: 0.98 },
     animate: { opacity: 1, y: 0, scale: 1 },
@@ -154,13 +167,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="bg-zinc-100 dark:bg-zinc-900/50 p-1 border border-zinc-200 dark:border-zinc-800 w-full justify-start overflow-x-auto">
-          <TabsTrigger value="general" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><User className="w-4 h-4" /> General</TabsTrigger>
-          <TabsTrigger value="team" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Users className="w-4 h-4" /> Team</TabsTrigger>
-          <TabsTrigger value="domains" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Globe className="w-4 h-4" /> Domains</TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 dark:data-[state=active]:text-white"><Sun className="w-4 h-4" /> Appearance</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} className="space-y-6">
 
         <AnimatePresence mode="wait">
           {/* General Tab */}
@@ -322,6 +329,13 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations" className="outline-none">
+            <motion.div {...fadeIn}>
+                <IntegrationsSettings workspaceId={workspaceId} initialIntegrations={workspace?.integrations} />
             </motion.div>
           </TabsContent>
 

@@ -31,6 +31,14 @@ class RadarService {
 
             const target = competitors[targetIndex];
 
+            // 0. LIVE STATUS UPDATE: Set to "scanning" immediately
+            target.radarStatus = 'scanning';
+            competitors[targetIndex] = target;
+            await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: { competitors: competitors }
+            });
+
             // 1. Get URL (If missing, use AI/Search to find it - mocked for now or use Perplexity in future)
             let url = target.url || target.website;
 
@@ -147,10 +155,10 @@ class RadarService {
                     console.log(`✅ No change detected for ${competitorName}.`);
                 }
 
-                // 5. Update DB
                 const updatedCompetitor = {
                     ...target,
                     url: url,
+                    radarStatus: 'stable',
                     lastScrapedAt: new Date().toISOString(),
                     contentHash: newHash,
                     // Add to history log (keep last 5 entries to save space)

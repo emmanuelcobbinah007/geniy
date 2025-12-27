@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -26,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog"
 
 import { useParams, useRouter } from "next/navigation"
@@ -36,6 +38,7 @@ export function Sidebar() {
   const params = useParams()
   const router = useRouter()
   const workspaceId = params?.workspaceId as string
+  const searchParams = useSearchParams()
   
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -45,9 +48,126 @@ export function Sidebar() {
   const links = [
     { href: `/dashboard/${workspaceId}`, label: "Overview", icon: LayoutDashboard },
     { href: `/dashboard/${workspaceId}/campaigns`, label: "Campaigns", icon: FolderOpen },
-    { href: `/dashboard/${workspaceId}/context`, label: "Context", icon: FileText },
-    { href: `/dashboard/${workspaceId}/settings`, label: "Settings", icon: Settings },
+    { 
+      href: `/dashboard/${workspaceId}/context`, 
+      label: "Context", 
+      icon: FileText,
+      children: [
+        { href: `/dashboard/${workspaceId}/context?tab=context`, label: "Knowledge Base", param: "context" },
+        { href: `/dashboard/${workspaceId}/context?tab=competitors`, label: "Competitor Intel", param: "competitors" },
+        { href: `/dashboard/${workspaceId}/context?tab=strategy`, label: "Strategy & Gaps", param: "strategy" },
+      ]
+    },
+    { 
+      href: `/dashboard/${workspaceId}/settings`, 
+      label: "Settings", 
+      icon: Settings,
+      children: [
+         { href: `/dashboard/${workspaceId}/settings?tab=general`, label: "General", param: "general" },
+         { href: `/dashboard/${workspaceId}/settings?tab=team`, label: "Team", param: "team" },
+         { href: `/dashboard/${workspaceId}/settings?tab=integrations`, label: "Integrations", param: "integrations" },
+         { href: `/dashboard/${workspaceId}/settings?tab=domains`, label: "Domains", param: "domains" },
+         { href: `/dashboard/${workspaceId}/settings?tab=appearance`, label: "Appearance", param: "appearance" },
+      ]
+    },
   ]
+
+  const SidebarItem = ({ link, isMobile, collapsed, pathname }: any) => {
+    const isActive = pathname === link.href || (link.children && pathname.startsWith(link.href))
+    const [isOpen, setIsOpen] = useState(isActive)
+    const hasChildren = link.children && link.children.length > 0;
+
+    // Determine if child is active based on query param
+    const isChildActive = (child: any) => {
+        const childUrl = new URL(child.href, "http://dummy.com") // Dummy base for parsing
+        const childTab = childUrl.searchParams.get("tab")
+        const currentTab = searchParams.get("tab") || (link.href.includes("settings") ? "general" : "context") // default logic
+        return pathname === childUrl.pathname && childTab === currentTab
+    }
+
+    return (
+        <div className="space-y-1">
+             {hasChildren ? (
+                 <>
+                    <button
+                        onClick={() => {
+                            if (collapsed && !isMobile) return; // Expand sidebar instead?
+                            setIsOpen(!isOpen)
+                        }}
+                        className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors select-none",
+                            isActive
+                            ? "text-violet-600 dark:text-violet-300 bg-violet-50/50 dark:bg-violet-900/10"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100",
+                            collapsed && !isMobile && "justify-center px-2"
+                        )}
+                    >
+                        <link.icon className="h-5 w-5 flex-shrink-0" />
+                        {(!collapsed || isMobile) && (
+                            <div className="flex-1 flex items-center justify-between">
+                                <span>{link.label}</span>
+                                <div 
+                                    className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-sm transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); 
+                                        setIsOpen(!isOpen);
+                                    }}
+                                >
+                                     <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isOpen ? "transform rotate-180" : "")} />
+                                </div>
+                            </div>
+                        )}
+                    </button>
+                    
+                    <AnimatePresence initial={false}>
+                        {isOpen && (!collapsed || isMobile) && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                            >
+                                <div className="pl-9 space-y-1 pb-1">
+                                    {link.children.map((child: any) => (
+                                        <Link
+                                            key={child.href}
+                                            href={child.href}
+                                            onClick={() => isMobile && setMobileOpen(false)}
+                                            className={cn(
+                                                "block px-3 py-1.5 rounded-md text-sm transition-colors",
+                                                isChildActive(child)
+                                                    ? "text-violet-600 dark:text-violet-400 font-medium bg-violet-50 dark:bg-violet-900/20"
+                                                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                                            )}
+                                        >
+                                            {child.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                 </>
+             ) : (
+                <Link
+                    href={link.href}
+                    onClick={() => isMobile && setMobileOpen(false)}
+                    className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        isActive
+                        ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"
+                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100",
+                        collapsed && !isMobile && "justify-center px-2"
+                    )}
+                >
+                    <link.icon className="h-5 w-5 flex-shrink-0" />
+                    {(!collapsed || isMobile) && <span>{link.label}</span>}
+                </Link>
+             )}
+        </div>
+    )
+  }
 
   const SidebarContent = ({ isMobile = false }) => (
     <>
@@ -152,27 +272,15 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {links.map((link) => {
-          const Icon = link.icon
-          const isActive = pathname === link.href
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => isMobile && setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100",
-                collapsed && !isMobile && "justify-center px-2"
-              )}
-            >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {(!collapsed || isMobile) && <span>{link.label}</span>}
-            </Link>
-          )
-        })}
+        {links.map((link) => (
+          <SidebarItem 
+            key={link.href} 
+            link={link} 
+            isMobile={isMobile} 
+            collapsed={collapsed} 
+            pathname={pathname}
+          />
+        ))}
       </nav>
 
       {/* User Profile / Footer */}

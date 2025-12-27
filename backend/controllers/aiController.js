@@ -1,6 +1,7 @@
 const genesisAgent = require('../services/ai/genesis');
 const auditService = require('../services/auditService');
 const radarService = require('../services/radarService');
+const notificationService = require('../services/notificationService');
 const prisma = require('../config/db');
 
 exports.analyzeContext = async (req, res) => {
@@ -439,6 +440,14 @@ exports.generateGapAnalysis = async (req, res) => {
         await prisma.workspace.update({
             where: { id: workspaceId },
             data: { gapAnalysis: analysis }
+        });
+
+        // NOTIFICATION: Alert workspace owner
+        await notificationService.send(workspaceId, {
+            title: "Strategic Gap Analysis Ready",
+            message: "Geniy has identified new gaps and opportunities for your business.",
+            type: "info",
+            link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`
         });
 
         res.json(analysis);
