@@ -11,7 +11,6 @@ const {
     testIntegrations
 } = require('../controllers/workspaceController');
 const { getDashboardStats, getWorkspaceHealth } = require('../controllers/dashboardController');
-const { initializeTransaction, verifyTransaction } = require('../controllers/paymentController');
 const { addDomain, getDomains, verifyDomain, deleteDomain } = require('../controllers/domainController');
 
 router.put('/:id', protect, updateWorkspace);
@@ -23,8 +22,6 @@ router.get('/:id/health', protect, getWorkspaceHealth);
 router.get('/:id', protect, getWorkspace);
 router.put('/:id/integrations', protect, saveIntegrations);
 router.post('/:id/integrations/test', protect, testIntegrations);
-router.post('/paystack/initialize', protect, initializeTransaction);
-router.post('/paystack/verify', protect, verifyTransaction);
 
 // Domain Routes
 router.post('/:workspaceId/domains', protect, addDomain);

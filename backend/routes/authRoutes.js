@@ -4,6 +4,7 @@ const {
     signup,
     signin,
     googleAuth,
+    completeGoogleSignup,
     getMe,
     updateUser,
 } = require('../controllers/authController');
@@ -14,5 +15,8 @@ router.post('/signin', signin);
 router.post('/google', googleAuth);
 router.get('/me', protect, getMe);
 router.put('/me', protect, updateUser);
+
+// New Transactional Endpoint
+router.post('/complete-google-signup', completeGoogleSignup);
 
 module.exports = router;

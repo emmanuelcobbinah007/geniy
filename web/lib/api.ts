@@ -256,4 +256,8 @@ export const api = {
   async getInsights(campaignId: string, token: string) {
     return this.get(`/campaigns/${campaignId}/insights`, token);
   },
+
+  async completeGoogleSignup(googleUser: any, planTier: string, paymentReference?: string) {
+    return this.post('/auth/complete-google-signup', { googleUser, planTier, paymentReference });
+  },
 };

@@ -4,7 +4,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
 import { Comparison } from "@/components/landing/Comparison";
 
-import { Pricing } from "@/components/landing/Pricing";
+import { PricingWrapper as Pricing } from "@/components/landing/PricingWrapper";
 import { Footer } from "@/components/layout/Footer";
 import { Waitlist } from "@/components/landing/Waitlist";
 import { DemoVideo } from "@/components/landing/DemoVideo";

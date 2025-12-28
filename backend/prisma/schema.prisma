@@ -40,6 +40,35 @@ model Workspace {
   integrations    Json?             // Stores webhook URLs and notification settings
   chatHistory     Json?             // Stores the conversation history with Geniy
   domains         Domain[]
+  subscription    Subscription?
+  transactions    Transaction[]
+}
+
+model Subscription {
+  id                       String    @id @default(uuid())
+  workspaceId              String    @unique
+  planTier                 PlanTier
+  status                   String    // active, trialing, past_due, canceled
+  paystackSubscriptionCode String?
+  paystackEmailToken       String?
+  currentPeriodStart       DateTime
+  currentPeriodEnd         DateTime
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  workspace                Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  workspaceId String
+  amount      Float
+  currency    String    @default("GHS")
+  status      String    // success, failed, pending
+  reference   String    @unique // Paystack reference
+  planTier    PlanTier
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 }
 
 model Domain {
@@ -143,6 +172,7 @@ model ActivityLog {
 
 enum PlanTier {
   FREE
+  STARTER
   PRO
   BUSINESS
   ENTERPRISE

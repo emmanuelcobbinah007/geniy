@@ -24,10 +24,11 @@ interface AuthContextType {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
-  googleLogin: (code: string) => Promise<void>
+  googleLogin: (code: string) => Promise<any>
   logout: () => void
   refreshUser: () => Promise<void>
   updateUser: (data: any) => Promise<void>
+  completeGoogleSignup: (googleUser: any, planTier: string, paymentReference?: string) => Promise<any>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["user"],
     queryFn: async () => {
       const token = localStorage.getItem("token")
-      if (!token) return null
+      if (!token || token === "undefined") return null
       try {
         return await api.get("/auth/me", token)
       } catch (error) {
@@ -70,8 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const googleLogin = async (code: string) => {
     const data = await api.post("/auth/google", { code })
-    localStorage.setItem("token", data.token)
-    await queryClient.invalidateQueries({ queryKey: ["user"] })
+    if (data.token) {
+        localStorage.setItem("token", data.token)
+        await queryClient.invalidateQueries({ queryKey: ["user"] })
+    }
+    return data;
   }
 
   const logout = () => {
@@ -90,8 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
+  const completeGoogleSignup = async (googleUser: any, planTier: string, paymentReference?: string) => {
+    const data = await api.completeGoogleSignup(googleUser, planTier, paymentReference);
+    localStorage.setItem("token", data.token);
+    await queryClient.invalidateQueries({ queryKey: ["user"] });
+    return data;
+  }
+
   return (
-    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ user: user || null, token, isLoading, login, signup, googleLogin, logout, refreshUser, updateUser, completeGoogleSignup }}>
       {children}
     </AuthContext.Provider>
   )

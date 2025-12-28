@@ -47,13 +47,16 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
       try {
         if (isLogin) {
           await login(values.email, values.password)
+          if (onSuccess) {
+            onSuccess()
+          } else {
+            router.push("/dashboard")
+          }
         } else {
           await signup(values.name, values.email, values.password)
-        }
-        if (onSuccess) {
-          onSuccess()
-        } else {
-          router.push("/dashboard")
+          // Always redirect to onboarding for new signups
+          router.push("/onboarding/plans")
+          if (onSuccess) onSuccess();
         }
       } catch (err: any) {
         setError(userFriendlyError(err))
@@ -75,7 +78,24 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
       setIsLoading(true)
       setError(null)
       try {
-        await googleLogin(codeResponse.code)
+        const result = await googleLogin(codeResponse.code)
+        
+        // CASE 1: New User (Pending Creation)
+        if (result && result.status === 'PENDING') {
+             // Store Google Info for next step
+             sessionStorage.setItem('googleUser', JSON.stringify(result.googleUser));
+             router.push("/onboarding/plans");
+             if (onSuccess) onSuccess(); 
+             return;
+        }
+
+        // CASE 2: Existing User or Legacy logic
+        if (result && result.isNewUser) {
+            router.push("/onboarding/plans")
+            if (onSuccess) onSuccess(); 
+            return;
+        }
+
         if (onSuccess) {
           onSuccess()
         } else {
