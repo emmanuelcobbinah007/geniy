@@ -275,13 +275,14 @@ const completeGoogleSignup = async (req, res) => {
                         currency: 'GHS',
                         status: 'COMPLETED',
                         reference: paymentReference,
-                        type: 'SUBSCRIPTION',
-                        planTier: planTier // Add missing field
+                        planTier: planTier
                     }
                 });
             }
 
             return newUser;
+        }, {
+            timeout: 20000
         });
 
         console.log("Transaction Complete. User created:", user.id);
