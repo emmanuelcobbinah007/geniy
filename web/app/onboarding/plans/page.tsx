@@ -13,6 +13,7 @@ export default function OnboardingPlansPage() {
   // const searchParams = useSearchParams() // Need to wrap in Suspense if using directly in Next 13+ App Dir page, or use window checks
   const [googleUser, setGoogleUser] = useState<any>(null)
   const [checkingStorage, setCheckingStorage] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Protect the route & Handle Paystack Redirect
   useEffect(() => {
@@ -27,45 +28,44 @@ export default function OnboardingPlansPage() {
             setGoogleUser(JSON.parse(pendingUserStr));
         }
 
-        // 2. Check for Paystack Return
+        // 2. Check for Paystack Return (Prioritize this over rendering)
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const reference = params.get('reference') || params.get('trxref');
-            const pendingPlan = localStorage.getItem('pendingPlan') || sessionStorage.getItem('pendingPlan');
-
-            // DEBUG ALERT: Prove we are running this code
+            
+            // If we have a reference, we MUST be processing. Don't show the Pricing UI.
             if (reference) {
-                alert(`DEBUG: Paystack Redirect Detected!\nRef: ${reference}\nPlan: ${pendingPlan}\nUser Found: ${!!pendingUserStr}`);
-            }
+                setIsProcessing(true);
+                const pendingPlan = localStorage.getItem('pendingPlan') || sessionStorage.getItem('pendingPlan');
+                
+                console.log("PAYMENT REDIRECT DETECTED:", { reference, pendingPlan, hasUser: !!pendingUserStr });
 
-            if (reference && pendingPlan && pendingUserStr) {
-                 console.log("DETECTED PAYSTACK RETURN:", { reference, pendingPlan });
-                 
-                 try {
-                     const gUser = JSON.parse(pendingUserStr);
-                     
-                     // Helper: Don't delete until we confirm success or failure handling
-                     alert("DEBUG: Attempting to create account...");
-                     
-                     await completeGoogleSignup(gUser, pendingPlan.toUpperCase(), reference);
-                     
-                     // NOW Success!
-                     localStorage.removeItem('pendingPlan');
-                     localStorage.removeItem('pendingGoogleUser');
-                     sessionStorage.removeItem('googleUser');
-                     sessionStorage.removeItem('pendingPlan');
+                if (pendingPlan && pendingUserStr) {
+                     try {
+                         const gUser = JSON.parse(pendingUserStr);
+                         await completeGoogleSignup(gUser, pendingPlan.toUpperCase(), reference);
+                         
+                         // Success
+                         localStorage.removeItem('pendingPlan');
+                         localStorage.removeItem('pendingGoogleUser');
+                         // Also clear the active reference so Pricing doesn't try to recover it later
+                         localStorage.removeItem('activePaymentReference'); 
+                         sessionStorage.removeItem('googleUser');
+                         sessionStorage.removeItem('pendingPlan');
 
-                     alert("DEBUG: Success! Redirecting to Dashboard.");
-                     window.location.href = '/dashboard';
-                     return;
-                 } catch (e: any) {
-                     console.error("Redirect Completion Error:", e);
-                     alert("Error completing setup: " + e.message);
-                 }
-            } else if (reference) {
-                // Reference exists but data missing?
-                console.warn("Reference found but missing data:", { pendingPlan, pendingUserStr });
-                alert(`DEBUG: Missing Data!\nPlan: ${pendingPlan}\nUser: ${!!pendingUserStr ? 'Yes' : 'No'}`);
+                         window.location.href = '/dashboard';
+                         return;
+                     } catch (e: any) {
+                         console.error("Redirect Completion Error:", e);
+                         alert("Setup Failed: " + e.message);
+                         setIsProcessing(false); // Allow user to try again
+                     }
+                } else {
+                     console.warn("Reference found but missing data in storage");
+                     // Only alert if we really are stuck
+                     // alert("Session lost. Please try selecting the plan again.");
+                     setIsProcessing(false);
+                }
             }
         }
         setCheckingStorage(false);
@@ -79,10 +79,11 @@ export default function OnboardingPlansPage() {
     }
   }, [user, loading, googleUser, checkingStorage, router])
 
-  if (loading || checkingStorage || (!user && !googleUser)) {
+  if (loading || checkingStorage || isProcessing || (!user && !googleUser)) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-violet-600" />
+        {isProcessing && <p className="text-sm font-medium animate-pulse text-zinc-500">Verifying your payment...</p>}
       </div>
     )
   }
@@ -101,11 +102,6 @@ export default function OnboardingPlansPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      {/* DEBUG OVERLAY */}
-      <div className="fixed bottom-4 right-4 p-4 bg-black/80 text-green-400 text-xs font-mono rounded z-50 pointer-events-none">
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-      </div>
-
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <h1 className="text-3xl font-bold font-display text-zinc-900 dark:text-white mb-4">

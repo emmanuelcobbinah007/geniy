@@ -395,11 +395,8 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     )
 }
 
-// 2. Headless Payment Launcher (Outside Dialog)
-// 2. Headless Payment Launcher (Outside Dialog)
-// 2. Headless Payment Launcher (Outside Dialog) -> Now a Visible Dialog for reliability
-// 2. Headless Payment Launcher (Outside Dialog) -> Now a Visible Dialog for reliability
-function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose }: any) {
+    // 2. Headless Payment Launcher (Now Visible Dialog but acts automatically)
+ function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose }: any) {
     const { token, completeGoogleSignup } = useAuth();
     const [rate, setRate] = useState(15);
     // Stable reference (recover from storage if exists)
@@ -410,17 +407,19 @@ function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, on
         return (new Date()).getTime().toString();
     });
     
-    // If we have a stored reference, we assume the window WAS open or we are recovering
-    const [isPaystackOpen, setIsPaystackOpen] = useState(() => {
+    // Check if we are in recovery mode (page reload after payment)
+    const [isRecoveryMode] = useState(() => {
          if (typeof window !== 'undefined') {
             return !!localStorage.getItem('activePaymentReference');
          }
          return false;
     });
+
     const [verifying, setVerifying] = useState(false);
+    const [statusMessage, setStatusMessage] = useState("Initializing payment...");
 
     // Fallback: Try to get googleUser from storage if prop is missing
-    const googleUser = propGoogleUser || (typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem('googleUser') || 'null') : null);
+    const googleUser = propGoogleUser || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('pendingGoogleUser') || 'null') : null);
 
     // Fetch rate ONCE
     useEffect(() => {
@@ -444,26 +443,21 @@ function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, on
         amount: amountInKobo,
         publicKey: PAYSTACK_PUBLIC_KEY, 
         currency: 'GHS',
-        // callback_url: typeof window !== 'undefined' ? window.location.href : '', // DISABLE REDIRECT to test manual flow
+        // callback_url: window.location.href, // Removing explicit callback_url to rely on manual handling in onSuccess to avoid conflicts
     };
 
     const initializePayment = usePaystackPayment(config);
 
     const onVerificationSuccess = async (ref: string) => {
         setVerifying(true);
+        setStatusMessage("Finalizing your account setup...");
+        
         try {
-             // Case 1: Pending Google User
+             // Case 1: Pending Google User (Onboarding)
              if (googleUser && !user) {
-                 const res = await completeGoogleSignup(googleUser, tier.name.toUpperCase(), ref);
-                 
-                 // Cleanup
-                 localStorage.removeItem('pendingPlan');
-                 localStorage.removeItem('pendingGoogleUser');
-                 localStorage.removeItem('activePaymentReference'); // Clear it
-                 sessionStorage.removeItem('googleUser');
-                 
-                 toast.success("Account Created! You are in.");
-                 window.location.href = '/dashboard'; 
+                 // We must let the page.tsx handle this via redirect to ensure clean state
+                 // So we simply reload the page with the reference
+                 window.location.href = `${window.location.pathname}?reference=${ref}`; 
                  return;
              }
 
@@ -481,105 +475,116 @@ function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, on
              
              if (res.ok) {
                  toast.success("Subscription Active!");
-                 onSuccess();
                  localStorage.removeItem('activePaymentReference');
+                 onSuccess();
              } else {
-                 alert("Verification Failed: " + await res.text());
+                 const err = await res.text();
+                 setStatusMessage("Verification failed.");
+                 const msg = (err.includes("Payment verification") ? "Payment verification failed." : "Setup failed. Please contact support.");
+                 alert(msg);
+                 setVerifying(false);
              }
         } catch (e: any) {
             console.error("PAYMENT VERIFICATION ERROR:", e);
-            alert("Error creating account: " + e.message);
-        } finally {
+            setStatusMessage("Error: " + e.message);
+            let displayMsg = "Something went wrong providing your access.";
+            if (e.message && e.message.includes("Account created")) displayMsg = "Account already exists. Please login.";
+            alert(displayMsg);
             setVerifying(false);
         }
     }
 
-    const handleSuccess = async (reference: any) => {
-        // Just call the manual verifier
-        setIsPaystackOpen(false);
-        console.log("PAYMENT SUCCESS CALLBACK:", reference);
-        await onVerificationSuccess(reference.reference);
+    const handleSuccess = (reference: any) => {
+        // Force manual redirect behavior/handling
+        // reference object from Paystack contains { message, reference, status, trans, transaction }
+        onVerificationSuccess(reference.reference);
     };
 
     const handleClose = () => {
         console.log("PAYSTACK CLOSED");
-        // Don't close immediately allow user to click 'Verify'
-        // setIsPaystackOpen(false); 
+        // Only close if we haven't started verification (user cancelled popup)
+        if (!verifying && !isRecoveryMode) {
+            onClose(); 
+        }
     }
 
     const triggerPayment = () => {
         // PERSIST EVERYTHING
         localStorage.setItem('pendingPlan', tier.name);
-        localStorage.setItem('activePaymentReference', reference); // SAVE KEY
+        localStorage.setItem('activePaymentReference', reference); 
         if (googleUser) {
             localStorage.setItem('pendingGoogleUser', JSON.stringify(googleUser));
         }
         
-        setIsPaystackOpen(true);
         initializePayment(handleSuccess, handleClose);
     }
 
-    const checkPaymentStatus = () => {
-        const savedRef = localStorage.getItem('activePaymentReference');
-        if (savedRef) {
-            onVerificationSuccess(savedRef);
-        } else {
-            alert("No pending payment found. Please click 'Pay Now' first.");
+    // AUTO-RUN LOGIC
+    useEffect(() => {
+        // Prevention: Ensure we only run this once per mount
+        // If Requesting New Payment -> Trigger immediately
+        if (!isRecoveryMode && amountInKobo > 0) {
+            // Small timeout to ensure render is stable
+            const timer = setTimeout(() => {
+                triggerPayment();
+            }, 500); // 500ms delay for visual feedback of dialog opening (optional)
+            return () => clearTimeout(timer);
         }
-    }
+
+        // If Recovery Mode -> Verify immediately
+        if (isRecoveryMode) {
+            const savedRef = localStorage.getItem('activePaymentReference');
+            if (savedRef) {
+                onVerificationSuccess(savedRef);
+            }
+        }
+    }, [isRecoveryMode]); // Run once
 
     const handleReset = () => {
-        // Clear stuck state so user can try again
         localStorage.removeItem('activePaymentReference');
         localStorage.removeItem('pendingPlan');
         onClose();
     }
 
-    // New Visible Dialog Interface
+    // Optimized Dialog: Shows status instead of buttons mostly
     return (
-        <Dialog open={true} onOpenChange={onClose} modal={true}>
-            {/* Force high Z-Index in case of conflicts */}
-            <DialogContent className="sm:max-w-md z-[9999]">
-                <DialogHeader>
-                    <DialogTitle>Complete Subscription</DialogTitle>
-                    <DialogDescription>
-                        You are subscribing to the <strong>{tier.name}</strong> plan.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                     <p className="text-2xl font-bold">GHS {amountInGHS.toFixed(2)}</p>
-                     <p className="text-sm text-muted-foreground">Approx. ${priceInUSD} USD</p>
-                     
-                     {isPaystackOpen && (
-                        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded text-sm mt-4">
-                            <p className="font-bold">Payment Window Open?</p>
-                            <p>If you completed payment but nothing happened, click the button below to force verification.</p>
-                            <Button variant="link" size="sm" onClick={() => {
-                                localStorage.removeItem('activePaymentReference');
-                                setIsPaystackOpen(false);
-                            }} className="text-amber-900 dark:text-amber-100 underline mt-2">
-                                I havne't paid yet, let me retry.
-                            </Button>
-                        </div>
-                     )}
-                </div>
-                <DialogFooter className="sm:justify-start flex flex-col sm:flex-row gap-2">
-                    <Button type="button" variant="secondary" onClick={handleReset}>
-                        Cancel / Reset
-                    </Button>
-                    {!isPaystackOpen ? (
-                        <Button type="button" onClick={triggerPayment} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
-                            Pay Now
+        <>
+            {/* Manual Backdrop to dim background but NOT trap focus (so Paystack works) */}
+            <div className="fixed inset-0 bg-black/80 z-[9900]" aria-hidden="true" />
+
+            <Dialog open={true} onOpenChange={() => {}} modal={false}>
+                <DialogContent className="sm:max-w-md z-[9999]" onInteractOutside={(e) => e.preventDefault()}> 
+                    {/* Removed pointer-events-none to ensure normal behavior */}
+                    <DialogHeader>
+                        <DialogTitle>Complete Subscription</DialogTitle>
+                        <DialogDescription>
+                             {verifying || isRecoveryMode ? "Please wait while we confirm your payment..." : "Launching payment secure window..."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                         {(verifying || isRecoveryMode) ? (
+                            <div className="flex flex-col items-center gap-2">
+                                 <Loader2 className="w-10 h-10 animate-spin text-violet-500" />
+                                 <p className="text-sm font-medium animate-pulse">{statusMessage}</p>
+                            </div>
+                         ) : (
+                            <div className="flex flex-col items-center gap-2">
+                                 <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+                                 <p className="text-xs text-zinc-500">Contacting Payment Provider...</p>
+                            </div>
+                         )}
+                    </div>
+
+                    <DialogFooter className="sm:justify-center">
+                        {/* Only show Cancel if it takes too long or fails */}
+                        <Button type="button" variant="ghost" onClick={handleReset} className="text-zinc-500 text-xs hover:text-red-500">
+                            Cancel / Reset
                         </Button>
-                    ) : (
-                        <Button type="button" onClick={checkPaymentStatus} disabled={verifying} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
-                            {verifying ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Check className="w-4 h-4 mr-2"/>}
-                            I Have Paid (Verify Log)
-                        </Button>
-                    )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

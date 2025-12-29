@@ -36,18 +36,32 @@ class ContextService {
         unifiedContext += businessContext || "No business context provided yet.";
         unifiedContext += "\n=========================================\n";
 
-        // 2. Append Competitors
         if (workspace.competitors && Array.isArray(workspace.competitors) && workspace.competitors.length > 0) {
-            unifiedContext += `\n=== KNOWN COMPETITORS ===\n`;
+            unifiedContext += `\n=== KNOWN COMPETITORS & INTELLIGENCE ===\n`;
             workspace.competitors.forEach(c => {
-                unifiedContext += `- ${c.name}`;
+                unifiedContext += `\n--- COMPETITOR: ${c.name} ---\n`;
+                if (c.url) unifiedContext += `URL: ${c.url}\n`;
+
+                // 1. Static Analysis
                 if (c.analysis) {
-                    // Summarize analysis to save tokens if needed, for now dump it
-                    unifiedContext += `: ${JSON.stringify(c.analysis).substring(0, 500)}...`;
+                    unifiedContext += `Core Analysis: ${JSON.stringify(c.analysis).substring(0, 500)}...\n`;
                 }
-                unifiedContext += `\n`;
+
+                // 2. Recent Radar Activity (The "pulse")
+                if (c.radarHistory && Array.isArray(c.radarHistory) && c.radarHistory.length > 0) {
+                    unifiedContext += `Recent Website Activity (Last 10 Scans):\n`;
+                    // Take last 10, filter for meaningful updates if possible, or just list them
+                    const history = c.radarHistory.slice(0, 10);
+                    history.forEach(h => {
+                        const date = h.date ? h.date.split('T')[0] : 'Unknown Date';
+                        const status = h.status === 'changed' ? '⚠ UPDATE DETECTED' : 'Stable';
+                        unifiedContext += `  - [${date}] ${status}: ${h.insight || 'No significant changes.'}\n`;
+                    });
+                } else {
+                    unifiedContext += `(No recent scan history available)\n`;
+                }
             });
-            unifiedContext += `=========================\n`;
+            unifiedContext += `==========================================\n`;
         }
 
         // 2.5 Append Gap Analysis (Strategic Insights)

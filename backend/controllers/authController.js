@@ -185,18 +185,23 @@ const signin = async (req, res) => {
 // @route   POST /api/auth/google
 // @access  Public
 const completeGoogleSignup = async (req, res) => {
-    console.log("completeGoogleSignup HIT. Body:", req.body); // DEBUG LOG
-    const { googleUser, planTier, paymentReference } = req.body;
+    console.log("🔥 completeGoogleSignup HIT. Body:", req.body);
 
-    if (!googleUser) {
-        console.error("Missing googleUser in body");
+    if (!req.body || !req.body.googleUser) {
+        console.error("Missing req.body or googleUser in body");
         return res.status(400).json({ message: 'Invalid request: Missing googleUser' });
     }
 
-    const { name, email } = googleUser;
+    const { googleUser, planTier, paymentReference } = req.body;
 
-    if (!email) {
-        console.error("Invalid googleUser data (no email):", googleUser);
+    if (!googleUser) {
+        return res.status(400).json({ message: 'Invalid user data' });
+    }
+
+    const { email, name } = googleUser;
+
+    if (!email || !name) {
+        console.error("Invalid googleUser data (no email or name):", googleUser);
         return res.status(400).json({ message: 'Invalid user data' });
     }
 
@@ -222,11 +227,19 @@ const completeGoogleSignup = async (req, res) => {
         console.log("Starting Transaction for:", email);
         // Transactional Creation
         const user = await prisma.$transaction(async (prisma) => {
-            // 1. Create User
+            // 1. Create User (Double-check inside transaction for race conditions)
             console.log(" Creating User...");
-            const newUser = await prisma.user.create({
-                data: { name, email, passwordHash: hashedPassword },
-            });
+            let newUser = await prisma.user.findUnique({ where: { email } });
+
+            // If user still doesn't exist, try to create. 
+            // If race condition happens here, P2002 will be thrown and caught below.
+            if (!newUser) {
+                newUser = await prisma.user.create({
+                    data: { name, email, passwordHash: hashedPassword },
+                });
+            } else {
+                console.log(" User found inside transaction (race condition handled PRE-CREATE).");
+            }
 
             // 2. Create Default Workspace
             console.log(" Creating Workspace...");
@@ -234,7 +247,7 @@ const completeGoogleSignup = async (req, res) => {
                 data: {
                     name: `${name}'s Workspace`,
                     ownerId: newUser.id,
-                    planTier: planTier === 'FREE' ? 'FREE' : (planTier || 'FREE'), // Default to FREE if undefined
+                    planTier: planTier === 'FREE' ? 'FREE' : (planTier || 'FREE'),
                 },
             });
 
@@ -265,14 +278,29 @@ const completeGoogleSignup = async (req, res) => {
                 }
             });
 
-            // 5. If Paid, Create Transaction Record (Optional but good practice)
+            // 5. If Paid, Verify & Create Transaction Record
             if (planTier !== 'FREE' && paymentReference) {
-                console.log(" Creating Transaction Record...");
+                console.log(" Verifying Payment with Paystack:", paymentReference);
+
+                // Server-side Verification
+                const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${paymentReference}`, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_PUBLIC_KEY}` // Fallback if secret missing (not ideal but better than crash)
+                    }
+                });
+                const verifyData = await verifyRes.json();
+
+                if (!verifyData.status || verifyData.data.status !== 'success') {
+                    console.error("Payment Verification Failed:", verifyData);
+                    throw new Error("Payment verification failed! Ref: " + paymentReference);
+                }
+
+                console.log(" Payment Verified! Creating Transaction Record...");
                 await prisma.transaction.create({
                     data: {
                         workspaceId: workspace.id,
-                        amount: 0,
-                        currency: 'GHS',
+                        amount: verifyData.data.amount / 100, // Convert kobo to GHS
+                        currency: verifyData.data.currency,
                         status: 'COMPLETED',
                         reference: paymentReference,
                         planTier: planTier
@@ -299,7 +327,41 @@ const completeGoogleSignup = async (req, res) => {
 
     } catch (error) {
         console.error("Complete Signup Error:", error);
-        res.status(500).json({ message: 'Signup failed', details: error.message });
+
+        // RACE CONDITION HANDLING (P2002 on Email)
+        if (error.code === 'P2002' && (error.meta?.target?.includes('email') || error.message.includes('email'))) {
+            console.log("Race condition detected (User created in parallel). Attempting login...");
+            try {
+                const existingUser = await prisma.user.findUnique({ where: { email } });
+                if (existingUser) {
+                    const userData = await getUserWithWorkspaces(existingUser.id);
+                    return res.json({
+                        _id: existingUser.id,
+                        name: existingUser.name,
+                        email: existingUser.email,
+                        workspaces: userData.workspaces,
+                        sharedWorkspaces: userData.sharedWorkspaces,
+                        token: generateToken(existingUser.id),
+                    });
+                }
+            } catch (loginError) {
+                console.error("Secondary Login Error:", loginError);
+            }
+        }
+
+        // Sanitize Error for Client
+        let userMessage = "Account setup failed. Please try again or contact support.";
+
+        // Handle specific known errors with friendlier messages
+        if (error.code === 'P2002') {
+            userMessage = "An account with this email already exists. Please log in.";
+        } else if (error.message && error.message.includes('Payment verification failed')) {
+            userMessage = "We could not verify your payment. Please contact support with your reference.";
+        } else if (error.message && error.message.includes('timeout')) {
+            userMessage = "The system is busy. Please refresh and try verifying again.";
+        }
+
+        res.status(500).json({ message: userMessage, debug: null }); // Don't send stack trace to client
     }
 };
 

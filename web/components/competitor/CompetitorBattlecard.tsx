@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp, Trash2, History, Activity } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
@@ -21,9 +21,10 @@ interface CompetitorBattlecardProps {
   onDelete?: () => void
   lastScrapedAt?: string | null
   radarStatus?: string
+  radarHistory?: Array<{ date: string; status: string; insight: string }>
 }
 
-export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, radarStatus }: CompetitorBattlecardProps) {
+export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, radarStatus, radarHistory }: CompetitorBattlecardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Helper to truncate text
@@ -41,6 +42,9 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
       weaknesses: Array.isArray(analysis?.weaknesses) ? analysis.weaknesses : [],
       keyFeatures: Array.isArray(analysis?.keyFeatures) ? analysis.keyFeatures : []
   };
+
+  // Get latest valid update
+  const latestUpdate = radarHistory && radarHistory.length > 0 ? radarHistory[0] : null;
 
   return (
     <Card className={`border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700 ${radarStatus === 'scanning' ? 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-400 dark:ring-amber-600' : ''}`}>
@@ -97,6 +101,23 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
       
       <CardContent className="p-5 space-y-5">
         
+        {/* LATEST RADAR UPDATE - Prominent Display */}
+        {latestUpdate && (
+            <div className={`p-3 rounded-md border ${latestUpdate.status === 'changed' ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30' : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800'}`}>
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${latestUpdate.status === 'changed' ? 'text-amber-600 dark:text-amber-500' : 'text-zinc-500 decoration-zinc-500'}`}>
+                        <Activity className="w-3.5 h-3.5" /> 
+                        {latestUpdate.status === 'changed' ? 'New Update Detected' : 'Latest Scan Result'}
+                    </h4>
+                    <span className="text-[10px] text-zinc-400">{new Date(latestUpdate.date).toLocaleDateString()}</span>
+                </div>
+                <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                    {latestUpdate.insight}
+                </p>
+                {/* Show View History button if expanded? */}
+            </div>
+        )}
+
         {/* USP - More subtle */}
         <div className="bg-violet-50/50 dark:bg-violet-900/10 p-3 rounded-md border border-violet-100 dark:border-violet-900/20">
             <p className="text-sm text-violet-700 dark:text-violet-300 leading-relaxed">

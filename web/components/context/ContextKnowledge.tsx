@@ -545,9 +545,12 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                         <CompetitorBattlecard 
                                             name={name} 
                                             analysis={competitorData[name]} 
-                                            onDelete={() => deleteCompetitorMutation.mutate(name)}
+                                            onDelete={() => {
+                                                if (confirm(`Delete competitor "${name}"?`)) deleteCompetitorMutation.mutate(name)
+                                            }}
                                             lastScrapedAt={lastScrapedAt}
                                             radarStatus={typeof comp !== 'string' ? comp.radarStatus : undefined}
+                                            radarHistory={typeof comp !== 'string' ? comp.radarHistory : undefined}
                                         />
                                     ) : (
                                         <Card className="p-6 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">

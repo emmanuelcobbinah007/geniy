@@ -169,11 +169,11 @@ class RadarService {
                     radarStatus: 'stable',
                     lastScrapedAt: new Date().toISOString(),
                     contentHash: newHash,
-                    // Add to history log (keep last 5 entries to save space)
+                    // Add to history log (keep last 15 entries)
                     radarHistory: [
                         { date: new Date().toISOString(), status: changeDetected ? "changed" : "stable", insight },
                         ...(target.radarHistory || [])
-                    ].slice(0, 5)
+                    ].slice(0, 15)
                 };
 
                 competitors[targetIndex] = updatedCompetitor;
