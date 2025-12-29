@@ -170,15 +170,22 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
         const savedPlanName = localStorage.getItem('pendingPlan');
         const savedRef = localStorage.getItem('activePaymentReference');
         
-        if (savedPlanName && savedRef) {
+        // CRITICAL FIX: Only auto-recover if we are explicitly in onboarding mode
+        if (mode === 'onboarding' && savedPlanName && savedRef) {
             const plan = tiers.find(t => t.name === savedPlanName);
             if (plan) {
                 console.log("RECOVERY: Found pending session", plan);
                 setPendingPayment(plan);
             }
+        } else if (mode === 'landing' && (savedPlanName || savedRef)) {
+            // If on landing page but have stale data, CLEAR IT to stop loops/modals
+            console.warn("Clearing stale payment data on landing page");
+            localStorage.removeItem('pendingPlan');
+            localStorage.removeItem('activePaymentReference');
+            localStorage.removeItem('pendingGoogleUser');
         }
     }
-  }, []);
+  }, [mode]); // Depend on mode to ensure correct context
 
   const handlePaymentRequest = (tier: any) => {
       setPendingPayment(tier);
@@ -410,7 +417,12 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     // Check if we are in recovery mode (page reload after payment)
     const [isRecoveryMode] = useState(() => {
          if (typeof window !== 'undefined') {
-            return !!localStorage.getItem('activePaymentReference');
+            const hasRef = !!localStorage.getItem('activePaymentReference');
+            // CRITICAL FIX: Only recover if we are actually on the onboarding page OR explicitly told to do so.
+            // This prevents the Landing Page from auto-reloading infinitely if a reference exists.
+            const isOnboardingPage = window.location.pathname.includes('/onboarding/plans');
+            
+            return hasRef && isOnboardingPage;
          }
          return false;
     });
@@ -441,7 +453,7 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
         reference,
         email: user?.email || googleUser?.email || "placeholder@email.com",
         amount: amountInKobo,
-        publicKey: PAYSTACK_PUBLIC_KEY, 
+        publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!, 
         currency: 'GHS',
         // callback_url: window.location.href, // Removing explicit callback_url to rely on manual handling in onSuccess to avoid conflicts
     };
@@ -497,6 +509,31 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     const handleSuccess = (reference: any) => {
         // Force manual redirect behavior/handling
         // reference object from Paystack contains { message, reference, status, trans, transaction }
+        
+        console.log("PAYTACK SUCCESS:", reference);
+        // alert(`Payment Done! Ref: ${reference.reference}`);
+        
+        // Debug Google User Logic
+        // alert(`DEBUG: Has GoogleUser: ${!!googleUser}, Has User: ${!!user}`);
+
+        // Case 1: Pending Google User (Onboarding)
+        if (googleUser && !user) {
+             // Loop Prevention: If we are already on the page with this specific reference, DO NOT reload.
+             const currentRef = new URLSearchParams(window.location.search).get('reference');
+             if (currentRef === reference.reference) {
+                 console.warn("Already on verification page. Letting page.tsx handle it.");
+                 return;
+             }
+
+             // We must let the page.tsx handle this via redirect to ensure clean state
+             // So we simply reload the page with the reference
+             window.location.href = `${window.location.pathname}?reference=${reference.reference}`; 
+             return;
+        }
+        
+        // alert("Entering Case 2 (Upgrade)");
+
+        // Case 2: Existing User (Upgrade) -> Use the internal function
         onVerificationSuccess(reference.reference);
     };
 

@@ -243,12 +243,13 @@ const completeGoogleSignup = async (req, res) => {
 
             // 2. Create Default Workspace
             console.log(" Creating Workspace...");
+
             const workspace = await prisma.workspace.create({
                 data: {
-                    name: `${name}'s Workspace`,
+                    name: `${name.split(' ')[0]}'s Workspace`,
                     ownerId: newUser.id,
-                    planTier: planTier === 'FREE' ? 'FREE' : (planTier || 'FREE'),
-                },
+                    planTier: planTier
+                }
             });
 
             // 3. Create Workspace Member (Owner)

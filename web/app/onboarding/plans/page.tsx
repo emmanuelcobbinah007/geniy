@@ -39,11 +39,15 @@ export default function OnboardingPlansPage() {
                 const pendingPlan = localStorage.getItem('pendingPlan') || sessionStorage.getItem('pendingPlan');
                 
                 console.log("PAYMENT REDIRECT DETECTED:", { reference, pendingPlan, hasUser: !!pendingUserStr });
+                // DEBUG: Confirm we see this
+                // alert(`Step 1: Redirect seen. Ref: ${reference}`);
 
                 if (pendingPlan && pendingUserStr) {
                      try {
                          const gUser = JSON.parse(pendingUserStr);
+                         // alert("Step 2: Calling backend...");
                          await completeGoogleSignup(gUser, pendingPlan.toUpperCase(), reference);
+                         // alert("Step 3: Backend success!");
                          
                          // Success
                          localStorage.removeItem('pendingPlan');
@@ -58,6 +62,11 @@ export default function OnboardingPlansPage() {
                      } catch (e: any) {
                          console.error("Redirect Completion Error:", e);
                          alert("Setup Failed: " + e.message);
+                         
+                         // CRITICAL: Clear storage to prevent infinite loops if Pricing.tsx tries to recover
+                         localStorage.removeItem('activePaymentReference');
+                         localStorage.removeItem('pendingPlan');
+                         
                          setIsProcessing(false); // Allow user to try again
                      }
                 } else {
