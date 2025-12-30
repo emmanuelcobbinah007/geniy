@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog"
-import { usePaystackPayment } from 'react-paystack';
+// Note: Using native Paystack Inline JS instead of react-paystack for better redirect reliability
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -403,10 +403,12 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     )
 }
 
-    // 2. Headless Payment Launcher (Now Visible Dialog but acts automatically)
+    // 2. Native Paystack Payment Launcher (Bypasses react-paystack for reliability)
  function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose, mode }: any) {
     const { token, completeGoogleSignup } = useAuth();
     const [rate, setRate] = useState(15);
+    const [paystackLoaded, setPaystackLoaded] = useState(false);
+    
     // Stable reference (recover from storage if exists)
     const [reference] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -419,10 +421,7 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     const [isRecoveryMode] = useState(() => {
          if (typeof window !== 'undefined') {
             const hasRef = !!localStorage.getItem('activePaymentReference');
-            // CRITICAL FIX: Only recover if we are actually on the onboarding page OR explicitly told to do so.
-            // This prevents the Landing Page from auto-reloading infinitely if a reference exists.
             const isOnboardingPage = window.location.pathname.includes('/onboarding/plans');
-            
             return hasRef && isOnboardingPage;
          }
          return false;
@@ -430,12 +429,26 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
 
     const [verifying, setVerifying] = useState(false);
     const [statusMessage, setStatusMessage] = useState("Initializing payment...");
-    const successRef = useRef(false); // Synchronous tracking to prevent race conditions
+    const successRef = useRef(false);
+    const paymentTriggered = useRef(false); // Prevent double-triggering
 
-    // Fallback: Try to get googleUser from storage if prop is missing (Check BOTH Local and Session)
+    // Fallback: Try to get googleUser from storage
     const googleUser = propGoogleUser || (typeof window !== 'undefined' ? 
         (JSON.parse(localStorage.getItem('pendingGoogleUser') || 'null') || JSON.parse(sessionStorage.getItem('googleUser') || 'null')) 
         : null);
+
+    // Load Paystack Script
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !(window as any).PaystackPop) {
+            const script = document.createElement('script');
+            script.src = 'https://js.paystack.co/v1/inline.js';
+            script.async = true;
+            script.onload = () => setPaystackLoaded(true);
+            document.body.appendChild(script);
+        } else if ((window as any).PaystackPop) {
+            setPaystackLoaded(true);
+        }
+    }, []);
 
     // Fetch rate ONCE
     useEffect(() => {
@@ -453,31 +466,16 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     const amountInGHS = priceInUSD * rate;
     const amountInKobo = Math.round(amountInGHS * 100); 
 
-    const config = {
-        reference,
-        email: user?.email || googleUser?.email || "placeholder@email.com",
-        amount: amountInKobo,
-        publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!, 
-        currency: 'GHS',
-        // callback_url: window.location.href, // Removing explicit callback_url to rely on manual handling in onSuccess to avoid conflicts
-    };
-
-    const initializePayment = usePaystackPayment(config);
-
     const onVerificationSuccess = async (ref: string) => {
         setVerifying(true);
         setStatusMessage("Finalizing your account setup...");
         
         try {
-             // Case 1: Pending Google User (Onboarding)
              if (googleUser && !user) {
-                 // We must let the page.tsx handle this via redirect to ensure clean state
-                 // So we simply reload the page with the reference
                  window.location.href = `${window.location.pathname}?reference=${ref}`; 
                  return;
              }
 
-             // Case 2: Existing User (Upgrade)
              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/verify`, {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -496,91 +494,75 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
              } else {
                  const err = await res.text();
                  setStatusMessage("Verification failed.");
-                 const msg = (err.includes("Payment verification") ? "Payment verification failed." : "Setup failed. Please contact support.");
-                 alert(msg);
+                 alert(err.includes("Payment verification") ? "Payment verification failed." : "Setup failed. Please contact support.");
                  setVerifying(false);
              }
         } catch (e: any) {
             console.error("PAYMENT VERIFICATION ERROR:", e);
             setStatusMessage("Error: " + e.message);
-            let displayMsg = "Something went wrong providing your access.";
-            if (e.message && e.message.includes("Account created")) displayMsg = "Account already exists. Please login.";
-            alert(displayMsg);
+            alert("Something went wrong providing your access.");
             setVerifying(false);
         }
     }
 
-    const handleSuccess = (reference: any) => {
-        successRef.current = true; // LOCK immediately
-        
-        // Force manual redirect behavior/handling
-        // reference object from Paystack contains { message, reference, status, trans, transaction }
-        
-        console.log("PAYTACK SUCCESS:", reference);
-
-        // Case 1: Onboarding / Landing (No User OR Explicit Onboarding Mode)
-        // Checks if logic should redirect rather than try inline verification
-        if (!user || mode === 'onboarding' || mode === 'landing') {
-             console.log("Redirecting to verification...", reference.reference);
-
-             // 1. Give Visual Feedback Immediately
-             setVerifying(true);
-             setStatusMessage("Payment received! Redirecting you...");
-
-             const verificationUrl = `/onboarding/plans?reference=${reference.reference}`;
-             
-             // Check if we are already there to avoid reload if possible (optimization)
-             if (window.location.pathname === '/onboarding/plans' && window.location.search.includes(reference.reference)) {
-                 return; 
-             }
-
-             // 2. Force Navigation Synchronously (No Timeout)
-             window.location.assign(verificationUrl);
-             return;
-        }
-        
-        // Case 2: Existing User (Upgrade) -> Use the internal function
-        onVerificationSuccess(reference.reference);
-    };
-
-    const handleClose = () => {
-        console.log("PAYSTACK CLOSED");
-        // Only close if we haven't started verification (user cancelled popup)
-        // AND check the Ref because 'verifying' state might not have updated yet!
-        if (!verifying && !isRecoveryMode && !successRef.current) {
-            onClose(); 
-        }
-    }
-
     const triggerPayment = () => {
-        // PERSIST EVERYTHING
+        if (paymentTriggered.current) return; // Prevent double trigger
+        paymentTriggered.current = true;
+
+        // PERSIST EVERYTHING before opening Paystack
         localStorage.setItem('pendingPlan', tier.name);
         localStorage.setItem('activePaymentReference', reference); 
         if (googleUser) {
             localStorage.setItem('pendingGoogleUser', JSON.stringify(googleUser));
         }
 
-        console.log("Triggering Paystack Init...", config);
-        
-        initializePayment(handleSuccess, handleClose);
+        const email = user?.email || googleUser?.email || "placeholder@email.com";
+        // The callback_url is KEY: Paystack's server will redirect the browser here after payment.
+        const callbackUrl = `${window.location.origin}/onboarding/plans?reference=${reference}`;
+
+        console.log("Opening Native Paystack Popup...", { reference, email, amount: amountInKobo, callbackUrl });
+
+        const handler = (window as any).PaystackPop.setup({
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+            email: email,
+            amount: amountInKobo,
+            currency: 'GHS',
+            ref: reference,
+            callback_url: callbackUrl, // <-- SERVER-DRIVEN REDIRECT
+            callback: (response: any) => {
+                // This is a BACKUP callback. The redirect should handle it, but just in case:
+                console.log("Paystack JS Callback (Backup):", response);
+                successRef.current = true;
+                setVerifying(true);
+                setStatusMessage("Payment successful! Redirecting...");
+                // Force redirect if callback_url somehow didn't work
+                setTimeout(() => {
+                    window.location.assign(callbackUrl);
+                }, 500);
+            },
+            onClose: () => {
+                console.log("Paystack Closed by user (or after redirect)");
+                if (!successRef.current && !verifying) {
+                    onClose();
+                }
+            }
+        });
+        handler.openIframe();
     }
 
     // AUTO-RUN LOGIC
     useEffect(() => {
-        // Prevention: Ensure we only run this once per mount
-        // If Requesting New Payment -> Trigger immediately (No delay to avoid popup blockers)
-        if (!isRecoveryMode && amountInKobo > 0) {
+        if (paystackLoaded && !isRecoveryMode && amountInKobo > 0) {
              triggerPayment();
         }
 
-        // If Recovery Mode -> Verify immediately
         if (isRecoveryMode) {
             const savedRef = localStorage.getItem('activePaymentReference');
             if (savedRef) {
                 onVerificationSuccess(savedRef);
             }
         }
-    }, [isRecoveryMode]); // Run once
+    }, [paystackLoaded, isRecoveryMode]);
 
     const handleReset = () => {
         localStorage.removeItem('activePaymentReference');
@@ -588,28 +570,24 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
         onClose();
     }
 
-    // Determine visibility state
     const isVisible = verifying || isRecoveryMode;
 
     return (
         <>
-            {/* Manual Backdrop - Only visible when verifying */}
             <div 
                 className={`fixed inset-0 bg-black/80 z-[9900] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
                 aria-hidden="true" 
             />
 
-            {/* Dialog - Always rendered but hidden visually when paying */}
             <Dialog open={true} onOpenChange={() => {}} modal={false}>
                 <DialogContent 
                     className={`sm:max-w-md z-[9999] transition-all duration-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`} 
                     onInteractOutside={(e) => e.preventDefault()}
                 > 
-                    {/* Removed pointer-events-none to ensure normal behavior */}
                     <DialogHeader>
                         <DialogTitle>Complete Subscription</DialogTitle>
                         <DialogDescription>
-                             Please wait while we confirm your payment...
+                             {paystackLoaded ? "Please wait while we confirm your payment..." : "Loading payment provider..."}
                         </DialogDescription>
                     </DialogHeader>
                     
@@ -617,11 +595,19 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
                         <div className="flex flex-col items-center gap-2">
                                 <Loader2 className="w-10 h-10 animate-spin text-violet-500" />
                                 <p className="text-sm font-medium animate-pulse">{statusMessage}</p>
+                                {verifying && (
+                                    <Button 
+                                        variant="link" 
+                                        className="text-xs text-violet-400 mt-2"
+                                        onClick={() => window.location.assign(`/onboarding/plans?reference=${reference}`)}
+                                    >
+                                        Click here if not redirected automatically
+                                    </Button>
+                                )}
                         </div>
                     </div>
 
                     <DialogFooter className="sm:justify-center">
-                        {/* Only show Cancel if it takes too long or fails */}
                         <Button type="button" variant="ghost" onClick={handleReset} className="text-zinc-500 text-xs hover:text-red-500">
                             Cancel / Reset
                         </Button>

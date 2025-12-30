@@ -83,10 +83,12 @@ export default function OnboardingPlansPage() {
   }, [completeGoogleSignup]);
 
   useEffect(() => {
-    if (!checkingStorage && !loading && !user && !googleUser) {
+    // CRITICAL FIX: Do NOT redirect if we are currently processing a payment (found in URL)
+    if (!checkingStorage && !loading && !user && !googleUser && !isProcessing) {
+      console.warn("No user context found. Redirecting to login.");
       router.push("/?auth=login")
     }
-  }, [user, loading, googleUser, checkingStorage, router])
+  }, [user, loading, googleUser, checkingStorage, router, isProcessing])
 
   if (loading || checkingStorage || isProcessing || (!user && !googleUser)) {
     return (
