@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -155,7 +155,7 @@ export function Hero() {
             className="max-w-2xl"
           >
             <p className="text-xl text-zinc-600 dark:text-zinc-200 leading-relaxed drop-shadow-none dark:drop-shadow-md transition-colors duration-300">
-              Upload your business context. Geniy’s AI builds dynamic surveys, analyzes competitors, and delivers actionable strategic insights—automatically.
+              Early-stage founders don't need more data. They need direction. Geniy turns your messy context into clear, decision-ready insights — automatically.
             </p>
           </motion.div>
 
@@ -171,12 +171,12 @@ export function Hero() {
               className="h-14 px-8 text-lg rounded-full bg-foreground text-background hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-lg transition-all hover:scale-105"
               onClick={handleStartSurvey}
             >
-              Start with a Survey
+              Start With a Survey
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Link href="/early-adopter">
+            <Link href="#features">
               <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-zinc-200 bg-white/50 text-foreground hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 backdrop-blur-sm">
-                Join Early Adopters Program
+                See How It Works
               </Button>
             </Link>
           </motion.div>

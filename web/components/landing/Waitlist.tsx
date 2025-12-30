@@ -39,7 +39,7 @@ export function Waitlist() {
             className="inline-flex items-center justify-center px-4 py-1.5 mb-8 rounded-full border border-violet-500/30 bg-violet-500/10 text-sm font-medium text-violet-300"
           >
             <Sparkles className="w-4 h-4 mr-2" />
-            Join 2,000+ Founders on the list
+            Founders are shipping faster
           </motion.div>
 
           <motion.h2 
@@ -48,9 +48,9 @@ export function Waitlist() {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-bold font-display text-white mb-6 tracking-tight"
           >
-            Get Early Access to the <br />
+            Stop second-guessing. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-              Future of Strategy
+              Start deciding.
             </span>
           </motion.h2>
 
@@ -61,7 +61,7 @@ export function Waitlist() {
             transition={{ delay: 0.1 }}
             className="text-lg text-zinc-400 mb-10 max-w-xl mx-auto"
           >
-            We are currently rolling out access in batches. Secure your spot in line to get priority access when we open the doors.
+            Every week you delay is another week of uncertainty. Get clarity now.
           </motion.p>
 
           <motion.div
@@ -94,7 +94,7 @@ export function Waitlist() {
                   disabled={loading}
                   className="h-12 px-8 bg-violet-600 hover:bg-violet-700 text-white font-medium"
                 >
-                  {loading ? "Joining..." : "Join Waitlist"}
+                  {loading ? "Starting..." : "Get Started Free"}
                   {!loading && <ArrowRight className="ml-2 w-4 h-4" />}
                 </Button>
               </form>

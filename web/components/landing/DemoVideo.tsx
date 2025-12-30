@@ -43,8 +43,8 @@ export function DemoVideo() {
 
               {/* Teaser Text (Visible when no video is playing) */}
               <div className="text-center relative z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-300">
-                 <h3 className="text-2xl font-semibold text-white mb-2">See Geniy in Action</h3>
-                 <p className="text-zinc-400">Watch how we automate your market research</p>
+                 <h3 className="text-2xl font-semibold text-white mb-2">See Geniy in 60 Seconds</h3>
+                 <p className="text-zinc-400">Watch a founder go from confused to clear</p>
               </div>
 
               {/* Add your <video> tag here later */}
