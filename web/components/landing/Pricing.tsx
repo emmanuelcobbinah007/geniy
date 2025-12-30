@@ -222,6 +222,7 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
                 googleUser={googleUser}
                 onSuccess={onPaymentComplete} 
                 onClose={() => setPendingPayment(null)}
+                mode={mode} // Pass mode for redirect logic
             />
         )}
 
@@ -403,7 +404,7 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
 }
 
     // 2. Headless Payment Launcher (Now Visible Dialog but acts automatically)
- function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose }: any) {
+ function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose, mode }: any) {
     const { token, completeGoogleSignup } = useAuth();
     const [rate, setRate] = useState(15);
     // Stable reference (recover from storage if exists)
@@ -429,9 +430,12 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
 
     const [verifying, setVerifying] = useState(false);
     const [statusMessage, setStatusMessage] = useState("Initializing payment...");
+    const successRef = useRef(false); // Synchronous tracking to prevent race conditions
 
-    // Fallback: Try to get googleUser from storage if prop is missing
-    const googleUser = propGoogleUser || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('pendingGoogleUser') || 'null') : null);
+    // Fallback: Try to get googleUser from storage if prop is missing (Check BOTH Local and Session)
+    const googleUser = propGoogleUser || (typeof window !== 'undefined' ? 
+        (JSON.parse(localStorage.getItem('pendingGoogleUser') || 'null') || JSON.parse(sessionStorage.getItem('googleUser') || 'null')) 
+        : null);
 
     // Fetch rate ONCE
     useEffect(() => {
@@ -507,32 +511,34 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     }
 
     const handleSuccess = (reference: any) => {
+        successRef.current = true; // LOCK immediately
+        
         // Force manual redirect behavior/handling
         // reference object from Paystack contains { message, reference, status, trans, transaction }
         
         console.log("PAYTACK SUCCESS:", reference);
-        // alert(`Payment Done! Ref: ${reference.reference}`);
-        
-        // Debug Google User Logic
-        // alert(`DEBUG: Has GoogleUser: ${!!googleUser}, Has User: ${!!user}`);
 
-        // Case 1: Pending Google User (Onboarding)
-        if (googleUser && !user) {
-             // Loop Prevention: If we are already on the page with this specific reference, DO NOT reload.
-             const currentRef = new URLSearchParams(window.location.search).get('reference');
-             if (currentRef === reference.reference) {
-                 console.warn("Already on verification page. Letting page.tsx handle it.");
-                 return;
+        // Case 1: Onboarding / Landing (No User OR Explicit Onboarding Mode)
+        // Checks if logic should redirect rather than try inline verification
+        if (!user || mode === 'onboarding' || mode === 'landing') {
+             console.log("Redirecting to verification...", reference.reference);
+
+             // 1. Give Visual Feedback Immediately
+             setVerifying(true);
+             setStatusMessage("Payment received! Redirecting you...");
+
+             const verificationUrl = `/onboarding/plans?reference=${reference.reference}`;
+             
+             // Check if we are already there to avoid reload if possible (optimization)
+             if (window.location.pathname === '/onboarding/plans' && window.location.search.includes(reference.reference)) {
+                 return; 
              }
 
-             // We must let the page.tsx handle this via redirect to ensure clean state
-             // So we simply reload the page with the reference
-             window.location.href = `${window.location.pathname}?reference=${reference.reference}`; 
+             // 2. Force Navigation Synchronously (No Timeout)
+             window.location.assign(verificationUrl);
              return;
         }
         
-        // alert("Entering Case 2 (Upgrade)");
-
         // Case 2: Existing User (Upgrade) -> Use the internal function
         onVerificationSuccess(reference.reference);
     };
@@ -540,7 +546,8 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     const handleClose = () => {
         console.log("PAYSTACK CLOSED");
         // Only close if we haven't started verification (user cancelled popup)
-        if (!verifying && !isRecoveryMode) {
+        // AND check the Ref because 'verifying' state might not have updated yet!
+        if (!verifying && !isRecoveryMode && !successRef.current) {
             onClose(); 
         }
     }
@@ -552,6 +559,8 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
         if (googleUser) {
             localStorage.setItem('pendingGoogleUser', JSON.stringify(googleUser));
         }
+
+        console.log("Triggering Paystack Init...", config);
         
         initializePayment(handleSuccess, handleClose);
     }
@@ -559,13 +568,9 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     // AUTO-RUN LOGIC
     useEffect(() => {
         // Prevention: Ensure we only run this once per mount
-        // If Requesting New Payment -> Trigger immediately
+        // If Requesting New Payment -> Trigger immediately (No delay to avoid popup blockers)
         if (!isRecoveryMode && amountInKobo > 0) {
-            // Small timeout to ensure render is stable
-            const timer = setTimeout(() => {
-                triggerPayment();
-            }, 500); // 500ms delay for visual feedback of dialog opening (optional)
-            return () => clearTimeout(timer);
+             triggerPayment();
         }
 
         // If Recovery Mode -> Verify immediately
@@ -583,34 +588,36 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
         onClose();
     }
 
-    // Optimized Dialog: Shows status instead of buttons mostly
+    // Determine visibility state
+    const isVisible = verifying || isRecoveryMode;
+
     return (
         <>
-            {/* Manual Backdrop to dim background but NOT trap focus (so Paystack works) */}
-            <div className="fixed inset-0 bg-black/80 z-[9900]" aria-hidden="true" />
+            {/* Manual Backdrop - Only visible when verifying */}
+            <div 
+                className={`fixed inset-0 bg-black/80 z-[9900] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+                aria-hidden="true" 
+            />
 
+            {/* Dialog - Always rendered but hidden visually when paying */}
             <Dialog open={true} onOpenChange={() => {}} modal={false}>
-                <DialogContent className="sm:max-w-md z-[9999]" onInteractOutside={(e) => e.preventDefault()}> 
+                <DialogContent 
+                    className={`sm:max-w-md z-[9999] transition-all duration-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`} 
+                    onInteractOutside={(e) => e.preventDefault()}
+                > 
                     {/* Removed pointer-events-none to ensure normal behavior */}
                     <DialogHeader>
                         <DialogTitle>Complete Subscription</DialogTitle>
                         <DialogDescription>
-                             {verifying || isRecoveryMode ? "Please wait while we confirm your payment..." : "Launching payment secure window..."}
+                             Please wait while we confirm your payment...
                         </DialogDescription>
                     </DialogHeader>
                     
                     <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                         {(verifying || isRecoveryMode) ? (
-                            <div className="flex flex-col items-center gap-2">
-                                 <Loader2 className="w-10 h-10 animate-spin text-violet-500" />
-                                 <p className="text-sm font-medium animate-pulse">{statusMessage}</p>
-                            </div>
-                         ) : (
-                            <div className="flex flex-col items-center gap-2">
-                                 <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
-                                 <p className="text-xs text-zinc-500">Contacting Payment Provider...</p>
-                            </div>
-                         )}
+                        <div className="flex flex-col items-center gap-2">
+                                <Loader2 className="w-10 h-10 animate-spin text-violet-500" />
+                                <p className="text-sm font-medium animate-pulse">{statusMessage}</p>
+                        </div>
                     </div>
 
                     <DialogFooter className="sm:justify-center">
