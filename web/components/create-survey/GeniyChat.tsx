@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sparkles, Send, Upload, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { api } from "@/lib/api"
-import { userFriendlyError } from "@/lib/error-utils"
+import { userFriendlyError, GATED_ERROR_PREFIX, isGatedError } from "@/lib/error-utils"
 import { useAuth } from "@/context/auth-context"
 import { CompetitorCard } from "./CompetitorCard"
 import { ResearchStrategyCard } from "./ResearchStrategyCard"
@@ -160,7 +160,11 @@ If yes, just say "Yes" or "Go ahead", and I'll build the research strategy and s
     } catch (error: any) {
         console.error(error)
         const errorMessage = userFriendlyError(error)
-        addMessage("assistant", errorMessage)
+        if (errorMessage.startsWith(GATED_ERROR_PREFIX)) {
+            addMessage("assistant", `🔒 **Upgrade Required**\n\n${errorMessage.replace(GATED_ERROR_PREFIX, '')}\n\n[Upgrade your plan](/pricing) to unlock this feature.`)
+        } else {
+            addMessage("assistant", errorMessage)
+        }
     } finally {
         setIsProcessing(false)
         if (fileInputRef.current) fileInputRef.current.value = ""
@@ -220,7 +224,12 @@ If yes, just say "Yes" or "Go ahead", and I'll build the research strategy and s
 
     } catch (error) {
         console.error(error)
-        addMessage("assistant", userFriendlyError(error))
+        const errorMessage = userFriendlyError(error)
+        if (errorMessage.startsWith(GATED_ERROR_PREFIX)) {
+            addMessage("assistant", `🔒 **Upgrade Required**\n\n${errorMessage.replace(GATED_ERROR_PREFIX, '')}\n\n[Upgrade your plan](/#pricing) to unlock this feature.`)
+        } else {
+            addMessage("assistant", errorMessage)
+        }
     }
   }
 
@@ -322,7 +331,12 @@ If yes, just say "Yes" or "Go ahead", and I'll build the research strategy and s
 
     } catch (error) {
         console.error(error)
-        addMessage("assistant", userFriendlyError(error))
+        const errorMessage = userFriendlyError(error)
+        if (errorMessage.startsWith(GATED_ERROR_PREFIX)) {
+            addMessage("assistant", `🔒 **Upgrade Required**\n\n${errorMessage.replace(GATED_ERROR_PREFIX, '')}\n\n[Upgrade your plan](/#pricing) to unlock this feature.`)
+        } else {
+            addMessage("assistant", errorMessage)
+        }
     } finally {
         setIsProcessing(false)
     }

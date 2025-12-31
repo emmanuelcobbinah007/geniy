@@ -2,17 +2,20 @@ const express = require('express');
 const router = express.Router();
 const campaignController = require('../controllers/campaignController');
 const { protect: authenticateToken } = require('../middleware/authMiddleware');
+const { checkLimit, requireFeature, countSurveys } = require('../middleware/gatingMiddleware');
 
 // POST /api/campaigns - Create a new campaign and survey
-router.post('/', campaignController.createCampaign);
+// GATED: Survey limit
+router.post('/', checkLimit('surveys', countSurveys), campaignController.createCampaign);
 
 // GET /api/campaigns - Get all campaigns for a workspace
 router.get('/', campaignController.getCampaigns);
 
-// GET /api/campaigns/public/:slug - Get survey by public slug
+// GET /api/campaigns/public/:slug - Get survey by public slug (public, no auth)
 router.get('/public/:slug', campaignController.getSurveyBySlug);
 
-// POST /api/campaigns/public/:slug/response - Submit survey response
+// POST /api/campaigns/public/:slug/response - Submit survey response (public, no auth)
+// Note: Response limits checked in controller since we need campaign context
 router.post('/public/:slug/response', campaignController.submitResponse);
 
 // GET /api/campaigns/:id - Get a single campaign details
@@ -25,7 +28,8 @@ router.get('/:id/responses', campaignController.getCampaignResponses);
 router.get('/:id/analytics', campaignController.getCampaignAnalytics);
 
 // GET /api/campaigns/:id/export - Export responses as CSV
-router.get('/:id/export', campaignController.exportCampaignResponses);
+// GATED: Requires csvExport feature (STARTER+)
+router.get('/:id/export', requireFeature('csvExport'), campaignController.exportCampaignResponses);
 
 // DELETE /api/campaigns/:id - Delete a campaign
 router.delete('/:id', campaignController.deleteCampaign);
@@ -34,12 +38,13 @@ router.delete('/:id', campaignController.deleteCampaign);
 router.put('/:id/survey', campaignController.updateSurvey);
 
 // POST /api/campaigns/:id/insights - Generate AI insights
-router.post('/:id/insights', campaignController.generateInsights);
+// GATED: Requires aiInsights feature (STARTER+)
+router.post('/:id/insights', requireFeature('aiInsights'), campaignController.generateInsights);
 
 // GET /api/campaigns/:id/insights - Get existing insights
 router.get('/:id/insights', campaignController.getInsights);
 
-// Chat with Geniy
+// Chat with Geniy - Available to all tiers
 router.post('/chat', authenticateToken, campaignController.chatWithGeniy);
 
 module.exports = router;
