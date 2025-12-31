@@ -4,15 +4,12 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle, Radar, Compass, ArrowRight, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
+import Image from "next/image"
 
 export function Features() {
   return (
     <section id="features" className="py-24 md:py-32 relative overflow-hidden transition-colors duration-300">
-      {/* Background Decorations */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-0 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-fuchsia-500/5 rounded-full blur-3xl" />
-      </div>
+
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         {/* Section Header */}
@@ -58,16 +55,14 @@ export function Features() {
               transition={{ duration: 0.6 }}
               className="md:row-span-2"
             >
-              <Card className="h-full p-8 md:p-10 bg-gradient-to-br from-violet-500/5 via-transparent to-fuchsia-500/5 border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-sm overflow-hidden relative group hover:border-violet-500/30 transition-all duration-500">
-                {/* Floating Decoration */}
-                <div className="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all duration-500" />
+              <Card className="h-full p-8 md:p-10 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative group hover:bg-white/15 dark:hover:bg-white/10 hover:border-violet-500/30 transition-all duration-500">
                 
                 {/* Step Indicator */}
                 <div className="flex items-center gap-4 mb-8">
                   <div className="relative">
                     <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl" />
-                    <div className="relative p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20">
-                      <MessageCircle className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+                    <div className="relative p-1 rounded-2xl bg-violet-500/10 border border-violet-500/20">
+                      <Image src="/gen_states/gen_consultant.png" alt="gen_consultant" width={48} height={48}/>
                     </div>
                   </div>
                   <div>
@@ -93,7 +88,7 @@ export function Features() {
                   <div className="mt-8 p-4 rounded-xl bg-white/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-4 h-4 text-violet-600" />
+                        <Image src="/gen_states/gen_consultant.png" alt="gen_consultant" width={48} height={48}/>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-foreground">Geniy</p>
@@ -114,13 +109,12 @@ export function Features() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.15 }}
             >
-              <Card className="h-full p-8 bg-gradient-to-br from-fuchsia-500/5 via-transparent to-transparent border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-sm overflow-hidden relative group hover:border-fuchsia-500/30 transition-all duration-500">
-                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-2xl" />
+              <Card className="h-full p-8 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative group hover:bg-white/15 dark:hover:bg-white/10 hover:border-fuchsia-500/30 transition-all duration-500">
                 
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20">
-                    <Radar className="w-6 h-6 text-fuchsia-600 dark:text-fuchsia-400" />
-                  </div>
+                  <div className="relative p-1 rounded-2xl bg-violet-500/10 border border-violet-500/20">
+                      <Image src="/gen_states/gen_thinking.png" alt="gen_thinking" width={48} height={48}/>
+                    </div>
                   <span className="text-sm font-medium text-fuchsia-600 dark:text-fuchsia-400">Step 02</span>
                 </div>
 
@@ -149,13 +143,12 @@ export function Features() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <Card className="h-full p-8 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-sm overflow-hidden relative group hover:border-emerald-500/30 transition-all duration-500">
-                <div className="absolute -top-10 -left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
+              <Card className="h-full p-8 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl shadow-xl overflow-hidden relative group hover:bg-white/15 dark:hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-500">
                 
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <Compass className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                  </div>
+                  <div className="relative p-1 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                      <Image src="/gen_states/gen_bulb.png" alt="gen_bulb" width={48} height={48}/>
+                    </div>
                   <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Step 03</span>
                 </div>
 
