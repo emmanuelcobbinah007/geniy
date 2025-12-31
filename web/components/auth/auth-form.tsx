@@ -15,10 +15,17 @@ import { useAuth } from "@/context/auth-context"
 import { useGoogleLogin } from "@react-oauth/google"
 import { userFriendlyError } from "@/lib/error-utils"
 
-export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; onSuccess?: () => void }) {
-  const [isLogin, setIsLogin] = useState(true)
+interface AuthFormProps {
+  isModal?: boolean;
+  onSuccess?: () => void;
+  defaultTier?: string; // When provided, auto-assign this tier and skip plan selection
+  defaultToSignup?: boolean; // When true, show signup form by default instead of login
+}
+
+export function AuthForm({ isModal = false, onSuccess, defaultTier, defaultToSignup = false }: AuthFormProps) {
+  const [isLogin, setIsLogin] = useState(!defaultToSignup)
   const [isLoading, setIsLoading] = useState(false)
-  const { login, signup, googleLogin } = useAuth()
+  const { login, signup, googleLogin, completeGoogleSignup } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -54,9 +61,17 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
           }
         } else {
           await signup(values.name, values.email, values.password)
-          // Always redirect to onboarding for new signups
-          router.push("/onboarding/plans")
-          if (onSuccess) onSuccess();
+          // If defaultTier is set (e.g., from Hero trial flow), skip onboarding
+          if (defaultTier) {
+            // TODO: Backend needs to handle tier assignment
+            // For now, store in session for the onboarding to pick up
+            sessionStorage.setItem('defaultTier', defaultTier);
+            if (onSuccess) onSuccess();
+          } else {
+            // Standard flow: redirect to plan selection
+            router.push("/onboarding/plans")
+            if (onSuccess) onSuccess();
+          }
         }
       } catch (err: any) {
         setError(userFriendlyError(err))
@@ -82,17 +97,27 @@ export function AuthForm({ isModal = false, onSuccess }: { isModal?: boolean; on
         
         // CASE 1: New User (Pending Creation)
         if (result && result.status === 'PENDING') {
-             // Store Google Info for next step
+             // If defaultTier set (Hero trial flow), complete signup immediately with that tier
+             if (defaultTier) {
+               // Complete the signup with the specified tier
+               await completeGoogleSignup(result.googleUser, defaultTier);
+               if (onSuccess) onSuccess();
+               return;
+             }
+             
+             // Standard flow: Store Google Info and redirect to plan selection
              sessionStorage.setItem('googleUser', JSON.stringify(result.googleUser));
              router.push("/onboarding/plans");
-             if (onSuccess) onSuccess(); 
+             if (onSuccess) onSuccess();
              return;
         }
 
-        // CASE 2: Existing User or Legacy logic
+        // CASE 2: Existing User or Legacy logic (isNewUser from older flow)
         if (result && result.isNewUser) {
+            // This path shouldn't trigger for trial flow since we handle PENDING above
+            // But just in case, redirect to plan selection
             router.push("/onboarding/plans")
-            if (onSuccess) onSuccess(); 
+            if (onSuccess) onSuccess();
             return;
         }
 

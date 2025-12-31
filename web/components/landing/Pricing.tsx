@@ -18,44 +18,27 @@ import {
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { AuthModal } from "@/components/auth/auth-modal";
 
-// GHS Rate (Hardcoded for now as per instructions, or 1:1 if just treating numbers as GHS)
-// Using 15 GHS per USD roughly for display, but actually user said "billing in GHS" using the dollar amounts.
-// Let's assume the $29 means 29 GHS for simplicity unless specified otherwise, or use a conversion.
-// User said: "USD is standard but... we will be billing in ghs". Usually implies conversion.
-// Let's use a standard conversion rate for now (e.g., 1 USD = 15 GHS) or just pass the raw amount if the frontend display stays in $.
-// Actually, Paystack expects amount in kobo (lowest currency unit). 
-// I will keep the display in $ but charge in GHS equivalent (x 15 for rough conversion).
-const EXCHANGE_RATE = 15; 
+// GHS amounts matching Paystack plan settings
+const PLAN_AMOUNTS_GHS: { [key: string]: number } = {
+    'Starter': 290,
+    'Pro': 790,
+}; 
 
 const tiers = [
+  // Free tier kept for backend/fallback but hidden from pricing display
   {
     name: "Free",
     price: "$0",
-    amount: 0, 
-    // ... rest of tier data
-
-    description: "For testing the waters.",
+    amount: 0,
+    hidden: true, // Don't show on pricing page
+    description: "Post-trial fallback",
     icon: User,
-    features: [
-      "3 AI-generated forms",
-      "50 responses",
-      "Basic analytics",
-    ],
-    detailedFeatures: [
-      "3 AI-generated forms",
-      "50 responses limit",
-      "Basic Context Interviewer",
-      "Basic analytics dashboard",
-      "Simple themes",
-      "CSV export"
-    ],
-    scenarios: [
-      "You want to test if AI surveys actally work.",
-      "You have a small school project or quick feedback form.",
-      "You don't need deep competitor analysis."
-    ],
-    cta: "Start for Free",
+    features: ["1 survey", "25 responses"],
+    detailedFeatures: ["1 AI survey", "25 responses max", "Basic dashboard"],
+    scenarios: [],
+    cta: "Current Plan",
     variant: "outline"
   },
   {
@@ -63,59 +46,60 @@ const tiers = [
     price: "$29",
     period: "/mo",
     unit: "per workspace",
-    description: "For founders who need speed. (Billed in GHS equivalent)",
+    trial: true, // 14-day free trial
+    description: "For solo founders who move fast.",
     icon: Zap,
     features: [
-      "Socratic Genesis Agent",
-      "Daily Market Monitoring",
-      "Basic Gap Analysis",
-      "Magic Link Distribution",
+      "Unlimited surveys",
+      "Track 3 competitors",
+      "Daily updates",
+      "Easy sharing",
     ],
     detailedFeatures: [
-      "Socratic Genesis Agent (Vagueness Detection)",
-      "Daily Competitor Scans (Passive)",
-      "Basic Gap Analysis (1 Insight/Competitor)",
-      "Magic Link (Auto-drafted Reddit/Social posts)",
-      "Track 3 Competitors",
       "Unlimited surveys & responses",
-      "Shareable Live Reports"
+      "Geniy digs deeper with smarter questions",
+      "Track up to 3 competitors",
+      "Get daily competitor updates",
+      "Basic gap analysis (what they're missing)",
+      // "One-click sharing to Reddit, Twitter, etc.",
+      "Shareable live reports"
     ],
     scenarios: [
-      "You are a solo founder launching a new product.",
-      "You need to know what's trending right now.",
-      "You want to quickly validate an idea before building."
+      "You're launching something and need answers fast.",
+      "You want to know what competitors are up to.",
+      "You're validating before you build."
     ],
-    cta: "View Starter Details",
-    finalCta: "Get Starter",
-    variant: "secondary"
+    cta: "Start 14-Day Free Trial",
+    finalCta: "Start Free Trial",
+    variant: "primary"
   },
   {
     name: "Pro",
     price: "$79",
     period: "/mo",
     unit: "per workspace",
-    description: "For teams who need deep intel. (Billed in GHS equivalent)",
+    description: "For teams who want the full picture.",
     popular: true,
     icon: Sparkles,
     features: [
-      "Real-time Competitor Alerts",
-      "Live Pulse (Slack/Discord)",
-      "Deep Strategic Gap Analysis",
-      "Track 10 Competitors",
+      "Track 10 competitors",
+      "Real-time alerts",
+      "Slack & Discord",
+      "5 team seats",
     ],
     detailedFeatures: [
-      "Real-time Competitor Alerts (Instant Notifications)",
-      "Live Pulse Integration (Slack & Discord Webhooks)",
-      "Deep Strategic Gap Analysis (Full SWOT & Opportunities)",
-      "Inbound Intelligence (Email Forwarding)",
-      "Track up to 10 Competitors",
-      "5 Team Seats (Confined to this workspace)",
-      "Detailed Strategy Reports"
+      "Everything in Starter, plus:",
+      "Track up to 10 competitors",
+      "Get notified instantly when competitors change",
+      "Full SWOT analysis for each competitor",
+      "Alerts in Slack or Discord",
+      "Invite up to 5 teammates",
+      "Detailed strategy reports"
     ],
     scenarios: [
-      "You are a serious startup or agency.",
-      "You need to spy on competitor pricing and hidden features.",
-      "You have a team that needs access to insights."
+      "You have a team that needs access.",
+      "You want to catch competitor moves as they happen.",
+      "You need deep competitive intelligence."
     ],
     cta: "View Pro Details",
     finalCta: "Get Pro",
@@ -127,21 +111,21 @@ const tiers = [
     description: "For large organizations.",
     icon: Building2,
     features: [
-      "White-labeling",
-      "Private AI Models",
-      "Private data storage",
+      "White-label",
+      "Custom AI",
+      "Dedicated support",
     ],
     detailedFeatures: [
-      "White-labeling (Remove Geniy branding)",
-      "Private AI Models trained on your data",
-      "Private data storage (Compliance)",
-      "SSO & Audit Logs",
-      "Dedicated Success Manager"
+      "Remove Geniy branding (your brand only)",
+      "AI trained on your company's data",
+      "Compliant data storage",
+      "SSO & audit logs",
+      "Dedicated success manager"
     ],
     scenarios: [
-      "You need custom compliance or security.",
-      "You want to resell Geniy technology.",
-      "You have massive data volume needs."
+      "You need enterprise security or compliance.",
+      "You want to resell or embed Geniy.",
+      "You have high-volume needs."
     ],
     cta: "Contact Sales",
     variant: "outline"
@@ -160,6 +144,10 @@ interface PricingProps {
 export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
   const { user, token, completeGoogleSignup } = useAuth()
   const router = useRouter()
+  
+  // Auth modal state for pricing flow
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [selectedTierForAuth, setSelectedTierForAuth] = useState<{ name: string; trial?: boolean } | null>(null)
   
   // ... inside Pricing component
   const [pendingPayment, setPendingPayment] = useState<any>(null);
@@ -199,17 +187,102 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
       router.push('/dashboard');
   }
 
+  // Open auth modal with selected tier (for landing page signups)
+  const openAuthForTier = (tierName: string, hasTrial: boolean) => {
+    setSelectedTierForAuth({ name: tierName, trial: hasTrial });
+    setShowAuthModal(true);
+  }
+
+  // Handle auth success from pricing modal - initialize subscription
+  const onPricingAuthSuccess = async () => {
+    const tierInfo = selectedTierForAuth;
+    setShowAuthModal(false);
+    setSelectedTierForAuth(null);
+
+    // If no tier selected, just go to dashboard
+    if (!tierInfo) {
+      router.push('/dashboard');
+      return;
+    }
+
+    // Both STARTER (trial) and PRO need to go through Paystack for card authorization
+    try {
+      // Get user info from auth context or session
+      const userEmail = user?.email;
+      const workspaceId = user?.workspaces?.[0]?.id;
+
+      if (!userEmail || !workspaceId) {
+        console.error('Missing user email or workspace');
+        router.push('/dashboard');
+        return;
+      }
+
+      // Store pending subscription info for callback page
+      localStorage.setItem('pendingSubscription', JSON.stringify({
+        workspaceId,
+        planTier: tierInfo.name.toUpperCase(),
+        hasTrial: tierInfo.trial || false
+      }));
+
+      // Initialize Paystack subscription
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          planTier: tierInfo.name.toUpperCase(),
+          workspaceId,
+          hasTrial: tierInfo.trial || false
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to initialize subscription');
+      }
+
+      const data = await response.json();
+      
+      // Redirect to Paystack checkout
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error('No authorization URL returned');
+      }
+
+    } catch (error) {
+      console.error('Subscription initialization error:', error);
+      toast.error('Failed to initialize payment. Please try again.');
+      router.push('/dashboard');
+    }
+  }
+
   return (
     <section id="pricing" className="py-24 border-t border-zinc-200/50 dark:border-zinc-800/50 transition-colors duration-300">
+      {/* Auth Modal for Pricing Signup */}
+      <AuthModal 
+        open={showAuthModal} 
+        onOpenChange={setShowAuthModal} 
+        onSuccess={onPricingAuthSuccess}
+        mode={selectedTierForAuth?.trial ? 'trial' : 'default'}
+        defaultTier={selectedTierForAuth?.name.toUpperCase()}
+      />
+      
       {/* ... header ... */}
        <div className="container mx-auto px-4 md:px-6">
         {mode === 'landing' && (
             <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground mb-6">
-                Simple pricing, powerful insights.
+                Start your 14-day free trial.
             </h2>
             <p className="text-lg text-zinc-600 dark:text-zinc-500">
-                Start for free. Upgrade when you need deeper intelligence.
+                No credit card required. Full access to Starter features.
+            </p>
+            <p className="text-sm text-zinc-400 dark:text-zinc-600 mt-3">
+                Prices shown in USD • Billed in GHS at equivalent rate
             </p>
             </div>
         )}
@@ -226,17 +299,26 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
             />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {tiers.map((tier, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-center">
+          {tiers.filter(tier => !(tier as any).hidden).map((tier, index) => (
              <Dialog key={index}>
               <DialogTrigger asChild>
                 <Card 
-                  className={`cursor-pointer flex flex-col h-full bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-violet-500/50 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-md ${tier.popular ? 'border-violet-500 shadow-lg shadow-violet-500/10 relative ring-1 ring-violet-500 dark:ring-0' : ''}`}
+                  className={`cursor-pointer flex flex-col bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-violet-500/50 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-md relative ${
+                    tier.popular 
+                      ? 'border-violet-500 shadow-xl shadow-violet-500/20 ring-2 ring-violet-500 scale-105 z-10 py-4' 
+                      : ''
+                  } ${(tier as any).trial ? 'border-violet-400/50 shadow-lg' : ''}`}
                 >
                    {/* ... Card content (unchanged) ... */}
                   {tier.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-none shadow-lg px-4 py-1">Most Popular</Badge>
+                    </div>
+                  )}
+                  {(tier as any).trial && !tier.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-violet-600 hover:bg-violet-700 text-white border-none shadow-md">Most Popular</Badge>
+                      <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 border-violet-500/30 shadow-sm">14-Day Free Trial</Badge>
                     </div>
                   )}
                   <CardHeader>
@@ -324,6 +406,7 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
                       user={user} 
                       googleUser={googleUser}
                       onRequestPayment={() => handlePaymentRequest(tier)}
+                      onOpenAuthForTier={openAuthForTier}
                    />
                 </DialogFooter>
               </DialogContent>
@@ -339,7 +422,13 @@ export function Pricing({ mode = 'landing', googleUser }: PricingProps) {
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_b8e5c1056588675459341490212f464010531535';
 
 // 1. Action Button (Inside Dialog) - Handles Logic & Closes Dialog
-function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: any, user: any, googleUser?: any, onRequestPayment: () => void }) {
+function PayActionButton({ tier, user, googleUser, onRequestPayment, onOpenAuthForTier }: { 
+    tier: any, 
+    user: any, 
+    googleUser?: any, 
+    onRequestPayment: () => void,
+    onOpenAuthForTier?: (tierName: string, hasTrial: boolean) => void 
+}) {
     const router = useRouter();
     const { completeGoogleSignup } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -351,7 +440,12 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     // Simplified for button:
     const handleClick = async () => {
         if (!user && !googleUser) {
-             router.push('/?auth=signup');
+             // Open auth modal with selected tier instead of redirecting
+             if (onOpenAuthForTier) {
+               onOpenAuthForTier(tier.name.toUpperCase(), !!(tier as any).trial);
+             } else {
+               router.push('/?auth=signup');
+             }
              return;
         }
 
@@ -406,7 +500,6 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
     // 2. Native Paystack Payment Launcher (Bypasses react-paystack for reliability)
  function PaymentLauncher({ tier, user, googleUser: propGoogleUser, onSuccess, onClose, mode }: any) {
     const { token, completeGoogleSignup } = useAuth();
-    const [rate, setRate] = useState(15);
     const [paystackLoaded, setPaystackLoaded] = useState(false);
     
     // Stable reference (recover from storage if exists)
@@ -450,21 +543,9 @@ function PayActionButton({ tier, user, googleUser, onRequestPayment }: { tier: a
         }
     }, []);
 
-    // Fetch rate ONCE
-    useEffect(() => {
-        const fetchRate = async () => {
-            try {
-                const res = await fetch('https://open.er-api.com/v6/latest/USD');
-                const data = await res.json();
-                if (data?.rates?.GHS) setRate(data.rates.GHS);
-            } catch (e) {}
-        };
-        fetchRate();
-    }, []);
-
-    const priceInUSD = parseInt(tier.price.replace('$', ''));
-    const amountInGHS = priceInUSD * rate;
-    const amountInKobo = Math.round(amountInGHS * 100); 
+    // Use fixed GHS amounts matching Paystack plan settings
+    const amountInGHS = PLAN_AMOUNTS_GHS[tier.name] || 290;
+    const amountInKobo = amountInGHS * 100; 
 
     const onVerificationSuccess = async (ref: string) => {
         setVerifying(true);

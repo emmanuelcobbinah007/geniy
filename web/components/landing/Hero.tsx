@@ -89,6 +89,7 @@ export function Hero() {
         open={showAuthModal} 
         onOpenChange={setShowAuthModal} 
         onSuccess={handleAuthSuccess}
+        mode="trial"
       />
 
       {/* Background Image & Effects */}
