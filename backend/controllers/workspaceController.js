@@ -124,15 +124,16 @@ const getWorkspaceMembers = async (req, res) => {
 // @route   POST /api/workspaces
 // @access  Private
 const createWorkspace = async (req, res) => {
-    const { name } = req.body;
+    const { name, planTier = 'FREE' } = req.body;
 
     try {
         const workspace = await prisma.$transaction(async (prisma) => {
-            // 1. Create Workspace
+            // 1. Create Workspace with planTier
             const newWorkspace = await prisma.workspace.create({
                 data: {
                     name,
                     ownerId: req.user.id,
+                    planTier: planTier, // Set the plan tier
                 },
             });
 
@@ -144,6 +145,23 @@ const createWorkspace = async (req, res) => {
                     role: 'OWNER',
                 },
             });
+
+            // 3. Create Subscription record (if not FREE)
+            if (planTier !== 'FREE') {
+                const now = new Date();
+                const trialEnd = new Date();
+                trialEnd.setDate(now.getDate() + 14); // 14-day trial
+
+                await prisma.subscription.create({
+                    data: {
+                        workspaceId: newWorkspace.id,
+                        planTier: planTier,
+                        status: 'trialing',
+                        currentPeriodStart: now,
+                        currentPeriodEnd: trialEnd,
+                    },
+                });
+            }
 
             return newWorkspace;
         });

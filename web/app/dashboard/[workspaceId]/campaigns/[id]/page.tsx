@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 import { toast } from "sonner"
+import { GatedButton, GatedFeature } from "@/components/ui/gated-feature"
 
 export default function CampaignInsightsPage({ params }: { params: Promise<{ workspaceId: string, id: string }> }) {
   const { workspaceId, id } = use(params)
@@ -172,15 +173,14 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
             Preview
           </Button>
 
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="flex-1 md:flex-none border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+          <GatedButton 
+            feature="csvExport"
             onClick={handleExport}
+            className="flex-1 md:flex-none border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
           >
             <Download className="mr-2 h-4 w-4" />
             Export CSV
-          </Button>
+          </GatedButton>
           
           <Popover>
             <PopoverTrigger asChild>
@@ -224,10 +224,12 @@ export default function CampaignInsightsPage({ params }: { params: Promise<{ wor
 
         {/* Sidebar: Geniy Consultant (1/3) */}
         <motion.div variants={item} className="space-y-6">
-          <GeniyRecommendations 
-            campaignId={campaign.id} 
-            hasResponses={(survey?._count?.responses || 0) > 0}
-          />
+          <GatedFeature feature="aiInsights">
+            <GeniyRecommendations 
+              campaignId={campaign.id} 
+              hasResponses={(survey?._count?.responses || 0) > 0}
+            />
+          </GatedFeature>
         </motion.div>
       </div>
     </motion.div>

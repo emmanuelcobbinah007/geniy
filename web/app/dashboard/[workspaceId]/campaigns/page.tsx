@@ -11,12 +11,14 @@ import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import { GatedButton } from "@/components/ui/gated-feature"
 
 export default function CampaignsPage() {
   const { user, token } = useAuth()
   const params = useParams()
   const workspaceId = params?.workspaceId as string
+  const router = useRouter()
   
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', workspaceId],
@@ -59,12 +61,14 @@ export default function CampaignsPage() {
             Manage your research projects, track responses, and uncover AI-driven insights.
           </p>
         </div>
-        <Link href={`/create-survey?workspaceId=${workspaceId}`}>
-          <Button size="lg" className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 rounded-full px-6">
-            <Plus className="mr-2 h-5 w-5" />
-            New Survey
-          </Button>
-        </Link>
+        <GatedButton 
+          limit="surveys"
+          onClick={() => router.push(`/create-survey?workspaceId=${workspaceId}`)}
+          className="bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 rounded-full px-6"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          New Survey
+        </GatedButton>
       </motion.div>
 
       {/* Filters */}
@@ -100,12 +104,13 @@ export default function CampaignsPage() {
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto text-center">
                     Create your first campaign to start gathering insights from your users.
                 </p>
-                <Link href={`/create-survey?workspaceId=${workspaceId}`}>
-                    <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Campaign
-                    </Button>
-                </Link>
+                <GatedButton 
+                  limit="surveys"
+                  onClick={() => router.push(`/create-survey?workspaceId=${workspaceId}`)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Campaign
+                </GatedButton>
             </div>
         ) : (
             campaigns?.map((campaign: any) => (

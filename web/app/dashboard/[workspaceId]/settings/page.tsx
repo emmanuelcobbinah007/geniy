@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge"
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog"
 import { DomainsSettings } from "@/components/settings/DomainsSettings"
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings"
+import { GatedFeature, GatedButton } from "@/components/ui/gated-feature"
+import { useGatingContext } from "@/context/gating-context"
 
 const PLANS = [
     {
@@ -236,11 +238,50 @@ export default function SettingsPage() {
                         <Plus className="w-4 h-4 mr-2" /> New Workspace
                     </Button>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
+                  {/* Workspace Name */}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Workspace Name</label>
                     <Input value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} className="bg-white dark:bg-zinc-950/50 border-zinc-200 dark:border-zinc-800" />
                   </div>
+                  
+                  {/* Workspace Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Plan Tier */}
+                    <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
+                      <div className="text-xs text-zinc-500 mb-1">Plan</div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={
+                          currentWorkspace?.planTier === 'PRO' 
+                            ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' 
+                            : currentWorkspace?.planTier === 'STARTER'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                        }>
+                          {currentWorkspace?.planTier || 'FREE'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {/* Team Members */}
+                    <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
+                      <div className="text-xs text-zinc-500 mb-1">Team Members</div>
+                      <div className="text-lg font-semibold">{members?.length || 1}</div>
+                    </div>
+                    
+                    {/* Campaigns/Surveys */}
+                    <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
+                      <div className="text-xs text-zinc-500 mb-1">Surveys</div>
+                      <div className="text-lg font-semibold">{workspace?.campaigns?.length || 0}</div>
+                    </div>
+                    
+                    {/* Competitors */}
+                    <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30">
+                      <div className="text-xs text-zinc-500 mb-1">Competitors</div>
+                      <div className="text-lg font-semibold">{workspace?.competitors?.length || 0}</div>
+                    </div>
+                  </div>
+                  
                   <div className="flex justify-end">
                     <Button 
                         onClick={() => updateWorkspaceMutation.mutate()}
@@ -264,48 +305,13 @@ export default function SettingsPage() {
                     <CardTitle>Team Members</CardTitle>
                     <CardDescription>Manage who has access to this workspace.</CardDescription>
                   </div>
-                  <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white w-full md:w-auto">
-                                <Plus className="w-4 h-4 mr-2" /> Add Member
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
-                            <DialogHeader>
-                                <DialogTitle className="text-zinc-900 dark:text-white">Add Team Member</DialogTitle>
-                                <DialogDescription className="text-zinc-500 dark:text-zinc-400">Invite a user to your workspace by email.</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-900 dark:text-white">Workspace</label>
-                                    <select 
-                                        className="w-full p-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-2 focus:ring-violet-600 outline-none"
-                                        value={selectedWorkspaceId}
-                                        onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-                                    >
-                                        {user?.workspaces?.map((ws: any) => (
-                                            <option key={ws.id} value={ws.id}>{ws.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-zinc-900 dark:text-white">Email Address</label>
-                                    <Input 
-                                        placeholder="colleague@example.com" 
-                                        value={newMemberEmail}
-                                        onChange={(e) => setNewMemberEmail(e.target.value)}
-                                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400"
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="ghost" onClick={() => setIsAddMemberOpen(false)} className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Button>
-                                <Button onClick={() => addMemberMutation.mutate()} disabled={addMemberMutation.isPending} className="bg-violet-600 hover:bg-violet-700 text-white">
-                                    {addMemberMutation.isPending ? "Adding..." : "Add Member"}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                  <GatedButton 
+                    limit="teamSeats"
+                    onClick={() => setIsAddMemberOpen(true)}
+                    className="bg-violet-600 hover:bg-violet-700 text-white w-full md:w-auto"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add Member
+                  </GatedButton>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -329,20 +335,63 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* Add Member Dialog - separate from button */}
+              <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+                <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+                    <DialogHeader>
+                        <DialogTitle className="text-zinc-900 dark:text-white">Add Team Member</DialogTitle>
+                        <DialogDescription className="text-zinc-500 dark:text-zinc-400">Invite a user to your workspace by email.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-900 dark:text-white">Workspace</label>
+                            <select 
+                                className="w-full p-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-2 focus:ring-violet-600 outline-none"
+                                value={selectedWorkspaceId}
+                                onChange={(e) => setSelectedWorkspaceId(e.target.value)}
+                            >
+                                {user?.workspaces?.map((ws: any) => (
+                                    <option key={ws.id} value={ws.id}>{ws.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-900 dark:text-white">Email Address</label>
+                            <Input 
+                                placeholder="colleague@example.com" 
+                                value={newMemberEmail}
+                                onChange={(e) => setNewMemberEmail(e.target.value)}
+                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsAddMemberOpen(false)} className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Button>
+                        <Button onClick={() => addMemberMutation.mutate()} disabled={addMemberMutation.isPending} className="bg-violet-600 hover:bg-violet-700 text-white">
+                            {addMemberMutation.isPending ? "Adding..." : "Add Member"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </motion.div>
           </TabsContent>
 
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="outline-none">
             <motion.div {...fadeIn}>
-                <IntegrationsSettings workspaceId={workspaceId} initialIntegrations={workspace?.integrations} />
+                <GatedFeature feature="integrations">
+                  <IntegrationsSettings workspaceId={workspaceId} initialIntegrations={workspace?.integrations} />
+                </GatedFeature>
             </motion.div>
           </TabsContent>
 
           {/* Domains Tab */}
           <TabsContent value="domains" className="outline-none">
             <motion.div {...fadeIn}>
-                <DomainsSettings />
+                <GatedFeature feature="customDomains">
+                  <DomainsSettings />
+                </GatedFeature>
             </motion.div>
           </TabsContent>
 

@@ -8,7 +8,8 @@ import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 
 import { Skeleton } from "@/components/ui/skeleton"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import { GatedButton } from "@/components/ui/gated-feature"
 
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const params = useParams()
   const workspaceId = params?.workspaceId as string
   const { user, token } = useAuth()
+  const router = useRouter()
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard', workspaceId],
@@ -108,12 +110,15 @@ export default function DashboardPage() {
             <FileText className="mr-2 h-4 w-4" />
             Upload Context
           </Button>
-          <Link href={`/create-survey?workspaceId=${workspaceId}`} className="flex-1 md:flex-none">
-            <Button id="create-survey-btn" className="w-full md:w-auto bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
-              <Plus className="mr-2 h-4 w-4" />
-              New Survey
-            </Button>
-          </Link>
+          <GatedButton 
+            id="create-survey-btn"
+            limit="surveys"
+            onClick={() => router.push(`/create-survey?workspaceId=${workspaceId}`)}
+            className="w-full md:w-auto bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Survey
+          </GatedButton>
         </div>
       </motion.div>
 

@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge"
 import { LenisScroll } from "@/components/ui/lenis-scroll"
 import { useSearchParams, useRouter } from "next/navigation"
+import { GatedButton, GatedFeature } from "@/components/ui/gated-feature"
 
 interface ContextDocument {
   id: string
@@ -580,7 +581,8 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                                 </h3>
                                                 <p className="text-sm text-zinc-500">Competitor detected from context</p>
                                             </div>
-                                            <Button 
+                                            <GatedButton 
+                                                feature="realTimeScans"
                                                 onClick={() => handleAnalyzeCompetitor(name)}
                                                 disabled={analyzingCompetitor === name || analyzingCompetitors.includes(name) || analyzingCompetitors.includes("ALL")}
                                                 className="w-full md:w-auto"
@@ -596,7 +598,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                                         Analyze Deep Dive
                                                     </>
                                                 )}
-                                            </Button>
+                                            </GatedButton>
                                         </Card>
                                     )}
                                 </div>
@@ -608,6 +610,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
             </TabsContent>
             
             <TabsContent value="strategy" className="flex flex-col gap-4 data-[state=inactive]:hidden">
+                <GatedFeature feature="gapAnalysis">
                 <div className="pr-2 pb-20">
                 <div className="space-y-8 max-w-5xl mx-auto py-4">
                     
@@ -759,6 +762,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                     )}
                     </div>
                 </div>
+                </GatedFeature>
             </TabsContent>
         </Tabs>
 

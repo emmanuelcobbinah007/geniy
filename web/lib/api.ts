@@ -151,8 +151,8 @@ export const api = {
       return this.get(`/workspaces/${id}`, token);
   },
 
-  async createWorkspace(name: string, token: string) {
-    return this.post("/workspaces", { name }, token);
+  async createWorkspace(name: string, token: string, planTier?: string) {
+    return this.post("/workspaces", { name, planTier: planTier || 'FREE' }, token);
   },
 
   async getWorkspaceMembers(id: string, token: string) {

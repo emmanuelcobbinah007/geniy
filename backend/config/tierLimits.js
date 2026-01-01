@@ -19,6 +19,7 @@ const TIER_LIMITS = {
             strategyReports: false,   // Strategy reports
             geniyChat: true,          // Chat with Geniy (available to all)
             realTimeScans: false,     // Real-time competitor scans
+            customDomains: false,     // Custom survey domains
         }
     },
     STARTER: {
@@ -34,6 +35,7 @@ const TIER_LIMITS = {
             strategyReports: false,
             geniyChat: true,
             realTimeScans: false,     // Daily scans only
+            customDomains: false,     // Custom survey domains
         }
     },
     PRO: {
@@ -49,6 +51,7 @@ const TIER_LIMITS = {
             strategyReports: true,
             geniyChat: true,
             realTimeScans: true,      // Real-time scans
+            customDomains: true,      // Custom survey domains
         }
     },
     BUSINESS: {
@@ -64,6 +67,7 @@ const TIER_LIMITS = {
             strategyReports: true,
             geniyChat: true,
             realTimeScans: true,
+            customDomains: true,
         }
     },
     ENTERPRISE: {
@@ -82,6 +86,7 @@ const TIER_LIMITS = {
             whiteLabel: true,        // Enterprise-only
             customAI: true,          // Enterprise-only
             sso: true,               // Enterprise-only
+            customDomains: true,
         }
     }
 };

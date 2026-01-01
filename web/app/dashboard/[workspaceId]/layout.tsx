@@ -2,9 +2,10 @@
 
 import { Sidebar } from "@/components/dashboard/Sidebar"
 import { useAuth } from "@/context/auth-context"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useEffect } from "react"
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
+import { GatingProvider } from "@/context/gating-context"
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,8 @@ export default function DashboardLayout({
 }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const params = useParams()
+  const workspaceId = params?.workspaceId as string
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -33,11 +36,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      <Sidebar />
-      <main className="flex-1 min-w-0 overflow-x-hidden">
-        {children}
-      </main>
-    </div>
+    <GatingProvider workspaceId={workspaceId}>
+      <div className="min-h-screen bg-background flex flex-col md:flex-row">
+        <Sidebar />
+        <main className="flex-1 min-w-0 overflow-x-hidden">
+          {children}
+        </main>
+      </div>
+    </GatingProvider>
   )
 }

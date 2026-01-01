@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
+import { api } from "@/lib/api";
 
 function PaymentCallbackContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your payment...');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { token } = useAuth();
+  const { token, refreshUser } = useAuth();
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -26,43 +27,76 @@ function PaymentCallbackContent() {
       }
 
       try {
-        // Get workspaceId from localStorage (stored before redirect)
+        // Check for pending workspace (new workspace creation flow)
+        const pendingWorkspace = localStorage.getItem('pendingWorkspace');
+        // Check for pending subscription (existing workspace upgrade flow)
         const pendingSubscription = localStorage.getItem('pendingSubscription');
-        if (!pendingSubscription) {
-          throw new Error('No pending subscription found');
+
+        if (pendingWorkspace) {
+          // New workspace creation flow
+          const { name, planTier, hasTrial } = JSON.parse(pendingWorkspace);
+          
+          setMessage('Creating your workspace...');
+          
+          // Create workspace with the selected plan tier
+          const workspace = await api.createWorkspace(name, token!, planTier);
+          
+          // Clear pending data
+          localStorage.removeItem('pendingWorkspace');
+          
+          // Refresh user to get updated workspaces
+          if (refreshUser) {
+            await refreshUser();
+          }
+
+          setStatus('success');
+          setMessage(hasTrial 
+            ? 'Workspace created! Your 14-day trial has started.' 
+            : 'Workspace created! Welcome to Pro!'
+          );
+
+          // Redirect to the new workspace
+          setTimeout(() => {
+            router.push(`/dashboard/${workspace.id}`);
+          }, 2000);
+
+        } else if (pendingSubscription) {
+          // Existing workspace upgrade flow
+          const { workspaceId, planTier } = JSON.parse(pendingSubscription);
+
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              reference: ref,
+              workspaceId,
+              planTier,
+              amount: planTier === 'PRO' ? 1185 : 435, // GHS amounts
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Payment verification failed');
+          }
+
+          // Clear pending subscription data
+          localStorage.removeItem('pendingSubscription');
+
+          setStatus('success');
+          setMessage('Payment successful! Redirecting to your dashboard...');
+
+          // Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+            router.push(`/dashboard/${workspaceId}`);
+          }, 2000);
+
+        } else {
+          throw new Error('No pending payment found. Please try again.');
         }
-
-        const { workspaceId, planTier } = JSON.parse(pendingSubscription);
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            reference: ref,
-            workspaceId,
-            planTier,
-            amount: planTier === 'PRO' ? 1185 : 435, // GHS amounts
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Payment verification failed');
-        }
-
-        // Clear pending subscription data
-        localStorage.removeItem('pendingSubscription');
-
-        setStatus('success');
-        setMessage('Payment successful! Redirecting to your dashboard...');
-
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
 
       } catch (error: any) {
         console.error('Payment verification error:', error);
@@ -74,7 +108,7 @@ function PaymentCallbackContent() {
     if (token) {
       verifyPayment();
     }
-  }, [searchParams, token, router]);
+  }, [searchParams, token, router, refreshUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
@@ -90,7 +124,7 @@ function PaymentCallbackContent() {
         {status === 'success' && (
           <>
             <CheckCircle className="w-16 h-16 mx-auto text-emerald-500 mb-6" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Payment Successful!</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Success!</h1>
             <p className="text-zinc-500 mb-6">{message}</p>
             <Button onClick={() => router.push('/dashboard')} className="bg-violet-600 hover:bg-violet-700">
               Go to Dashboard

@@ -34,11 +34,12 @@ router.put('/:id/integrations', protect, requireFeature('integrations'), saveInt
 // GATED: Requires integrations feature (PRO+)
 router.post('/:id/integrations/test', protect, requireFeature('integrations'), testIntegrations);
 
-// Domain Routes - Available to all (custom domain for surveys)
-router.post('/:workspaceId/domains', protect, addDomain);
+// Domain Routes
+// GATED: Requires customDomains feature (PRO+)
+router.post('/:workspaceId/domains', protect, requireFeature('customDomains'), addDomain);
 router.get('/:workspaceId/domains', protect, getDomains);
-router.post('/:workspaceId/domains/:domainId/verify', protect, verifyDomain);
-router.delete('/:workspaceId/domains/:domainId', protect, deleteDomain);
+router.post('/:workspaceId/domains/:domainId/verify', protect, requireFeature('customDomains'), verifyDomain);
+router.delete('/:workspaceId/domains/:domainId', protect, requireFeature('customDomains'), deleteDomain);
 
 // Get gating info (limits and feature access for UI)
 const { getGatingInfo } = require('../middleware/gatingMiddleware');

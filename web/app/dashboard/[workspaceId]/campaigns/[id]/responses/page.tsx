@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog"
 
 import { ExportButton } from "@/components/analytics/ExportButton"
+import { GatedFeature } from "@/components/ui/gated-feature"
 
 export default function CampaignResultsPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const { id, workspaceId } = use(params)
@@ -100,11 +101,13 @@ export default function CampaignResultsPage({ params }: { params: Promise<{ id: 
           <h1 className="text-3xl font-bold font-display tracking-tight text-zinc-900 dark:text-white">Results & Analytics</h1>
         </div>
         <div className="flex gap-2">
-            <ExportButton 
-                campaignName={campaign?.name || "Campaign"} 
-                responses={responses} 
-                targetElementId="dashboard-content" 
-            />
+            <GatedFeature feature="csvExport">
+              <ExportButton 
+                  campaignName={campaign?.name || "Campaign"} 
+                  responses={responses} 
+                  targetElementId="dashboard-content" 
+              />
+            </GatedFeature>
         </div>
       </div>
 
