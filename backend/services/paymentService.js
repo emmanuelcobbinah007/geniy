@@ -48,13 +48,26 @@ const PaymentService = {
      * @param {string} planTier - STARTER or PRO
      * @param {string} workspaceId - Workspace ID to attach to metadata
      * @param {boolean} hasTrial - Whether to include 14-day trial
+     * @param {boolean} isUpgrade - Whether this is an upgrade (not new workspace)
+     * @param {string} workspaceName - Name for new workspace (if applicable)
      * @returns {Promise<{authorization_url: string, reference: string}>}
      */
-    async initializePaystackSubscription({ email, planTier, workspaceId, hasTrial = false }) {
+    async initializePaystackSubscription({ email, planTier, workspaceId, hasTrial = false, isUpgrade = false, workspaceName = null }) {
         const planCode = PLAN_CODES[planTier];
 
         if (!planCode) {
             throw new Error(`Invalid plan tier: ${planTier}`);
+        }
+
+        // Plan amounts must match exactly what's in Paystack dashboard (in pesewas)
+        const PLAN_AMOUNTS = {
+            STARTER: 29000,  // GHS 290
+            PRO: 79000,      // GHS 790 (as per Paystack dashboard)
+        };
+
+        const amount = PLAN_AMOUNTS[planTier];
+        if (!amount) {
+            throw new Error(`No amount configured for plan: ${planTier}`);
         }
 
         // Calculate trial end date (14 days from now)
@@ -63,26 +76,35 @@ const PaymentService = {
 
         try {
             // Initialize transaction that will create a subscription
+            // Amount must match the plan's amount in Paystack
             const response = await axios.post(
                 `${PAYSTACK_BASE_URL}/transaction/initialize`,
                 {
                     email,
+                    amount, // Must match plan amount exactly
                     plan: planCode,
                     callback_url: `${process.env.FRONTEND_URL}/payment/callback`,
                     metadata: {
                         workspaceId,
                         planTier,
                         hasTrial,
+                        isUpgrade,
+                        workspaceName,
                         custom_fields: [
                             {
                                 display_name: "Plan",
                                 variable_name: "plan_name",
                                 value: planTier
+                            },
+                            {
+                                display_name: "Type",
+                                variable_name: "payment_type",
+                                value: isUpgrade ? "Upgrade" : "New Subscription"
                             }
                         ]
                     },
-                    // If trial, set start_date to 14 days from now (first charge delayed)
-                    ...(hasTrial && { start_date: trialEndDate.toISOString() })
+                    // If trial (and not upgrade), set start_date to 14 days from now (first charge delayed)
+                    ...(hasTrial && !isUpgrade && { start_date: trialEndDate.toISOString() })
                 },
                 {
                     headers: {
@@ -147,9 +169,13 @@ const PaymentService = {
             },
         });
 
-        // 4. Log the transaction
-        await prisma.transaction.create({
-            data: {
+        // 4. Log the transaction (upsert to handle duplicate webhook/callback calls)
+        await prisma.transaction.upsert({
+            where: { reference },
+            update: {
+                status: 'success',
+            },
+            create: {
                 workspaceId,
                 amount: amount,
                 currency: verification.data.currency,

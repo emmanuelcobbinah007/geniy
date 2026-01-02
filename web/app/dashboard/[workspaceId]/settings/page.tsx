@@ -27,6 +27,7 @@ import { DomainsSettings } from "@/components/settings/DomainsSettings"
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings"
 import { GatedFeature, GatedButton } from "@/components/ui/gated-feature"
 import { useGatingContext } from "@/context/gating-context"
+import { useUpgradeModal } from "@/components/ui/upgrade-modal"
 
 const PLANS = [
     {
@@ -81,9 +82,9 @@ export default function SettingsPage() {
   // New State
   const [newMemberEmail, setNewMemberEmail] = useState("")
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(workspaceId || "")
-  const [isPricingOpen, setIsPricingOpen] = useState(false)
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
+  const upgradeModal = useUpgradeModal()
 
   // Update User Mutation
   const updateUserMutation = useMutation({
@@ -181,11 +182,21 @@ export default function SettingsPage() {
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Current Plan</CardTitle>
-                        <CardDescription>You are currently on the <span className="font-medium text-violet-600 dark:text-violet-400">Free Plan</span>.</CardDescription>
+                        <CardDescription>
+                          You are currently on the{" "}
+                          <span className="font-medium text-violet-600 dark:text-violet-400">
+                            {currentWorkspace?.planTier || "FREE"} Plan
+                          </span>.
+                        </CardDescription>
                     </div>
-                    <Button onClick={() => setIsPricingOpen(true)} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0 w-full md:w-auto">
-                        <Sparkles className="w-4 h-4 mr-2" /> Upgrade
-                    </Button>
+                    {(currentWorkspace?.planTier === "FREE" || !currentWorkspace?.planTier) && (
+                      <Button 
+                          onClick={() => upgradeModal.open({ feature: "upgradePlan", requiredTier: "STARTER" })}
+                          className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0 w-full md:w-auto"
+                      >
+                          <Sparkles className="w-4 h-4 mr-2" /> Upgrade
+                      </Button>
+                    )}
                 </CardHeader>
               </Card>
 
@@ -428,59 +439,6 @@ export default function SettingsPage() {
           </TabsContent>
         </AnimatePresence>
       </Tabs>
-
-      {/* Pricing Modal */}
-      <Dialog open={isPricingOpen} onOpenChange={setIsPricingOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 w-[95vw] md:w-full p-4 md:p-6">
-            <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-center">Simple pricing, power for insights.</DialogTitle>
-                <DialogDescription className="text-center text-lg text-zinc-500 dark:text-zinc-400">Start for free. Upgrade when you need deeper intelligence.</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 py-6">
-                {PLANS.map((plan) => (
-                    <Card key={plan.name} className={`relative flex flex-col ${plan.popular ? 'border-violet-500 shadow-lg dark:shadow-violet-900/20' : 'border-zinc-200 dark:border-zinc-800'} bg-white dark:bg-zinc-900`}>
-                        {plan.popular && (
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                Most Popular
-                            </div>
-                        )}
-                        <CardHeader>
-                            <CardTitle className="text-zinc-900 dark:text-white">{plan.name}</CardTitle>
-                            <div className="mt-2">
-                                <span className="text-3xl font-bold text-zinc-900 dark:text-white">{plan.price}</span>
-                                {plan.period && <span className="text-zinc-500 dark:text-zinc-400">{plan.period}</span>}
-                            </div>
-                            <CardDescription className="mt-2 text-zinc-500 dark:text-zinc-400">{plan.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1">
-                            <ul className="space-y-2 text-sm">
-                                {plan.features.map((feature, i) => (
-                                    <li key={i} className="flex items-start gap-2">
-                                        <Check className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" />
-                                        <span className="text-zinc-600 dark:text-zinc-300">{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button 
-                                className={`w-full ${plan.popular ? 'bg-violet-600 hover:bg-violet-700 text-white' : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700'}`} 
-                                variant={plan.popular ? undefined : 'outline'}
-                            >
-                                {plan.name === 'Enterprise' ? 'Contact Sales' : `Get ${plan.name}`}
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="flex justify-center md:hidden mt-4">
-                <Button variant="outline" onClick={() => setIsPricingOpen(false)} className="w-full">
-                    Close
-                </Button>
-            </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

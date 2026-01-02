@@ -61,7 +61,7 @@ export function GatingProvider({ children, workspaceId }: GatingProviderProps) {
       if (!token || !workspaceId) return null;
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/workspaces/${workspaceId}/gating`,
+        `${process.env.NEXT_PUBLIC_API_URL}/workspaces/${workspaceId}/gating`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

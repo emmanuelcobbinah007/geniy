@@ -9,6 +9,7 @@ import { AuthProvider } from "@/context/auth-context"
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
+import { UpgradeModalProvider } from "@/components/providers/upgrade-modal-provider";
 
 const outfit = Outfit({ 
   subsets: ["latin"],
@@ -217,6 +218,7 @@ export default function RootLayout({
                 <SmoothScroll>
                   {children}
                   <Toaster />
+                  <UpgradeModalProvider />
                 </SmoothScroll>
               </ThemeProvider>
             </AuthProvider>

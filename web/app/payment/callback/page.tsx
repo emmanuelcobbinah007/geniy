@@ -61,10 +61,10 @@ function PaymentCallbackContent() {
           }, 2000);
 
         } else if (pendingSubscription) {
-          // Existing workspace upgrade flow
+          // Existing workspace upgrade flow (legacy)
           const { workspaceId, planTier } = JSON.parse(pendingSubscription);
 
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/verify`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -95,11 +95,76 @@ function PaymentCallbackContent() {
           }, 2000);
 
         } else {
-          throw new Error('No pending payment found. Please try again.');
+          // Check for pending upgrade (from upgrade modal)
+          const pendingUpgrade = localStorage.getItem('pendingUpgrade');
+          
+          if (pendingUpgrade) {
+            const { workspaceId, targetPlan } = JSON.parse(pendingUpgrade);
+            
+            setMessage('Upgrading your workspace...');
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                reference: ref,
+                workspaceId,
+                planTier: targetPlan,
+                amount: targetPlan === 'PRO' ? 1185 : 435, // GHS amounts
+                isUpgrade: true,
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Upgrade verification failed');
+            }
+
+            // Clear pending upgrade data
+            localStorage.removeItem('pendingUpgrade');
+
+            // Refresh user context to get updated workspace
+            if (refreshUser) {
+              await refreshUser();
+            }
+
+            setStatus('success');
+            setMessage(`Upgraded to ${targetPlan}! Redirecting...`);
+
+            // Redirect to dashboard after 2 seconds
+            setTimeout(() => {
+              router.push(`/dashboard/${workspaceId}`);
+            }, 2000);
+          } else {
+            throw new Error('No pending payment found. Please try again.');
+          }
         }
 
       } catch (error: any) {
         console.error('Payment verification error:', error);
+        
+        // If it's a duplicate reference error, treat as success (webhook already processed)
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('Unique constraint') || errorMessage.includes('reference')) {
+          // Payment was already processed by webhook - this is actually success!
+          const pendingUpgrade = localStorage.getItem('pendingUpgrade');
+          if (pendingUpgrade) {
+            const { workspaceId, targetPlan } = JSON.parse(pendingUpgrade);
+            localStorage.removeItem('pendingUpgrade');
+            
+            setStatus('success');
+            setMessage(`Upgraded to ${targetPlan}! Redirecting...`);
+            
+            setTimeout(() => {
+              router.push(`/dashboard/${workspaceId}`);
+            }, 1500);
+            return;
+          }
+        }
+        
         setStatus('error');
         setMessage(error.message || 'Payment verification failed');
       }

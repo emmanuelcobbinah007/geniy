@@ -32,16 +32,24 @@ exports.verifyPayment = async (req, res) => {
 };
 
 /**
- * Initialize a subscription with Paystack (for pricing modal signup)
+ * Initialize a subscription with Paystack (for pricing modal signup or upgrade)
  * Creates authorization URL for user to enter card details
  */
 exports.initializeSubscription = async (req, res) => {
     try {
-        const { email, planTier, workspaceId, hasTrial } = req.body;
+        const { email, planTier, workspaceId, hasTrial, isUpgrade, isNewWorkspace, workspaceName } = req.body;
 
-        if (!email || !planTier || !workspaceId) {
-            return res.status(400).json({ error: 'Missing required fields: email, planTier, workspaceId' });
+        if (!email || !planTier) {
+            return res.status(400).json({ error: 'Missing required fields: email, planTier' });
         }
+
+        // For upgrades, workspaceId is required
+        if (isUpgrade && !workspaceId) {
+            return res.status(400).json({ error: 'workspaceId is required for upgrades' });
+        }
+
+        // For new workspace, workspaceName is helpful but not required here
+        // (workspace created after payment callback)
 
         // Validate tier
         if (!['STARTER', 'PRO'].includes(planTier)) {
@@ -51,8 +59,10 @@ exports.initializeSubscription = async (req, res) => {
         const result = await PaymentService.initializePaystackSubscription({
             email,
             planTier,
-            workspaceId,
-            hasTrial: hasTrial === true
+            workspaceId: workspaceId || 'pending', // Use 'pending' for new workspace flows
+            hasTrial: hasTrial === true && !isUpgrade, // No trial for upgrades
+            isUpgrade: isUpgrade === true,
+            workspaceName: workspaceName || null,
         });
 
         res.status(200).json({
