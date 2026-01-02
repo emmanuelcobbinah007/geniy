@@ -371,9 +371,14 @@ class GenesisAgent {
      * Helper to execute AI call with retry logic
      */
     async completeWithRetry(prompt, model, jsonMode, maxTokens, retries = 1) {
+        // Perplexity models don't support response_format, so disable jsonMode for API call
+        // but still parse the result as JSON if jsonMode was requested
+        const isPerplexity = model.startsWith('perplexity/');
+        const useApiJsonMode = jsonMode && !isPerplexity;
+
         for (let i = 0; i <= retries; i++) {
             try {
-                const result = await openRouter.complete(prompt, model, jsonMode, maxTokens);
+                const result = await openRouter.complete(prompt, model, useApiJsonMode, maxTokens);
                 if (jsonMode) {
                     return this.safeParse(result);
                 }

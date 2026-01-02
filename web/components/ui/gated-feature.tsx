@@ -351,6 +351,7 @@ interface GatedButtonProps {
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 export function GatedButton({
@@ -360,6 +361,7 @@ export function GatedButton({
   onClick,
   className,
   disabled,
+  id,
 }: GatedButtonProps) {
   const { hasFeature, canCreate, tier, isLoading } = useGatingContext();
   const upgradeModal = useUpgradeModal();
@@ -390,6 +392,7 @@ export function GatedButton({
 
   return (
     <Button
+      id={id}
       onClick={handleClick}
       disabled={disabled || isLoading}
       className={cn(
