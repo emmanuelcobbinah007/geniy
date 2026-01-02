@@ -68,7 +68,7 @@ const getUserWithWorkspaces = async (userId) => {
 // @route   POST /api/auth/signup
 // @access  Public
 const signup = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, inviteCode } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ message: 'Please add all fields' });
@@ -82,6 +82,15 @@ const signup = async (req, res) => {
 
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // Check for valid beta invite code
+        // Beta codes can be configured in environment or hardcoded for simplicity
+        const VALID_BETA_CODES = (process.env.BETA_INVITE_CODES || 'GENIY-BETA-2026,BETA-TESTER-VIP').split(',').map(c => c.trim().toUpperCase());
+        const isBetaTester = inviteCode && VALID_BETA_CODES.includes(inviteCode.trim().toUpperCase());
+
+        if (isBetaTester) {
+            console.log(`[Auth] Beta tester signup with code: ${inviteCode} for ${email}`);
         }
 
         // Hash password
@@ -99,11 +108,12 @@ const signup = async (req, res) => {
                 },
             });
 
-            // 2. Create Default Workspace
+            // 2. Create Default Workspace (with PRO tier for beta testers)
             const workspace = await prisma.workspace.create({
                 data: {
                     name: `${name}'s Workspace`,
                     ownerId: newUser.id,
+                    planTier: isBetaTester ? 'PRO' : 'FREE',
                 },
             });
 
@@ -116,14 +126,19 @@ const signup = async (req, res) => {
                 },
             });
 
-            // 4. Create Default Free Subscription
+            // 4. Create Subscription (PRO for beta testers, FREE otherwise)
             await prisma.subscription.create({
                 data: {
                     workspaceId: workspace.id,
-                    planTier: 'FREE',
+                    planTier: isBetaTester ? 'PRO' : 'FREE',
                     status: 'active',
                     currentPeriodStart: new Date(),
-                    currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 100)), // Forever
+                    // Beta testers get 1 year PRO access, FREE gets forever
+                    currentPeriodEnd: isBetaTester
+                        ? new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                        : new Date(new Date().setFullYear(new Date().getFullYear() + 100)),
+                    // Mark as beta for tracking purposes
+                    paystackEmailToken: isBetaTester ? `BETA:${inviteCode.trim().toUpperCase()}` : null,
                 }
             });
 
@@ -193,7 +208,7 @@ const completeGoogleSignup = async (req, res) => {
         return res.status(400).json({ message: 'Invalid request: Missing googleUser' });
     }
 
-    const { googleUser, planTier, paymentReference } = req.body;
+    const { googleUser, planTier, paymentReference, inviteCode } = req.body;
 
     if (!googleUser) {
         return res.status(400).json({ message: 'Invalid user data' });
@@ -205,6 +220,17 @@ const completeGoogleSignup = async (req, res) => {
         console.error("Invalid googleUser data (no email or name):", googleUser);
         return res.status(400).json({ message: 'Invalid user data' });
     }
+
+    // Check for valid beta invite code
+    const VALID_BETA_CODES = (process.env.BETA_INVITE_CODES || 'GENIY-BETA-2026,BETA-TESTER-VIP').split(',').map(c => c.trim().toUpperCase());
+    const isBetaTester = inviteCode && VALID_BETA_CODES.includes(inviteCode.trim().toUpperCase());
+
+    if (isBetaTester) {
+        console.log(`[Auth] Beta tester Google signup with code: ${inviteCode} for ${email}`);
+    }
+
+    // Override plan tier for beta testers
+    const effectivePlanTier = isBetaTester ? 'PRO' : planTier;
 
     try {
         console.log("Checking existing user:", email);
@@ -249,7 +275,7 @@ const completeGoogleSignup = async (req, res) => {
                 data: {
                     name: `${name.split(' ')[0]}'s Workspace`,
                     ownerId: newUser.id,
-                    planTier: planTier
+                    planTier: effectivePlanTier
                 }
             });
 
@@ -272,16 +298,31 @@ const completeGoogleSignup = async (req, res) => {
 
             const startDate = new Date();
             const endDate = new Date();
-            endDate.setDate(startDate.getDate() + 30); // 30 day billing period
 
-            if (planTier !== 'FREE' && paymentReference) {
-                // PAID PLAN: Create subscription with plan tier (will update with auth code after transaction)
-                console.log("[Auth] Creating paid subscription for plan:", planTier);
+            if (isBetaTester) {
+                // BETA TESTER: Create PRO subscription without payment (1 year access)
+                console.log("[Auth] Creating beta tester PRO subscription");
+                endDate.setFullYear(startDate.getFullYear() + 1);
 
                 await prisma.subscription.create({
                     data: {
                         workspaceId: workspace.id,
-                        planTier: planTier,
+                        planTier: 'PRO',
+                        status: 'active',
+                        currentPeriodStart: startDate,
+                        currentPeriodEnd: endDate,
+                        paystackEmailToken: `BETA:${inviteCode.trim().toUpperCase()}`,
+                    }
+                });
+            } else if (effectivePlanTier !== 'FREE' && paymentReference) {
+                // PAID PLAN: Create subscription with plan tier (will update with auth code after transaction)
+                console.log("[Auth] Creating paid subscription for plan:", effectivePlanTier);
+                endDate.setDate(startDate.getDate() + 30); // 30 day billing period
+
+                await prisma.subscription.create({
+                    data: {
+                        workspaceId: workspace.id,
+                        planTier: effectivePlanTier,
                         status: 'active',
                         currentPeriodStart: startDate,
                         currentPeriodEnd: endDate,
@@ -292,7 +333,7 @@ const completeGoogleSignup = async (req, res) => {
                 // Store workspace ID for post-transaction payment verification
                 workspace._needsPaymentVerification = true;
                 workspace._paymentReference = paymentReference;
-                workspace._planTier = planTier;
+                workspace._planTier = effectivePlanTier;
                 workspace._customerEmail = email;
 
                 console.log("[Auth] Paid subscription created (pending payment verification)");

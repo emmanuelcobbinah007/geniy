@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, Lock, ArrowRight, Github, Loader2, User } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { useFormik } from "formik"
 import * as Yup from "yup"
@@ -28,6 +28,10 @@ export function AuthForm({ isModal = false, onSuccess, defaultTier, defaultToSig
   const { login, signup, googleLogin, completeGoogleSignup } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Read invite code from URL (e.g., /auth?invite=BETA-CODE)
+  const inviteCode = searchParams.get('invite')
 
   const validationSchema = Yup.object({
     name: Yup.string().when([], {
@@ -60,9 +64,13 @@ export function AuthForm({ isModal = false, onSuccess, defaultTier, defaultToSig
             router.push("/dashboard")
           }
         } else {
-          await signup(values.name, values.email, values.password)
-          // If defaultTier is set (e.g., from Hero trial flow), skip onboarding
-          if (defaultTier) {
+          await signup(values.name, values.email, values.password, inviteCode || undefined)
+          // If invite code provided (beta tester) OR defaultTier set, skip onboarding
+          if (inviteCode) {
+            // Beta tester with invite code - go straight to dashboard (they have PRO already)
+            router.push("/dashboard")
+            if (onSuccess) onSuccess();
+          } else if (defaultTier) {
             // TODO: Backend needs to handle tier assignment
             // For now, store in session for the onboarding to pick up
             sessionStorage.setItem('defaultTier', defaultTier);
@@ -97,6 +105,15 @@ export function AuthForm({ isModal = false, onSuccess, defaultTier, defaultToSig
         
         // CASE 1: New User (Pending Creation)
         if (result && result.status === 'PENDING') {
+             // If invite code present (beta tester), complete signup with PRO tier
+             if (inviteCode) {
+               // Store invite code for the completion call
+               await completeGoogleSignup(result.googleUser, 'PRO', undefined, inviteCode);
+               router.push("/dashboard");
+               if (onSuccess) onSuccess();
+               return;
+             }
+             
              // If defaultTier set (Hero trial flow), complete signup immediately with that tier
              if (defaultTier) {
                // Complete the signup with the specified tier

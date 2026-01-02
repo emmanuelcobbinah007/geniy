@@ -23,12 +23,12 @@ interface AuthContextType {
   token: string | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  signup: (name: string, email: string, password: string, inviteCode?: string) => Promise<void>
   googleLogin: (code: string) => Promise<any>
   logout: () => void
   refreshUser: () => Promise<void>
   updateUser: (data: any) => Promise<void>
-  completeGoogleSignup: (googleUser: any, planTier: string, paymentReference?: string) => Promise<any>
+  completeGoogleSignup: (googleUser: any, planTier: string, paymentReference?: string, inviteCode?: string) => Promise<any>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -63,8 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
-  const signup = async (name: string, email: string, password: string) => {
-    const data = await api.post("/auth/signup", { name, email, password })
+  const signup = async (name: string, email: string, password: string, inviteCode?: string) => {
+    const data = await api.post("/auth/signup", { name, email, password, inviteCode })
     localStorage.setItem("token", data.token)
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
@@ -94,8 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ["user"] })
   }
 
-  const completeGoogleSignup = async (googleUser: any, planTier: string, paymentReference?: string) => {
-    const data = await api.completeGoogleSignup(googleUser, planTier, paymentReference);
+  const completeGoogleSignup = async (googleUser: any, planTier: string, paymentReference?: string, inviteCode?: string) => {
+    const data = await api.completeGoogleSignup(googleUser, planTier, paymentReference, inviteCode);
     localStorage.setItem("token", data.token);
     await queryClient.invalidateQueries({ queryKey: ["user"] });
     return data;

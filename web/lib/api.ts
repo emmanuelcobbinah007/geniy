@@ -257,7 +257,7 @@ export const api = {
     return this.get(`/campaigns/${campaignId}/insights`, token);
   },
 
-  async completeGoogleSignup(googleUser: any, planTier: string, paymentReference?: string) {
-    return this.post('/auth/complete-google-signup', { googleUser, planTier, paymentReference });
+  async completeGoogleSignup(googleUser: any, planTier: string, paymentReference?: string, inviteCode?: string) {
+    return this.post('/auth/complete-google-signup', { googleUser, planTier, paymentReference, inviteCode });
   },
 };
