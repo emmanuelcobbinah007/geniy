@@ -141,31 +141,57 @@ const PaymentService = {
             throw new Error('Payment verification failed');
         }
 
-        // 2. Determine period (defaulting to 30 days for monthly)
+        // 2. Try to fetch the actual Paystack subscription code
+        let subscriptionCode = verification.data.authorization?.authorization_code;
+        const verifiedEmail = verification.data.customer?.email || customerEmail;
+
+        if (verifiedEmail) {
+            try {
+                // Wait a moment for Paystack to process the subscription
+                await new Promise(r => setTimeout(r, 2000));
+
+                // Fetch customer's subscriptions from Paystack
+                const subsRes = await axios.get(`${PAYSTACK_BASE_URL}/subscription?customer=${encodeURIComponent(verifiedEmail)}`, {
+                    headers: {
+                        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
+                    }
+                });
+
+                if (subsRes.data.status && subsRes.data.data?.length > 0) {
+                    // Get the most recent active subscription
+                    const activeSub = subsRes.data.data.find(s => s.status === 'active') || subsRes.data.data[0];
+                    subscriptionCode = activeSub.subscription_code;
+                    console.log("[PaymentService] Found Paystack subscription:", subscriptionCode);
+                }
+            } catch (subErr) {
+                console.warn("[PaymentService] Could not fetch subscription:", subErr.message);
+            }
+        }
+
+        // 3. Determine period (defaulting to 30 days for monthly)
         const startDate = new Date();
         const endDate = new Date();
         endDate.setDate(startDate.getDate() + 30);
 
-        // 3. Create or Update Subscription in DB
-        // We use upsert to handle upgrading/downgrading gracefully
+        // 4. Create or Update Subscription in DB
         const subscription = await prisma.subscription.upsert({
             where: { workspaceId },
             update: {
                 planTier,
                 status: 'active',
-                paystackEmailToken: verification.data.customer?.email,
+                paystackEmailToken: verifiedEmail,
                 currentPeriodStart: startDate,
                 currentPeriodEnd: endDate,
-                paystackSubscriptionCode: verification.data.authorization?.authorization_code, // Store auth code for recurring
+                paystackSubscriptionCode: subscriptionCode,
             },
             create: {
                 workspaceId,
                 planTier,
                 status: 'active',
-                paystackEmailToken: verification.data.customer?.email,
+                paystackEmailToken: verifiedEmail,
                 currentPeriodStart: startDate,
                 currentPeriodEnd: endDate,
-                paystackSubscriptionCode: verification.data.authorization?.authorization_code,
+                paystackSubscriptionCode: subscriptionCode,
             },
         });
 

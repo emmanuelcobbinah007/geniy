@@ -6,18 +6,33 @@ const prisma = require('../config/db');
 
 exports.analyzeContext = async (req, res) => {
     try {
+        // Accept both workspaceId (for stored context) and contextText (for chat context)
+        const { workspaceId, recommendations, missingDimensions, contextText } = req.body;
 
-        const { workspaceId, recommendations, missingDimensions } = req.body;
+        let unifiedContext = "";
 
-        if (!workspaceId) {
-            return res.status(400).json({ error: "Workspace ID is required for unified analysis" });
+        // If workspaceId provided, fetch stored context
+        if (workspaceId) {
+            const contextService = require('../services/contextService');
+            unifiedContext = await contextService.getUnifiedContext(workspaceId) || "";
         }
 
-        const contextService = require('../services/contextService');
-        const unifiedContext = await contextService.getUnifiedContext(workspaceId);
+        // If contextText provided (from chat), prepend it as it's the most recent/relevant
+        if (contextText) {
+            unifiedContext = `
+=== CURRENT CHAT CONTEXT (MOST IMPORTANT) ===
+${contextText}
+==============================================
 
-        if (!unifiedContext) {
-            return res.status(400).json({ error: "No context found for this workspace" });
+=== STORED WORKSPACE CONTEXT ===
+${unifiedContext}
+================================
+`;
+            console.log("[AI] Using chat context for analysis (length: " + contextText.length + " chars)");
+        }
+
+        if (!unifiedContext || unifiedContext.trim().length === 0) {
+            return res.status(400).json({ error: "No context found. Please provide context via chat or workspace." });
         }
 
         // Step 1: Analyze Context (Fast)

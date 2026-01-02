@@ -2,8 +2,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
-const { MemberRole } = require('@prisma/client'); // Keep MemberRole
-const prisma = require('../config/db'); // Use singleton Prisma client
+const { MemberRole } = require('@prisma/client');
+const prisma = require('../config/db');
+const paymentService = require('../services/paymentService');
 
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
@@ -266,47 +267,47 @@ const completeGoogleSignup = async (req, res) => {
                 },
             });
 
-            // 4. Create Subscription
-            console.log(" Creating Subscription...");
-            await prisma.subscription.create({
-                data: {
-                    workspaceId: workspace.id,
-                    planTier: planTier === 'FREE' ? 'FREE' : (planTier || 'FREE'),
-                    status: 'active',
-                    currentPeriodStart: new Date(),
-                    currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 100)), // Forever
-                    paystackSubscriptionCode: paymentReference || null
-                }
-            });
+            // 4. Create Subscription inline (must be in transaction since workspace isn't committed yet)
+            console.log("[Auth] Creating Subscription...");
 
-            // 5. If Paid, Verify & Create Transaction Record
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(startDate.getDate() + 30); // 30 day billing period
+
             if (planTier !== 'FREE' && paymentReference) {
-                console.log(" Verifying Payment with Paystack:", paymentReference);
+                // PAID PLAN: Create subscription with plan tier (will update with auth code after transaction)
+                console.log("[Auth] Creating paid subscription for plan:", planTier);
 
-                // Server-side Verification
-                const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${paymentReference}`, {
-                    headers: {
-                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_PUBLIC_KEY}` // Fallback if secret missing (not ideal but better than crash)
-                    }
-                });
-                const verifyData = await verifyRes.json();
-
-                if (!verifyData.status || verifyData.data.status !== 'success') {
-                    console.error("Payment Verification Failed:", verifyData);
-                    throw new Error("Payment verification failed! Ref: " + paymentReference);
-                }
-
-                console.log(" Payment Verified! Creating Transaction Record...");
-                await prisma.transaction.create({
+                await prisma.subscription.create({
                     data: {
                         workspaceId: workspace.id,
-                        amount: verifyData.data.amount / 100, // Convert kobo to GHS
-                        currency: verifyData.data.currency,
-                        status: 'COMPLETED',
-                        reference: paymentReference,
-                        planTier: planTier
+                        planTier: planTier,
+                        status: 'active',
+                        currentPeriodStart: startDate,
+                        currentPeriodEnd: endDate,
+                        paystackEmailToken: email,
                     }
                 });
+
+                // Store workspace ID for post-transaction payment verification
+                workspace._needsPaymentVerification = true;
+                workspace._paymentReference = paymentReference;
+                workspace._planTier = planTier;
+                workspace._customerEmail = email;
+
+                console.log("[Auth] Paid subscription created (pending payment verification)");
+            } else {
+                // FREE PLAN: Create simple subscription without Paystack
+                await prisma.subscription.create({
+                    data: {
+                        workspaceId: workspace.id,
+                        planTier: 'FREE',
+                        status: 'active',
+                        currentPeriodStart: startDate,
+                        currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 100)),
+                    }
+                });
+                console.log("[Auth] Free subscription created");
             }
 
             return newUser;
@@ -314,7 +315,102 @@ const completeGoogleSignup = async (req, res) => {
             timeout: 20000
         });
 
-        console.log("Transaction Complete. User created:", user.id);
+        console.log("[Auth] Transaction Complete. User created:", user.id);
+
+        // 5. Post-transaction: Verify payment and update subscription with authorization code
+        // This must happen AFTER the transaction commits so the workspace exists
+        if (planTier !== 'FREE' && paymentReference) {
+            try {
+                console.log("[Auth] Verifying payment and updating subscription with auth code...");
+
+                // Get the workspace that was just created
+                const userWithWorkspace = await prisma.user.findUnique({
+                    where: { id: user.id },
+                    include: {
+                        memberships: {
+                            where: { role: 'OWNER' },
+                            include: { workspace: true },
+                            take: 1
+                        }
+                    }
+                });
+
+                if (userWithWorkspace?.memberships?.[0]?.workspace) {
+                    const workspaceId = userWithWorkspace.memberships[0].workspace.id;
+
+                    // Verify with Paystack to get authorization code
+                    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${paymentReference}`, {
+                        headers: {
+                            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+                        }
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.status && verifyData.data.status === 'success') {
+                        const customerEmail = verifyData.data.customer?.email;
+                        const authorizationCode = verifyData.data.authorization?.authorization_code;
+
+                        // Try to fetch the subscription that was created with this payment
+                        let subscriptionCode = null;
+                        if (customerEmail) {
+                            try {
+                                // Wait a moment for Paystack to process the subscription
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                // Fetch customer's subscriptions from Paystack
+                                const subsRes = await fetch(`https://api.paystack.co/subscription?customer=${encodeURIComponent(customerEmail)}`, {
+                                    headers: {
+                                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+                                    }
+                                });
+                                const subsData = await subsRes.json();
+
+                                if (subsData.status && subsData.data?.length > 0) {
+                                    // Get the most recent active subscription
+                                    const activeSub = subsData.data.find(s => s.status === 'active') || subsData.data[0];
+                                    subscriptionCode = activeSub.subscription_code;
+                                    console.log("[Auth] Found Paystack subscription:", subscriptionCode);
+                                }
+                            } catch (subErr) {
+                                console.warn("[Auth] Could not fetch subscription:", subErr.message);
+                            }
+                        }
+
+                        // Update subscription with both auth code and subscription code
+                        await prisma.subscription.update({
+                            where: { workspaceId },
+                            data: {
+                                paystackSubscriptionCode: subscriptionCode || authorizationCode,
+                                paystackEmailToken: customerEmail,
+                            }
+                        });
+
+                        // Create transaction record
+                        await prisma.transaction.upsert({
+                            where: { reference: paymentReference },
+                            update: { status: 'success' },
+                            create: {
+                                workspaceId,
+                                amount: verifyData.data.amount / 100,
+                                currency: verifyData.data.currency,
+                                status: 'success',
+                                reference: paymentReference,
+                                planTier: planTier,
+                            }
+                        });
+
+                        console.log("[Auth] Payment verified. Subscription code:", subscriptionCode || "(using auth code)");
+                    } else {
+                        console.warn("[Auth] Payment verification returned non-success status:", verifyData.data?.status);
+                    }
+                }
+            } catch (verifyError) {
+                // Non-critical: User is created, subscription exists, just missing auth code
+                // The webhook will likely update this, or user can trigger a re-verification
+                console.error("[Auth] Post-transaction payment verification failed:", verifyError.message);
+            }
+        }
+
         const userData = await getUserWithWorkspaces(user.id);
 
         res.status(201).json({

@@ -270,9 +270,22 @@ If yes, just say "Yes" or "Go ahead", and I'll build the research strategy and s
             // Trigger the full generation cycle (Analyze -> Strategy -> Survey)
             // This mirrors the file upload workflow for better quality and UX
             
+            // BUILD FULL CONTEXT: Include conversation history + updated context
+            const conversationSummary = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+            const fullChatContext = `
+=== CONVERSATION HISTORY ===
+${conversationSummary}
+USER: ${userText}
+===========================
+
+=== AI-GENERATED CONTEXT SUMMARY ===
+${response.updatedContext || chatContext}
+=====================================
+`;
+            
             // 1. Analyze
             addMessage("assistant", "That's enough context! Analyzing your request... 🧠")
-            const analysis = await api.analyzeContext(response.updatedContext || chatContext, token, workspaceId)
+            const analysis = await api.analyzeContext(fullChatContext, token, workspaceId)
             
             // 2. Strategy
             addMessage("assistant", "Generating research strategy... 📝")

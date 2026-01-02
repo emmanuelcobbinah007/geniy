@@ -2,26 +2,86 @@ const openRouter = require('./openrouter');
 const manus = require('./manus');
 const trainingLogger = require('../logging/trainingLogger');
 
+// ============================================
+// MODEL CONFIGURATION (Centralized)
+// ============================================
+const MODELS = {
+    FAST: "openai/gpt-4o-mini",
+    SMART: "openai/gpt-4o",
+    RESEARCH: "perplexity/sonar-reasoning-pro",
+    CREATIVE: "openai/gpt-4o-mini",
+};
+
+const TOKEN_LIMITS = {
+    CHAT: 1500,
+    ANALYSIS: 2000,
+    STRATEGY: 3000,
+    SURVEY: 4000,
+    RESEARCH: 2000,
+    VALIDATION: 2000,
+};
+
 class GenesisAgent {
     /**
-     * Step 0: Chat & Intent Analysis
+     * Chat & Intent Analysis
      * Converses with the user to gather requirements or decides to generate.
      */
-    async chat(message, currentContext = "") {
+    async chat(messages, currentContext = "") {
+        // Build conversation history from messages array
+        const conversationHistory = Array.isArray(messages)
+            ? messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+            : `USER: ${messages}`;
+
         const prompt = `
-        You are Geniy, an expert AI Survey Consultant. Your goal is to help the user define the perfect survey campaign.
+        You are Geniy, an expert AI Survey Consultant and Market Research Co-Founder. 
+        Your goal is to help the user define the perfect survey campaign through natural conversation.
         
-        Current Context: "${currentContext}"
+        === CURRENT CONTEXT ===
+        ${currentContext || "No context provided yet."}
+        =======================
+        
+        === CONVERSATION HISTORY ===
+        ${conversationHistory}
+        ============================
+        
+        **INSTRUCTIONS:**
+        1. If the user is still exploring or providing information, engage conversationally and gather more details.
+        2. If the user has provided enough context (company, audience, goals), summarize and ask if they're ready to generate.
+        3. Only set action to "GENERATE" if the user explicitly confirms they want to create a survey (e.g., "yes", "go ahead", "create the survey").
+        
+        **CRITICAL RULES:**
+        - **NEVER list survey questions in the chat.** Questions are generated separately by the system.
+        - Do NOT show examples like "Question 1: ...", "Usage Frequency: ...", etc.
+        - Keep responses conversational. Just discuss strategy, not the actual survey content.
+        - When ready to generate, simply confirm and the system will create the survey automatically.
+        
+        **CONVERSATION STYLE:**
+        - Be friendly and professional, like a smart business partner.
+        - Ask probing questions if details are vague.
+        - Acknowledge new information and build on it.
+        - Focus on understanding: WHO is the audience, WHAT is the product, WHY are we surveying them.
+        
+        **CONTEXT ACCUMULATION:**
+        The "updatedContext" must contain ALL important details from the conversation:
+        - Company/Product name and description
+        - Target audience demographics
+        - Goals of the survey
+        - Any specific questions or topics to explore
+        - Key differentiators or value propositions mentioned
+        
+        Output JSON Schema:
+        {
+            "message": "string - Your conversational response (NO SURVEY QUESTIONS)",
             "action": "CHAT" | "GENERATE",
-            "updatedContext": "string" // The accumulated context including new info and specific names
+            "updatedContext": "string - Comprehensive accumulated context with ALL details from conversation"
         }
         `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
+        return this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.CHAT);
     }
 
     /**
-     * Step 1: Analyze Context
+     * Analyze Context
      * Extracts key entities from the raw BCD text.
      */
     async analyzeContext(rawText, recommendations = [], missingDimensions = []) {
@@ -44,7 +104,6 @@ class GenesisAgent {
             For these SPECIFIC missing dimensions, if the explicit answer is not in the context, you MUST **PROPOSE A PROFESSIONAL SUGGESTION** based on the Industry and Company Name.
             - Do NOT leave them as "Unknown".
             - Do NOT make them generic. Use your knowledge of the industry to draft high-quality placeholders.
-            - Example: If "Value Proposition" is missing for a "Coffee Shop", suggest: "Artisanal, fair-trade coffee experience focusing on community connection."
             `;
         }
 
@@ -65,25 +124,23 @@ class GenesisAgent {
       Output JSON Schema:
       {
         "contextType": "BUSINESS" | "GENERAL",
-        "companyName": "string", // or "General Research" if general
-        "industry": "string", // Topic or Industry
+        "companyName": "string",
+        "industry": "string",
         "targetAudience": ["string"],
-        "valueProposition": "string", // Value of the product OR importance of the topic
+        "valueProposition": "string",
         "goals": ["string"], 
-        "businessModel": "string", // or "N/A" if general
-        "competitors": ["string"] // List competitors OR key entities/sub-topics
+        "businessModel": "string",
+        "competitors": ["string"]
       }
     `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
+        return this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.ANALYSIS);
     }
 
     /**
-     * Helper to perform real-time web research using Perplexity via OpenRouter.
-     * Uses: perplexity/llama-3.1-sonar-large-128k-online
+     * Perform real-time web research using Perplexity via OpenRouter.
      */
     async research(prompt) {
-        // We use a specific system prompt for the researcher to ensure concise, factual results.
         const researchPrompt = `
         You are a high-speed market research assistant with real-time web access.
         
@@ -96,17 +153,148 @@ class GenesisAgent {
         4. If you cannot find specific data, infer based on reasonable industry standards but mark it as "Estimated".
         `;
 
-        // Using prompt-only completions often works better for "search" style queries with Sonar
-        // But OpenRouter standard is chat.
-        return this.completeWithRetry(researchPrompt, "perplexity/sonar-reasoning-pro", false, 1500);
+        return this.completeWithRetry(researchPrompt, MODELS.RESEARCH, false, TOKEN_LIMITS.RESEARCH);
     }
 
     /**
-     * Step 2: Discover Competitors (Hybrid: Perplexity -> Manus)
-     * Uses Perplexity for fast discovery.
+     * NEW FEATURE: Validate Business Idea
+     * Checks if the business idea has been implemented before (directly or indirectly).
+     * Returns existing solutions, failed attempts, and differentiation opportunities.
+     */
+    async validateBusinessIdea(contextSummary) {
+        const prompt = `
+        You are a seasoned startup analyst and venture capital researcher with real-time web access.
+        
+        TASK: Validate whether this business idea already exists in the market.
+        
+        === BUSINESS IDEA ===
+        Company/Product: "${contextSummary.companyName}"
+        Industry: "${contextSummary.industry}"
+        Value Proposition: "${contextSummary.valueProposition}"
+        Target Audience: ${JSON.stringify(contextSummary.targetAudience)}
+        ====================
+        
+        RESEARCH OBJECTIVES:
+        1. **Direct Competitors:** Find companies doing EXACTLY the same thing.
+        2. **Indirect Solutions:** Find alternative ways people currently solve this problem.
+        3. **Failed Attempts:** Search for startups that tried this and failed (look for shutdown notices, post-mortems).
+        4. **Market Validation:** Assess if there's evidence of demand (search volume, social discussions).
+        
+        CRITICAL: Be brutally honest. If the idea is crowded, say so. If it's novel, explain why.
+        
+        Output JSON Schema:
+        {
+            "ideaStatus": "NOVEL" | "EXISTS" | "CROWDED" | "FAILED_BEFORE",
+            "summary": "string - 2-3 sentence executive summary of findings",
+            "directCompetitors": [
+                { "name": "string", "description": "string", "differentiator": "string" }
+            ],
+            "indirectSolutions": ["string - How people currently solve this problem"],
+            "failedAttempts": [
+                { "name": "string", "reason": "string - Why it failed" }
+            ],
+            "marketSignals": {
+                "demandLevel": "HIGH" | "MEDIUM" | "LOW",
+                "evidence": "string - What indicates demand exists"
+            },
+            "differentiationOpportunities": ["string - Ways to stand out"]
+        }
+        `;
+
+        try {
+            console.log("[Genesis] Validating business idea...");
+            const result = await this.completeWithRetry(prompt, MODELS.RESEARCH, true, TOKEN_LIMITS.VALIDATION);
+            console.log("[Genesis] Business idea validation complete");
+            return result;
+        } catch (err) {
+            console.error("[Genesis] Business idea validation failed:", err.message);
+            return {
+                ideaStatus: "UNKNOWN",
+                summary: "Unable to validate idea at this time. Please try again.",
+                directCompetitors: [],
+                indirectSolutions: [],
+                failedAttempts: [],
+                marketSignals: { demandLevel: "UNKNOWN", evidence: "Research unavailable" },
+                differentiationOpportunities: []
+            };
+        }
+    }
+
+    /**
+     * NEW FEATURE: Find Audience Hangouts
+     * Discovers where the target audience spends time online and offline.
+     * Returns platforms, communities, influencers, and distribution channels.
+     */
+    async findAudienceHangouts(contextSummary) {
+        const audienceStr = Array.isArray(contextSummary.targetAudience)
+            ? contextSummary.targetAudience.join(", ")
+            : contextSummary.targetAudience;
+
+        const prompt = `
+        You are a digital marketing strategist and audience research expert with real-time web access.
+        
+        TASK: Find where this target audience hangs out online and offline.
+        
+        === TARGET AUDIENCE ===
+        Demographics: ${audienceStr}
+        Industry Context: "${contextSummary.industry}"
+        Product/Service: "${contextSummary.valueProposition}"
+        =======================
+        
+        RESEARCH OBJECTIVES:
+        1. **Social Platforms:** Which social media platforms do they use most? (Be specific - not just "Facebook" but "Facebook Groups about X")
+        2. **Online Communities:** Reddit subreddits, Discord servers, Slack communities, forums.
+        3. **Content Consumption:** Podcasts they listen to, YouTube channels they watch, newsletters they read.
+        4. **Offline Hangouts:** Events, conferences, meetups, physical locations.
+        5. **Influencers:** Key opinion leaders they follow and trust.
+        
+        CRITICAL: Prioritize SPECIFIC, ACTIONABLE locations. Not "Social Media" but "r/startups, LinkedIn SaaS groups, Product Hunt".
+        
+        Output JSON Schema:
+        {
+            "summary": "string - Quick overview of where to find this audience",
+            "socialPlatforms": [
+                { "platform": "string", "specificChannels": ["string"], "engagementTip": "string" }
+            ],
+            "onlineCommunities": [
+                { "name": "string", "type": "Reddit" | "Discord" | "Forum" | "Slack" | "Other", "link": "string or null", "memberCount": "string or null" }
+            ],
+            "contentChannels": [
+                { "type": "Podcast" | "YouTube" | "Newsletter" | "Blog", "name": "string", "relevance": "string" }
+            ],
+            "offlineVenues": [
+                { "type": "Conference" | "Meetup" | "Location" | "Event", "name": "string", "frequency": "string or null" }
+            ],
+            "keyInfluencers": [
+                { "name": "string", "platform": "string", "followers": "string or null" }
+            ],
+            "surveyDistributionStrategy": ["string - Specific recommendations for sharing surveys"]
+        }
+        `;
+
+        try {
+            console.log("[Genesis] Finding audience hangouts...");
+            const result = await this.completeWithRetry(prompt, MODELS.RESEARCH, true, TOKEN_LIMITS.VALIDATION);
+            console.log("[Genesis] Audience hangouts discovery complete");
+            return result;
+        } catch (err) {
+            console.error("[Genesis] Audience hangouts discovery failed:", err.message);
+            return {
+                summary: "Unable to discover audience hangouts at this time.",
+                socialPlatforms: [],
+                onlineCommunities: [],
+                contentChannels: [],
+                offlineVenues: [],
+                keyInfluencers: [],
+                surveyDistributionStrategy: ["Consider sharing on relevant social media platforms and communities."]
+            };
+        }
+    }
+
+    /**
+     * Discover Competitors (Perplexity-based)
      */
     async discoverCompetitors(contextSummary) {
-        // Check if existing competitors are specific or generic
         const currentCompetitors = contextSummary.competitors || [];
         const genericKeywords = ['service', 'system', 'provider', 'traditional', 'existing', 'general', 'other', 'unknown', 'various'];
 
@@ -114,7 +302,6 @@ class GenesisAgent {
             genericKeywords.some(keyword => c.toLowerCase().includes(keyword))
         );
 
-        // Only skip if we have enough SPECIFIC competitors
         if (currentCompetitors.length >= 3 && !hasGenericCompetitors) {
             return currentCompetitors;
         }
@@ -132,14 +319,12 @@ class GenesisAgent {
         `;
 
         try {
-            console.log("🔍 Researching competitors with Perplexity...");
+            console.log("[Genesis] Researching competitors...");
             const agentOutput = await this.research(instruction);
 
             if (agentOutput) {
-                // Try to parse JSON from the extracted text
                 try {
                     let finalResult = null;
-                    // Extract JSON if wrapped in code blocks
                     const jsonMatch = agentOutput.match(/\[.*\]/s);
                     if (jsonMatch) {
                         finalResult = JSON.parse(jsonMatch[0]);
@@ -147,55 +332,43 @@ class GenesisAgent {
                         finalResult = JSON.parse(agentOutput);
                     }
 
-                    // Validate: Must be array of strings
                     if (Array.isArray(finalResult) && finalResult.length > 0) {
-                        console.log("✅ Perplexity found competitors:", finalResult);
+                        console.log("[Genesis] Competitors found:", finalResult.length);
                         return finalResult;
                     }
                 } catch (e) {
-                    // console.warn("Failed to parse Perplexity output as JSON", e);
+                    // Parsing failed, try fallback
                 }
 
-                // Fallback: split by newlines if it looks like a list
                 if (typeof agentOutput === 'string') {
                     return agentOutput.split('\n')
                         .filter(line => line.trim().length > 0)
-                        .map(l => l.replace(/^- /, '').replace(/^\d+\.\s*/, '').replace(/"/g, '').replace(/,$/, '').trim()) // Remove bullets, numbers, quotes
+                        .map(l => l.replace(/^- /, '').replace(/^\d+\.\s*/, '').replace(/"/g, '').replace(/,$/, '').trim())
                         .filter(l => l.length > 0 && !l.startsWith('[') && !l.startsWith(']'));
                 }
             }
         } catch (err) {
-            console.error("Perplexity discovery failed:", err);
+            console.error("[Genesis] Competitor discovery failed:", err.message);
         }
 
-        // Fallback to existing logic (Manus) if Perplexity completely fails to return valid data? 
-        // Or just return empty array to let the UI prompt user.
         return contextSummary.competitors || [];
     }
 
-    /**
-     * Step 3: Generate Strategy
-     * Creates the "Starter Docs" (Research Plan).
-     */
-    /**
-     * Helper to clean and parse JSON
-     */
     /**
      * Helper to clean and parse JSON
      */
     safeParse(text) {
         try {
-            // Remove markdown code blocks if present
             const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
             return JSON.parse(cleanText);
         } catch (e) {
-            console.error("JSON Parse Failed. Raw text:", text);
+            console.error("[Genesis] JSON Parse Failed. Raw text preview:", text.substring(0, 200));
             throw new Error("Invalid JSON response from AI");
         }
     }
 
     /**
-     * Helper to execute AI call with retry logic on JSON parse failure
+     * Helper to execute AI call with retry logic
      */
     async completeWithRetry(prompt, model, jsonMode, maxTokens, retries = 1) {
         for (let i = 0; i <= retries; i++) {
@@ -206,32 +379,48 @@ class GenesisAgent {
                 }
                 return result;
             } catch (error) {
-                console.warn(`AI Attempt ${i + 1} failed:`, error.message);
+                console.warn(`[Genesis] AI Attempt ${i + 1}/${retries + 1} failed:`, error.message);
                 if (i === retries) {
-                    throw error; // Throw on final attempt
+                    throw new GenesisError(`AI completion failed after ${retries + 1} attempts`, error);
                 }
-                // Optional: Add a small delay or modify prompt for retry
                 await new Promise(r => setTimeout(r, 1000));
             }
         }
     }
 
     /**
-     * Step 3: Generate Strategy
-     * Creates the "Starter Docs" (Research Plan).
+     * Generate Strategy (Enhanced with new features)
+     * Creates the "Starter Docs" including idea validation and audience hangouts.
      */
     async generateStrategy(contextSummary) {
+        // Run idea validation and audience hangouts in parallel for speed
+        console.log("[Genesis] Generating comprehensive strategy...");
+
+        const [ideaValidation, audienceHangouts] = await Promise.all([
+            this.validateBusinessIdea(contextSummary).catch(err => {
+                console.warn("[Genesis] Idea validation skipped:", err.message);
+                return null;
+            }),
+            this.findAudienceHangouts(contextSummary).catch(err => {
+                console.warn("[Genesis] Audience hangouts skipped:", err.message);
+                return null;
+            })
+        ]);
+
         const prompt = `
       Based on the following business context, generate a research strategy for a survey campaign.
 
       Context: ${JSON.stringify(contextSummary)}
+      
+      ${ideaValidation ? `Idea Validation Results: ${JSON.stringify(ideaValidation)}` : ""}
+      ${audienceHangouts ? `Audience Research: ${JSON.stringify(audienceHangouts)}` : ""}
 
       **CRITICAL INSTRUCTIONS:**
-      1. **BE SPECIFIC:** Do NOT generalize the target audience. If the context says "18-30 year old Ghanaians", do NOT say "18-65 year olds". Use the EXACT demographics provided.
-      2. **BE RELEVANT:** Ensure the objectives and hypotheses are directly tied to the specific industry and value proposition mentioned.
+      1. **BE SPECIFIC:** Do NOT generalize the target audience. Use the EXACT demographics provided.
+      2. **BE RELEVANT:** Ensure the objectives and hypotheses are directly tied to the specific industry and value proposition.
       3. **NO FLUFF:** Keep the output concise and actionable.
-      4. **FACTUALITY CHECK:** If the input context does not mention a specific budget, timeline, or constraint, DO NOT INVENT ONE. Use "To be determined" or generalized assumptions marked as such.
-         - *Example:* Do not say "Targeting users with $100k+ income" if the context only said "Affluent users". Say "High-income individuals (Income TBD)".
+      4. **LEVERAGE RESEARCH:** If idea validation or audience data is provided, incorporate those insights.
+      5. **FACTUALITY CHECK:** If the input context does not mention a specific constraint, DO NOT INVENT ONE.
 
       Output JSON Schema:
       {
@@ -243,18 +432,25 @@ class GenesisAgent {
       }
     `;
 
-        const result = await this.completeWithRetry(prompt, "openai/gpt-4o", true, 2500);
+        const coreStrategy = await this.completeWithRetry(prompt, MODELS.SMART, true, TOKEN_LIMITS.STRATEGY);
 
-        // Log for proprietary training data
-        if (result) {
-            trainingLogger.log("GENERATE_STRATEGY", { contextSummary }, result, "openai/gpt-4o");
+        // Combine into enriched strategy
+        const enrichedStrategy = {
+            ...coreStrategy,
+            ideaValidation: ideaValidation || null,
+            audienceHangouts: audienceHangouts || null,
+        };
+
+        if (enrichedStrategy) {
+            trainingLogger.log("GENERATE_STRATEGY", { contextSummary }, enrichedStrategy, MODELS.SMART);
         }
 
-        return result;
+        console.log("[Genesis] Strategy generation complete");
+        return enrichedStrategy;
     }
 
     /**
-     * Step 4: Generate Survey
+     * Generate Survey
      * Creates the questions.json based on the strategy.
      */
     async generateSurvey(contextSummary, strategy, userInstruction = "") {
@@ -264,28 +460,24 @@ class GenesisAgent {
       Context: ${JSON.stringify(contextSummary)}
       Strategy: ${JSON.stringify(strategy)}
       
-      ${userInstruction ? `**USER INSTRUCTION:** ${userInstruction}\n(You MUST prioritize this instruction, e.g., if it asks for a specific number of questions or a specific topic, follow it strictly.)` : ""}
+      ${userInstruction ? `**USER INSTRUCTION:** ${userInstruction}\n(You MUST prioritize this instruction strictly.)` : ""}
 
-      **TONE & STYLE GUIDELINES (CRITICAL):**
-      1. **Conversational & Human:** Write like a friendly researcher, not a robot. Use "I" and "We".
+      **TONE & STYLE GUIDELINES:**
+      1. **Conversational & Human:** Write like a friendly researcher, not a robot.
          - BAD: "Rate your satisfaction with the delivery speed."
          - GOOD: "How was the delivery speed? Did it arrive when you expected?"
-      2. **Hyper-Specific Context:** You are NOT a general researcher. You are a specialist in the "${contextSummary.industry}" industry.
-         - **RULE:** Every single question must contain at least one specific keyword related to "${contextSummary.companyName}" or "${contextSummary.valueProposition}".
-         - If the company sells "Organic Coffee", you must use words like "Roast", "Bean", "Brew", "Morning Routine".
-         - **BAN:** Do NOT ask generic questions like "How likely are you to recommend us?" without tying it to the specific product value.
-      3. **Engaging:** People hate surveys. Make this one feel like a chat.
+      2. **Hyper-Specific Context:** You are a specialist in the "${contextSummary.industry}" industry.
+         - Every question must contain specific keywords related to "${contextSummary.companyName}" or "${contextSummary.valueProposition}".
+      3. **Engaging:** People hate surveys. Make this one feel like a conversation.
 
       **QUESTION RULES:**
-      1. **Rating Scales:** ALWAYS use a **1-5 scale** (1=Low, 5=High). NEVER use 1-10.
-      2. **Question Count:** 
-         - **DEFAULT:** Generate **18-25 questions** unless the user explicitly asks for a different number.
-         - If the user asks for a specific number (e.g., 10), follow it strictly.
-      3. **Cognitive Load:** Keep options simple.
+      1. **Rating Scales:** ALWAYS use a **1-5 scale**. NEVER use 1-10.
+      2. **Question Count:** Generate **18-25 questions** unless user specifies otherwise.
+      3. **Cognitive Load:** Keep options simple and clear.
 
-      **CRITICAL RULES FOR BRANCHING:**
-      1. **MANDATORY DIVERGENCE:** You MUST include at least 2 questions where different options lead to DIFFERENT questions (e.g., "If Yes, go to Q3; If No, go to Q4"). 
-         - **FORBIDDEN:** Do NOT create "fake branching" where all options jump to the same next question (e.g., If A -> Q2, If B -> Q2). This is useless.
+      **BRANCHING RULES:**
+      1. Include at least 2 questions where different options lead to DIFFERENT questions.
+      2. Do NOT create fake branching where all options go to the same next question.
 
       Output JSON Schema:
       {
@@ -295,84 +487,73 @@ class GenesisAgent {
               "Q1": {
                   "type": "multiple_choice" | "text" | "rating",
                   "question": "string",
-                  "options": ["string"], // Only for multiple_choice
+                  "options": ["string"],
                   "required": boolean,
-                  "branches": [
-                      { "if": "string", "next": "Q#" }
-                  ],
-                  "next": "Q#" // Default next question. Use this for merging branches!
+                  "branches": [{ "if": "string", "next": "Q#" }],
+                  "next": "Q#"
+              }
           }
       }
     `;
 
-        const result = await this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 4000);
+        const result = await this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.SURVEY);
 
-        // Log for proprietary training data
         if (result) {
-            trainingLogger.log("GENERATE_SURVEY", { contextSummary, strategy, userInstruction }, result, "openai/gpt-4o-mini");
+            trainingLogger.log("GENERATE_SURVEY", { contextSummary, strategy, userInstruction }, result, MODELS.FAST);
         }
 
         return result;
     }
 
     /**
-     * Step 6: Analyze Competitor (Deep Dive)
-     * Uses Manus to get detailed intel.
+     * Analyze Competitor (Deep Dive with Manus)
      */
     async analyzeCompetitor(competitorName, industry, goal = "") {
         let instruction = "";
         const lowerGoal = goal.toLowerCase();
 
-        // --- SPECIALIZED PROMPTS (FINE-TUNING) ---
-
         if (lowerGoal.includes('pric') || lowerGoal.includes('cost') || lowerGoal.includes('subscription')) {
-            // STRATEGY: PRICING HUNTER
             instruction = `
             ACT AS: A Competitor Pricing Analyst.
             TASK: Find the EXACT pricing model for "${competitorName}" (${industry}).
             
             **EXECUTION STEPS:**
-            1.  Navigate directly to their Pricing page (usually /pricing).
-            2.  If hidden, look for "FAQ" or "Support" pages mentioning costs.
-            3.  Extract: Free Tier limits, Pro Plan cost, Enterprise triggers.
+            1. Navigate directly to their Pricing page.
+            2. If hidden, look for FAQ or Support pages mentioning costs.
+            3. Extract: Free Tier limits, Pro Plan cost, Enterprise triggers.
             
-            **OUTPUT JSON (Strict):**
+            **OUTPUT JSON:**
             {
                 "pricingModel": "Detailed breakdown of tiers and costs",
-                "uniqueSellingPoint": "What is their 'value metric'? (e.g. per user, per GB)",
-                "strengths": ["List standard pricing features"],
+                "uniqueSellingPoint": "What is their value metric?",
+                "strengths": ["Standard pricing features"],
                 "weaknesses": ["Hidden fees, rigid contracts, expensive add-ons"]
             }
             `;
-        } else if (lowerGoal.includes('review') || lowerGoal.includes('sentiment') || lowerGoal.includes('hate') || lowerGoal.includes('love')) {
-            // STRATEGY: SENTIMENT ANALYST
+        } else if (lowerGoal.includes('review') || lowerGoal.includes('sentiment')) {
             instruction = `
             ACT AS: A UX Researcher.
             TASK: Find what real users think about "${competitorName}".
             
             **EXECUTION STEPS:**
-            1.  Ignore their landing page.
-            2.  Search Reddit, G2, Capterra, and Twitter for "${competitorName} reviews".
-            3.  Synthesize the "Emotional Sentiment".
+            1. Ignore their landing page.
+            2. Search Reddit, G2, Capterra, and Twitter for reviews.
+            3. Synthesize the emotional sentiment.
             
-            **OUTPUT JSON (Strict):**
+            **OUTPUT JSON:**
             {
-                "customerSentiment": "Summary of user vibes (Angry? Delighted? Frustrated?)",
+                "customerSentiment": "Summary of user reactions",
                 "strengths": ["Top 3 things users praise"],
-                "weaknesses": ["Top 3 complaints (e.g. 'Bad support', 'Buggy mobile app')"],
+                "weaknesses": ["Top 3 complaints"],
                 "keyFeatures": ["Features users mention most"]
             }
             `;
         } else {
-            // STRATEGY: GENERAL DEEP DIVE (Default)
             instruction = `
             Perform a deep-dive market analysis on "${competitorName}" in the "${industry}" sector.
-            
-            ${goal ? `**FOCUS GOAL:** The user specifically wants to: "${goal}". Prioritize finding this info.` : ""}
+            ${goal ? `**FOCUS GOAL:** "${goal}". Prioritize finding this info.` : ""}
 
-            I need a structured report focusing on actionable intelligence.
-            
-            Return a JSON object with the following fields:
+            Return a JSON object with:
             - pricingModel: string
             - keyFeatures: array of strings
             - targetAudience: string
@@ -385,92 +566,82 @@ class GenesisAgent {
         }
 
         instruction += `
-            CRITICAL INSTRUCTIONS:
-            1. OUTPUT THE JSON DIRECTLY IN THE CHAT.
-            2. DO NOT CREATE A FILE.
-            3. DO NOT INCLUDE CONVERSATIONAL FILLER.
-            4. START AND END WITH BRACES { }.
+            CRITICAL: Output JSON directly. Do not create files or include conversational filler.
         `;
 
-        // Kept MANUS here for deep dives per hybrid plan
         try {
+            console.log(`[Genesis] Analyzing competitor "${competitorName}"...`);
             const agentOutput = await manus.runTask(instruction);
+
             if (agentOutput) {
-                let textToParse = agentOutput;
-
-                // Handle structured output (Array of messages)
-                try {
-                    let parsedOutput = null;
-                    if (typeof agentOutput === 'string') {
-                        parsedOutput = JSON.parse(agentOutput);
-                    } else {
-                        parsedOutput = agentOutput;
-                    }
-
-                    if (Array.isArray(parsedOutput)) {
-                        // Find last assistant message
-                        const lastAssistantMsg = parsedOutput.slice().reverse().find(m => m.role === 'assistant');
-
-                        if (lastAssistantMsg) {
-                            if (Array.isArray(lastAssistantMsg.content)) {
-                                const textPart = lastAssistantMsg.content.find(c => c.type === 'text' || c.type === 'output_text');
-                                if (textPart && textPart.text) {
-                                    textToParse = textPart.text;
-                                }
-                            } else if (typeof lastAssistantMsg.content === 'string') {
-                                textToParse = lastAssistantMsg.content;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    // Not JSON or not the structure we expect, treat as raw string
-                }
-
-                // Try to parse JSON from output
-                try {
-                    // 1. Try to extract JSON block using regex
-                    const jsonMatch = textToParse.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        return JSON.parse(jsonMatch[0]);
-                    }
-
-                    // 2. Try to clean markdown and parse
-                    const cleanText = textToParse.replace(/```json\n?|\n?```/g, '').trim();
-                    return JSON.parse(cleanText);
-                } catch (e) {
-                    console.warn("Failed to parse Manus output as JSON for competitor analysis", e);
-
-                    // 3. Fallback: Return a valid object with the raw text
-                    // This prevents the frontend from crashing and shows the info to the user
-                    return {
-                        pricingModel: "See detailed analysis in strengths",
-                        keyFeatures: ["See detailed analysis in strengths"],
-                        targetAudience: "See detailed analysis in strengths",
-                        marketingChannels: ["See detailed analysis in strengths"],
-                        customerSentiment: "See detailed analysis in strengths",
-                        strengths: [textToParse], // Dump the raw text here so it is visible
-                        weaknesses: ["See detailed analysis in strengths"],
-                        uniqueSellingPoint: "See detailed analysis in strengths"
-                    };
-                }
+                return this.parseManusOutput(agentOutput, competitorName);
             }
         } catch (err) {
-            console.error("Manus analysis failed:", err);
+            console.error("[Genesis] Manus analysis failed:", err.message);
+            throw new GenesisError(`Failed to analyze competitor "${competitorName}"`, err);
         }
+
         return null;
     }
 
     /**
-     * Step 7: Generate Theme (AI Design)
-     * Creates a color palette and font selection based on a vibe/prompt.
+     * Helper to parse Manus agent output
+     */
+    parseManusOutput(agentOutput, competitorName) {
+        let textToParse = agentOutput;
+
+        try {
+            let parsedOutput = typeof agentOutput === 'string' ? JSON.parse(agentOutput) : agentOutput;
+
+            if (Array.isArray(parsedOutput)) {
+                const lastAssistantMsg = parsedOutput.slice().reverse().find(m => m.role === 'assistant');
+                if (lastAssistantMsg) {
+                    if (Array.isArray(lastAssistantMsg.content)) {
+                        const textPart = lastAssistantMsg.content.find(c => c.type === 'text' || c.type === 'output_text');
+                        if (textPart && textPart.text) {
+                            textToParse = textPart.text;
+                        }
+                    } else if (typeof lastAssistantMsg.content === 'string') {
+                        textToParse = lastAssistantMsg.content;
+                    }
+                }
+            }
+        } catch (e) {
+            // Not JSON, treat as raw string
+        }
+
+        try {
+            const jsonMatch = textToParse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            const cleanText = textToParse.replace(/```json\n?|\n?```/g, '').trim();
+            return JSON.parse(cleanText);
+        } catch (e) {
+            console.warn(`[Genesis] Failed to parse Manus output for ${competitorName}`);
+            return {
+                pricingModel: "See detailed analysis in strengths",
+                keyFeatures: ["See detailed analysis in strengths"],
+                targetAudience: "See detailed analysis in strengths",
+                marketingChannels: ["See detailed analysis in strengths"],
+                customerSentiment: "See detailed analysis in strengths",
+                strengths: [textToParse],
+                weaknesses: ["See detailed analysis in strengths"],
+                uniqueSellingPoint: "See detailed analysis in strengths"
+            };
+        }
+    }
+
+    /**
+     * Generate Theme (AI Design)
      */
     async generateTheme(prompt) {
         const instruction = `
             Create a UI theme based on this description: "${prompt}".
             Return a JSON object with:
-            - primaryColor: hex code (e.g. #6366f1)
-            - backgroundColor: hex code (e.g. #ffffff)
-            - textColor: hex code (e.g. #18181b)
+            - primaryColor: hex code
+            - backgroundColor: hex code
+            - textColor: hex code
             - accentColor: hex code
             - fontFamily: string (one of: "Inter", "Playfair Display", "Roboto Mono", "Comic Sans MS")
             - borderRadius: string (e.g. "0.5rem", "1rem", "0px")
@@ -478,57 +649,44 @@ class GenesisAgent {
             Return ONLY valid JSON.
         `;
 
-        return this.completeWithRetry(instruction, "openai/gpt-4o-mini", true, 1000);
+        return this.completeWithRetry(instruction, MODELS.CREATIVE, true, 1000);
     }
 
     /**
-     * Step 5a: Chat with Brain (Context Q&A)
-     * Dedicated method for the "Geniy's Brain" page.
-     * Prioritizes context retrieval over survey generation.
-     */
-    /**
-     * Step 8: Summarize Knowledge (for PDF/Context Injection)
-     * Compresses raw text into actionable insights.
+     * Summarize Knowledge (for PDF/Context Injection)
      */
     async summarizeKnowledge(rawText) {
         const prompt = `
-            You are an expert analyst.Summarize the following document into key actionable insights for a business context.
+            You are an expert analyst. Summarize the following document into key actionable insights for a business context.
             
             Document Content:
-                    "${rawText.substring(0, 15000)}" // Truncate to avoid massive token usage
+            "${rawText.substring(0, 15000)}"
 
-                    Goal: Extract the "Need to Know" information.
+            Goal: Extract the "Need to Know" information.
             - Key facts, figures, and dates.
             - Strategic goals or problems mentioned.
             - Competitor mentions.
             
-            Output format:
-                    - Bullet points.
-            - concise and dense.
+            Output format: Bullet points, concise and dense.
         `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", false, 1000);
+        return this.completeWithRetry(prompt, MODELS.FAST, false, 1000);
     }
 
     /**
-     * Step 9: Gap Analysis
-     * Compares user context with competitors to find gaps and opportunities.
+     * Gap Analysis
      */
     async generateGapAnalysis(contextSummary, competitors) {
-        // 1. Research Current Trends using Perplexity
         let marketTrends = "";
         try {
-            console.log("🔍 Researching market gaps/trends with Perplexity...");
+            console.log("[Genesis] Researching market trends...");
             const trendsPrompt = `
                 What are the current emerging trends and customer complaints in the "${contextSummary.industry}" industry right now?
-                Focus on:
-                - Unmet customer needs.
-                - New technologies or delivery methods.
-                - Features customers are asking for.
+                Focus on: Unmet customer needs, new technologies, features customers are asking for.
             `;
             marketTrends = await this.research(trendsPrompt);
         } catch (err) {
-            console.warn("Market trends research failed:", err);
+            console.warn("[Genesis] Market trends research failed:", err.message);
             marketTrends = "Unable to fetch live trends.";
         }
 
@@ -548,33 +706,27 @@ class GenesisAgent {
             === COMPETITORS ===
             ${competitorAnalysisText}
 
-            === LIVE MARKET TRENDS (Real-time data) ===
+            === LIVE MARKET TRENDS ===
             ${marketTrends}
 
             Identify:
-            1. 3 Market Gaps (Needs that competitors are ignoring, especially based on the live trends).
-            2. 3 Strategic Opportunities (How we can win).
-            3. 3 Specific Recommendations (Actionable steps).
+            1. 3 Market Gaps (Needs that competitors are ignoring)
+            2. 3 Strategic Opportunities (How we can win)
+            3. 3 Specific Recommendations (Actionable steps)
 
             Output JSON Schema:
             {
-                "gaps": [
-                    { "title": "string", "description": "string" }
-                ],
-                "opportunities": [
-                    { "title": "string", "description": "string" }
-                ],
+                "gaps": [{ "title": "string", "description": "string" }],
+                "opportunities": [{ "title": "string", "description": "string" }],
                 "recommendations": ["string"]
             }
         `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2000);
+        return this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.ANALYSIS);
     }
 
     /**
-     * Step 5a: Chat with Brain (Context Q&A)
-     * Dedicated method for the "Geniy's Brain" page.
-     * Prioritizes context retrieval over survey generation.
+     * Chat with Brain (Context Q&A)
      */
     async chatWithBrain(context, messages) {
         const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');
@@ -582,28 +734,23 @@ class GenesisAgent {
         const prompt = `
         You are Geniy, an expert market researcher and successful business co-founder. 
         Your goal is to help the user build a solid business strategy by being direct, insightful, and proactive.
-        You are NOT just a passive assistant. You are a partner.
 
-        === KNOWLEDGE BASE (SOURCE OF TRUTH) ===
+        === KNOWLEDGE BASE ===
         ${context}
-        ========================================
+        ======================
 
-        ** CORE INSTRUCTIONS:**
+        **CORE INSTRUCTIONS:**
         1. **Context is King:** ALWAYS answer based on the KNOWLEDGE BASE first.
-        2. **Be Honest:** If the answer isn't there, say: "I don't see that in our data yet. Can you tell me more about...?"
-        3. **Cofounder Persona (CRITICAL):**
-           - **Be Relatable & Human:** Write like a smart, friendly business partner. Use natural language, not robotic lists.
-           - **Socratic Probing:** If the user's idea is vague (e.g., "I want to sell shoes"), DO NOT just accept it. Ask probing questions: "That's a crowded market. Who specifically are you targeting? High-end collectors or budget runners?"
-           - **Challenge Gently:** If an assumption looks risky, point it out. "I love the ambition, but have we validated that people will pay $50 for this?"
-           - **Be Proactive:** Don't wait for questions. Suggest the next logical step. "Since we have the competitors, should we look at their pricing?"
-        4. **Formatting:** Use Markdown. Use DOUBLE NEWLINES between paragraphs.
-        5. **Memory Trigger:** If the user provides NEW information, acknowledge it so it can be saved.
-        6. **Agentic Actions:** You can trigger background research tasks.
-            - **CRITICAL:** Before triggering "ANALYZE_COMPETITOR", CHECK THE KNOWLEDGE BASE.
-            - If already analyzed, use existing data.
-            - ONLY trigger "ANALYZE_COMPETITOR" if new or explicitly requested.
-            - Valid actions: "ANALYZE_COMPETITOR" (requires "actionTarget").
-            - When triggering, confirm with the user: "On it! I'm starting the deep dive on [Target]."
+        2. **Be Honest:** If the answer isn't there, ask for more information.
+        3. **Cofounder Persona:**
+           - Be relatable and human, like a smart business partner.
+           - If ideas are vague, ask probing questions.
+           - Challenge risky assumptions gently.
+           - Be proactive - suggest next steps.
+        4. **Formatting:** Use Markdown with double newlines between paragraphs.
+        5. **Agentic Actions:** You can trigger "ANALYZE_COMPETITOR" if needed.
+           - Check if already analyzed before triggering.
+           - Confirm with user before starting.
 
         Output JSON Schema:
         {
@@ -611,7 +758,7 @@ class GenesisAgent {
             "memory": "string | null", 
             "action": "CHAT" | "ANALYZE_COMPETITOR",
             "actionTarget": "string | null",
-            "actionGoal": "string | null" // e.g. "Find pricing model", "Check feature list"
+            "actionGoal": "string | null"
         }
 
         Conversation History:
@@ -620,48 +767,36 @@ class GenesisAgent {
         ASSISTANT:
         `;
 
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 1000);
+        return this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.CHAT);
     }
 
     /**
-     * Step 5: Chat with Context
-     * Interactive chat with the business context.
+     * Chat with Context (Survey generation focused)
      */
     async chatWithContext(context, messages) {
-        // Format messages for the prompt
-        // Assuming messages is an array of { role: "user"|"assistant", content: "..." }
         const conversationHistory = messages.map(m => `${m.role.toUpperCase()}: ${m.content} `).join('\n');
 
         const prompt = `
-      You are Geniy, an expert market research co-founder helping a user definition their survey campaign.
+      You are Geniy, an expert market research co-founder helping a user define their survey campaign.
       
       === BUSINESS CONTEXT ===
       ${context}
       ========================
 
-      Your goal is to help the user refine their strategy.
-      
-      **Tone & Style Guidelines:**
-      - **Persona:** You are a savvy, successful co-founder. Direct, meaningful, and slightly casual.
-      - **Socratic Logic:** If the context is empty or vague, DO NOT generate a generic outcome. Ask questions!
-        - "I see we're targeting 'everyone'. That's usually a mistake. Can we narrow it down to a specific niche first?"
-      - **Be Hyper-Specific:** Use the provided Industry and Audience in your examples.
-      - **No Fluff:** Start with the insight.
+      **Tone & Style:**
+      - Be a savvy, successful co-founder. Direct, meaningful, slightly casual.
+      - If context is vague, ask clarifying questions instead of generating generic output.
+      - Use the provided Industry and Audience in your examples.
+      - No fluff - start with the insight.
 
-      **Capabilities & Tool Handling:**
-      - **File Uploads:** You have a file upload interface available to the user.
-        - If the user asks if they can upload a PDF, Doc, or Text file: **YES, YOU CAN.**
-        - Instruct them to use the **"Upload Business Context" button** below the chat input.
-        - Explain that once uploaded, you will automatically read and analyze it.
-      - **Context Awareness:** The "BUSINESS CONTEXT" section above IS the content of their uploaded files/input. You function by reading this.
+      **Capabilities:**
+      - File Uploads: Users can upload PDFs, Docs, or Text files via the "Upload Business Context" button.
+      - Context Awareness: The BUSINESS CONTEXT section contains their uploaded content.
 
       **Actions:**
-      - If the user asks to analyze a competitor, set "action" to "ANALYZE_COMPETITOR".
-      - **STRICT CONFIRMATION REQUIRED:** 
-        - **NEVER** generate the survey immediately unless the strategy is crystal clear.
-        - Summary: "I think we have a solid angle now: [Summary]. Ready to build the survey?"
-        - ONLY set "action" to "GENERATE" if the user explicitly confirms (e.g., "Yes", "Go ahead").
-      - Otherwise, set "action" to "CHAT".
+      - "ANALYZE_COMPETITOR" - if user asks to analyze a competitor
+      - "GENERATE" - ONLY if user explicitly confirms they're ready
+      - "CHAT" - default for conversation
 
       Output JSON Schema:
       {
@@ -677,9 +812,22 @@ class GenesisAgent {
       ASSISTANT:
       `;
 
-        // Use a smart model for chat
-        return this.completeWithRetry(prompt, "openai/gpt-4o-mini", true, 2500);
+        return this.completeWithRetry(prompt, MODELS.FAST, true, TOKEN_LIMITS.STRATEGY);
+    }
+}
+
+/**
+ * Custom error class for Genesis Agent errors
+ */
+class GenesisError extends Error {
+    constructor(message, originalError = null) {
+        super(message);
+        this.name = 'GenesisError';
+        this.originalError = originalError;
+        this.timestamp = new Date().toISOString();
     }
 }
 
 module.exports = new GenesisAgent();
+module.exports.GenesisError = GenesisError;
+module.exports.MODELS = MODELS;
