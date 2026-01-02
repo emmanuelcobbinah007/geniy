@@ -1,8 +1,18 @@
 "use client"
 
+import { Suspense } from "react"
 import { AuthForm } from "@/components/auth/auth-form"
 import { motion } from "framer-motion"
 import Link from "next/link"
+import { Loader2 } from "lucide-react"
+
+function AuthFormLoader() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+    </div>
+  )
+}
 
 export default function AuthPage() {
   return (
@@ -19,15 +29,17 @@ export default function AuthPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative z-10 w-full max-w-md px-4"
       >
-        <AuthForm />
+        <Suspense fallback={<AuthFormLoader />}>
+          <AuthForm />
+        </Suspense>
 
         <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
           By continuing, you agree to our{" "}
-          <Link href="#" className="underline underline-offset-4 hover:text-foreground">
+          <Link href="/legal/terms" className="underline underline-offset-4 hover:text-foreground">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="#" className="underline underline-offset-4 hover:text-foreground">
+          <Link href="/legal/privacy" className="underline underline-offset-4 hover:text-foreground">
             Privacy Policy
           </Link>
           .
