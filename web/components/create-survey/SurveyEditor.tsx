@@ -83,11 +83,16 @@ function SortableQuestionCard({
               />
               
               {/* Options Area (if applicable) */}
-              {q.type === "multiple_choice" && (
+              {(q.type === "multiple_choice" || q.type === "checkbox") && (
                 <div className="space-y-2 pl-1">
                   {q.options?.map((opt: string, i: number) => (
                     <div key={i} className="flex items-center gap-3 group/opt">
-                      <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700" />
+                      {/* Circle for multiple_choice, Square for checkbox */}
+                      {q.type === "checkbox" ? (
+                        <div className="w-4 h-4 rounded-sm border border-zinc-300 dark:border-zinc-700" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700" />
+                      )}
                       <Input 
                         className="h-8 bg-transparent border-none text-zinc-600 dark:text-zinc-300 placeholder:text-zinc-400 px-2 focus-visible:ring-0 focus:bg-zinc-100 dark:focus:bg-zinc-950/50 rounded"
                         value={opt}
@@ -107,7 +112,11 @@ function SortableQuestionCard({
                     className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
                     onClick={() => addOption(q.id)}
                   >
-                    <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 border-dashed" />
+                    {q.type === "checkbox" ? (
+                      <div className="w-4 h-4 rounded-sm border border-zinc-300 dark:border-zinc-700 border-dashed" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700 border-dashed" />
+                    )}
                     <span className="text-sm text-zinc-500 px-2">Add option</span>
                   </div>
                 </div>
@@ -126,6 +135,7 @@ function SortableQuestionCard({
                     <SelectItem value="text">Short Text</SelectItem>
                     <SelectItem value="long_text">Long Text</SelectItem>
                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                    <SelectItem value="checkbox">Checkbox (Multi-select)</SelectItem>
                     <SelectItem value="rating">Rating</SelectItem>
                   </SelectContent>
                 </Select>
@@ -169,7 +179,7 @@ function SortableQuestionCard({
                       {/* Condition Group */}
                       <div className="flex items-center gap-2 w-full md:w-auto">
                         <GitBranch className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                        {q.type === "multiple_choice" ? (
+                        {(q.type === "multiple_choice" || q.type === "checkbox") ? (
                           <>
                             <span className="shrink-0">If answer is</span>
                             <Select 
@@ -260,7 +270,7 @@ export function SurveyEditor({
   const addLogic = (qId: number) => {
     setQuestions(questions.map(q => {
       if (q.id === qId) {
-        const defaultIf = q.type === "multiple_choice" ? "" : true
+        const defaultIf = (q.type === "multiple_choice" || q.type === "checkbox") ? "" : true
         return { ...q, logic: [...(q.logic || []), { if: defaultIf, then: "" }] }
       }
       return q

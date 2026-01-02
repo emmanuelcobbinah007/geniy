@@ -109,6 +109,71 @@ export function FocusLayout({
         )
     }
 
+    // Checkbox (Multi-select) Component
+    const CheckboxQuestion = ({ options, onAnswer, theme, isSystem }: { options: string[], onAnswer: (val: string[]) => void, theme?: Theme, isSystem: boolean }) => {
+        const [selected, setSelected] = useState<string[]>([])
+    
+        const toggleOption = (opt: string) => {
+            setSelected(prev => 
+                prev.includes(opt) 
+                    ? prev.filter(o => o !== opt) 
+                    : [...prev, opt]
+            )
+        }
+    
+        return (
+            <div className="space-y-4">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Select all that apply</p>
+                <div className="grid gap-3">
+                    {options.map((opt) => (
+                        <button
+                            key={opt}
+                            onClick={() => toggleOption(opt)}
+                            className={`w-full text-left p-4 border transition-all font-medium flex items-center gap-3 rounded-xl ${
+                                selected.includes(opt)
+                                    ? (isSystem ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300' : '')
+                                    : (isSystem ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 text-zinc-700 dark:text-zinc-300' : '')
+                            }`}
+                            style={{
+                                borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                                borderColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--primary)' : 'var(--accent)') : undefined,
+                                backgroundColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--accent)' : 'var(--bg)') : undefined,
+                                color: !isSystem && theme ? 'var(--text)' : undefined,
+                            }}
+                        >
+                            {/* Checkbox indicator */}
+                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                                selected.includes(opt)
+                                    ? (isSystem ? 'bg-violet-600 border-violet-600' : '')
+                                    : (isSystem ? 'border-zinc-300 dark:border-zinc-600' : '')
+                            }`}
+                                style={{
+                                    backgroundColor: !isSystem && theme && selected.includes(opt) ? 'var(--primary)' : undefined,
+                                    borderColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--primary)' : 'var(--accent)') : undefined,
+                                }}
+                            >
+                                {selected.includes(opt) && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+                
+                <Button 
+                    className={`w-full mt-2 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
+                    disabled={selected.length === 0}
+                    onClick={() => onAnswer(selected)}
+                    style={{ 
+                        backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                        borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
+                    }}
+                >
+                    Continue <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+            </div>
+        )
+    }
+
     return (
         <div 
             className={`flex flex-col h-full w-full transition-colors duration-300 ${isSystem ? 'bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50' : ''}`}
@@ -222,6 +287,15 @@ export function FocusLayout({
                         ))}
                       </div>
                     )}
+
+                    {currentQ.type === "checkbox" && (
+                      <CheckboxQuestion 
+                        options={currentQ.options || []} 
+                        onAnswer={onAnswer}
+                        theme={theme}
+                        isSystem={isSystem}
+                      />
+                    )}
     
                     {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text") && (
                       <div className="flex gap-2">
@@ -296,7 +370,7 @@ export function FocusLayout({
                     )}
                     
                     {/* Fallback for other types */}
-                    {!["multiple_choice", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
+                    {!["multiple_choice", "checkbox", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
                         <div className="text-red-500">Unsupported question type: {currentQ.type}</div>
                     )}
                   </div>

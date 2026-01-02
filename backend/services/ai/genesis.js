@@ -462,6 +462,41 @@ class GenesisAgent {
       
       ${userInstruction ? `**USER INSTRUCTION:** ${userInstruction}\n(You MUST prioritize this instruction strictly.)` : ""}
 
+      **QUESTION FLOW - CRITICAL:**
+      The survey MUST follow a logical, psychological progression. Think "known to unknown".
+      
+      **PHASE 1 - WARM-UP (Questions 1-3):**
+      - Start with easy, non-threatening questions about the respondent's general context
+      - Example: "How often do you [relevant activity]?" or "What is your current role?"
+      - Purpose: Build comfort and establish baseline context
+      
+      **PHASE 2 - EXPERIENCE & BEHAVIOR (Questions 4-8):**
+      - Explore their current behaviors, habits, and experiences
+      - Example: "What tools do you currently use for [activity]?"
+      - Purpose: Understand their current state before asking about problems
+      
+      **PHASE 3 - PAIN POINTS & CHALLENGES (Questions 9-14):**
+      - Now dig into their frustrations and unmet needs
+      - Example: "What challenges do you encounter when trying to [activity]?"
+      - Purpose: Identify the problems your product/service could solve
+      
+      **PHASE 4 - SOLUTION EXPLORATION (Questions 15-20):**
+      - Present features, solutions, or validate your value proposition
+      - Example: "How valuable would [feature] be to you?"
+      - Purpose: Test product-market fit and feature priorities
+      
+      **PHASE 5 - COMMITMENT & DEMOGRAPHICS (Questions 21-24):**
+      - Closing questions about willingness to adopt, pricing, and demographics
+      - Example: "How likely are you to try a solution that [value prop]?"
+      - Purpose: Gauge purchase intent and segment respondents
+      
+      **PHASE 6 - CONTACT & FOLLOW-UP (Final Question):**
+      - Ask if the respondent would like to stay updated or be contacted
+      - The LAST question MUST ask: "Would you like to leave your email to receive updates about [product/service]?"
+      - This should be a text type question, NOT required
+      - Example: "If you'd like to be notified when we launch or receive exclusive early access, please share your email below."
+      - Purpose: Collect leads from interested respondents
+
       **TONE & STYLE GUIDELINES:**
       1. **Conversational & Human:** Write like a friendly researcher, not a robot.
          - BAD: "Rate your satisfaction with the delivery speed."
@@ -470,10 +505,17 @@ class GenesisAgent {
          - Every question must contain specific keywords related to "${contextSummary.companyName}" or "${contextSummary.valueProposition}".
       3. **Engaging:** People hate surveys. Make this one feel like a conversation.
 
+      **QUESTION TYPES:**
+      - "multiple_choice": Single selection from options (radio buttons)
+      - "checkbox": Multiple selections allowed (checkboxes) - USE THIS when asking "select all that apply"
+      - "text": Open-ended text response
+      - "rating": 1-5 scale rating (always use 1-5, NEVER 1-10)
+
       **QUESTION RULES:**
       1. **Rating Scales:** ALWAYS use a **1-5 scale**. NEVER use 1-10.
-      2. **Question Count:** Generate **18-25 questions** unless user specifies otherwise.
-      3. **Cognitive Load:** Keep options simple and clear.
+      2. **Question Count:** Generate **20-26 questions** across all 6 phases. The final question MUST be the email opt-in.
+      3. **Checkbox Usage:** Use "checkbox" type when the question says "select all that apply" or allows multiple answers.
+      4. **Cognitive Load:** Keep options simple and clear.
 
       **BRANCHING RULES:**
       1. Include at least 2 questions where different options lead to DIFFERENT questions.
@@ -485,7 +527,7 @@ class GenesisAgent {
           "description": "string",
           "questions": {
               "Q1": {
-                  "type": "multiple_choice" | "text" | "rating",
+                  "type": "multiple_choice" | "checkbox" | "text" | "rating",
                   "question": "string",
                   "options": ["string"],
                   "required": boolean,
