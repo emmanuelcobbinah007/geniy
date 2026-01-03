@@ -260,10 +260,10 @@ export function FocusLayout({
                       </div>
                     ) : (
                       <>
-                        {/* For rating questions, show header separately */}
-                        {currentQ.type === "rating" && currentQ.ratingHeader && (
+                        {/* For rating questions, show header separately (with fallback) */}
+                        {currentQ.type === "rating" && (
                           <p className={`text-base md:text-lg font-medium ${isSystem ? 'text-zinc-500 dark:text-zinc-400' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined, opacity: 0.8 }}>
-                            {currentQ.ratingHeader}
+                            {currentQ.ratingHeader || "Rate on a scale of 1-5 (1 = lowest, 5 = highest):"}
                           </p>
                         )}
                         <h2 className={`text-2xl md:text-3xl font-bold ${isSystem ? 'text-zinc-900 dark:text-zinc-100' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>

@@ -401,7 +401,15 @@ ${response.updatedContext || chatContext}
                         strong: ({ children }) => <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{children}</strong>,
                       }}
                     >
-                        {msg.content}
+                        {/* Preprocess: convert numbered patterns like "1)" to line breaks and proper lists */}
+                        {msg.content
+                          // Convert patterns like "1) Text" or "1. Text" at start of lines or after spaces to proper markdown
+                          .replace(/(\s)(\d+)\)\s/g, '\n\n$2. ')
+                          .replace(/(\s)(\d+)\.\s(?=[A-Z])/g, '\n\n$2. ')
+                          // Ensure double newlines before numbered items for proper paragraphs
+                          .replace(/([.!?])\s*(\d+)\.\s/g, '$1\n\n$2. ')
+                          .replace(/([.!?])\s*(\d+)\)\s/g, '$1\n\n$2. ')
+                        }
                     </ReactMarkdown>
                 </div>
                 {msg.strategy && (
