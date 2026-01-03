@@ -238,6 +238,70 @@ const PaymentService = {
         const requiredLevel = tiers.indexOf(requiredTier);
 
         return currentLevel >= requiredLevel;
+    },
+
+    /**
+     * Cancel a workspace subscription
+     * - Disables the subscription in Paystack
+     * - Downgrades workspace to FREE plan
+     * - Updates subscription status in database
+     */
+    async cancelSubscription(workspaceId) {
+        console.log('[PaymentService] Cancelling subscription for workspace:', workspaceId);
+
+        // 1. Find the subscription record
+        const subscription = await prisma.subscription.findUnique({
+            where: { workspaceId },
+        });
+
+        if (!subscription) {
+            throw new Error('No active subscription found for this workspace');
+        }
+
+        // 2. Cancel in Paystack if we have a subscription code
+        if (subscription.paystackSubscriptionCode) {
+            try {
+                console.log('[PaymentService] Disabling Paystack subscription:', subscription.paystackSubscriptionCode);
+
+                // Paystack uses token and code for disabling
+                const response = await axios.post(
+                    `${PAYSTACK_BASE_URL}/subscription/disable`,
+                    {
+                        code: subscription.paystackSubscriptionCode,
+                        token: subscription.paystackEmailToken
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                console.log('[PaymentService] Paystack disable response:', response.data);
+            } catch (error) {
+                console.error('[PaymentService] Error disabling Paystack subscription:', error.response?.data || error.message);
+                // Continue with local cancellation even if Paystack fails
+            }
+        }
+
+        // 3. Update subscription record
+        await prisma.subscription.update({
+            where: { workspaceId },
+            data: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+            }
+        });
+
+        // 4. Downgrade workspace to FREE
+        await prisma.workspace.update({
+            where: { id: workspaceId },
+            data: { planTier: 'FREE' }
+        });
+
+        console.log('[PaymentService] Subscription cancelled successfully');
+        return { success: true, message: 'Subscription cancelled. Your workspace has been downgraded to the Free plan.' };
     }
 };
 

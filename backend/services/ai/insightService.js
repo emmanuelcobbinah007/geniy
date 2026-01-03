@@ -20,13 +20,22 @@ class InsightService {
             }
         });
 
-        if (!campaign) throw new Error("Campaign not found");
+        if (!campaign) {
+            console.error("[InsightService] Campaign not found:", campaignId);
+            throw new Error("Campaign not found");
+        }
 
         const survey = campaign.surveys[0]; // Assuming single survey per campaign for now
-        if (!survey) throw new Error("No survey found for this campaign");
+        if (!survey) {
+            console.error("[InsightService] No survey found for campaign:", campaignId);
+            throw new Error("No survey found for this campaign");
+        }
 
         const responses = survey.responses;
-        if (responses.length === 0) throw new Error("No responses to analyze");
+        console.log(`[InsightService] Found ${responses.length} responses for campaign ${campaignId}`);
+        if (responses.length === 0) {
+            throw new Error("No responses to analyze. Collect some survey responses first!");
+        }
 
         // 2. Prepare Data for AI
         // Extract text answers only to save tokens
@@ -41,7 +50,7 @@ class InsightService {
         // 3. Construct Prompt
         const prompt = `
             You are an expert Data Analyst and Market Researcher.
-            Analyze the following survey responses for a campaign.
+            Analyze the following survey responses for a campaign and respond in json format.
 
             === CONTEXT ===
             Company/Business Context: "${businessContext}"
@@ -49,7 +58,7 @@ class InsightService {
             Survey Title: "${survey.title}"
 
             === RESPONSES ===
-            ${textAnswers.substring(0, 15000)} // Truncated to prevent token overflow
+            ${textAnswers.substring(0, 15000)}
 
             === INSTRUCTIONS ===
             Generate a comprehensive insight report in JSON format.

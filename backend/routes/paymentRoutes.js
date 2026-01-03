@@ -12,4 +12,7 @@ router.post('/subscribe', protect, paymentController.initializeSubscription);
 // Paystack webhook (no auth - uses signature verification)
 router.post('/webhook', paymentController.handleWebhook);
 
+// Cancel subscription
+router.post('/cancel', protect, paymentController.cancelSubscription);
+
 module.exports = router;

@@ -397,11 +397,14 @@ const insightService = require('../services/ai/insightService');
 exports.generateInsights = async (req, res) => {
     try {
         const { id } = req.params;
+        console.log("[Insights] Generating insights for campaign:", id);
         const insights = await insightService.generateInsights(id);
         res.json(insights);
     } catch (error) {
-        console.error("Insight Generation Error:", error);
-        res.status(500).json({ error: error.message || "Failed to generate insights" });
+        console.error("[Insights] Generation Error:", error.message);
+        console.error("[Insights] Full error:", error);
+        // Use 'message' key to match frontend error handling
+        res.status(400).json({ message: error.message || "Failed to generate insights" });
     }
 };
 

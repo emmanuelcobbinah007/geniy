@@ -61,6 +61,20 @@ const getWorkspace = async (req, res) => {
                             select: { id: true, name: true, email: true }
                         }
                     }
+                },
+                campaigns: {
+                    where: { isDeleted: false },
+                    select: {
+                        id: true,
+                        name: true,
+                        surveys: {
+                            select: {
+                                _count: {
+                                    select: { responses: true }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });

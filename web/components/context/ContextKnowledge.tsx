@@ -411,7 +411,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                 size="sm"
                 onClick={handleClearMemory}
                 disabled={clearMutation.isPending || (!context && documents.length === 0)}
-                className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
+                className="bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white border border-red-500/20 hover:border-red-600 transition-colors"
             >
                 {clearMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                 Clear Memory

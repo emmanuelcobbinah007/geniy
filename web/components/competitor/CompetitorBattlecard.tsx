@@ -187,7 +187,7 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="h-6 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                className="h-6 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
                 {isExpanded ? (
                     <>Show Less <ChevronUp className="w-3 h-3 ml-1" /></>

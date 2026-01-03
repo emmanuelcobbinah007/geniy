@@ -302,8 +302,8 @@ export function Sidebar() {
               </Avatar>
               {(!collapsed || isMobile) && (
                 <div className="flex flex-col items-start text-left overflow-hidden">
-                  <span className="text-sm font-medium truncate w-full">{user?.name || "User"}</span>
-                  <span className="text-xs text-zinc-500 truncate w-full">{user?.email}</span>
+                  <span className="text-sm font-medium truncate w-full text-zinc-900 dark:text-zinc-100">{user?.name || "User"}</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate w-full">{user?.email}</span>
                 </div>
               )}
             </Button>

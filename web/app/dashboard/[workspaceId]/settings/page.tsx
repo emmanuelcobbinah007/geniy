@@ -189,14 +189,65 @@ export default function SettingsPage() {
                           </span>.
                         </CardDescription>
                     </div>
-                    {(currentWorkspace?.planTier === "FREE" || !currentWorkspace?.planTier) && (
-                      <Button 
-                          onClick={() => upgradeModal.open({ feature: "upgradePlan", requiredTier: "STARTER" })}
-                          className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0 w-full md:w-auto"
-                      >
-                          <Sparkles className="w-4 h-4 mr-2" /> Upgrade
-                      </Button>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                      {(currentWorkspace?.planTier === "FREE" || !currentWorkspace?.planTier) ? (
+                        <Button 
+                            onClick={() => upgradeModal.open({ feature: "upgradePlan", requiredTier: "STARTER" })}
+                            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0 w-full md:w-auto"
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" /> Upgrade
+                        </Button>
+                      ) : (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                                variant="outline"
+                                className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20 w-full md:w-auto"
+                            >
+                                Cancel Subscription
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+                            <DialogHeader>
+                              <DialogTitle className="text-zinc-900 dark:text-white">Cancel Subscription?</DialogTitle>
+                              <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+                                Are you sure you want to cancel your subscription? You'll lose access to:
+                                <ul className="mt-2 space-y-1 text-sm">
+                                  <li>• Unlimited surveys & responses</li>
+                                  <li>• AI analysis & insights</li>
+                                  <li>• Competitor research</li>
+                                  <li>• Advanced themes & features</li>
+                                </ul>
+                                <p className="mt-3 text-amber-600 dark:text-amber-400">
+                                  Your workspace will be downgraded to the Free plan immediately.
+                                </p>
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="gap-2 sm:gap-0">
+                              <Button variant="ghost" className="text-zinc-600 dark:text-zinc-400">
+                                Keep Subscription
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={async () => {
+                                  if (!token || !workspaceId) return;
+                                  try {
+                                    await api.cancelSubscription(workspaceId, token);
+                                    toast.success("Subscription cancelled. You're now on the Free plan.");
+                                    queryClient.invalidateQueries({ queryKey: ["user"] });
+                                    queryClient.invalidateQueries({ queryKey: ["workspace", workspaceId] });
+                                  } catch (error: any) {
+                                    toast.error(error.message || "Failed to cancel subscription");
+                                  }
+                                }}
+                              >
+                                Yes, Cancel
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
                 </CardHeader>
               </Card>
 

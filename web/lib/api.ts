@@ -260,4 +260,8 @@ export const api = {
   async completeGoogleSignup(googleUser: any, planTier: string, paymentReference?: string, inviteCode?: string) {
     return this.post('/auth/complete-google-signup', { googleUser, planTier, paymentReference, inviteCode });
   },
+
+  async cancelSubscription(workspaceId: string, token: string) {
+    return this.post('/payment/cancel', { workspaceId }, token);
+  },
 };

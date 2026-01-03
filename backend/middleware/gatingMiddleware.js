@@ -57,9 +57,21 @@ function requireTier(requiredTier) {
 function requireFeature(featureName) {
     return async (req, res, next) => {
         try {
-            const workspaceId = req.query.workspaceId || req.body.workspaceId || req.params.workspaceId;
+            let workspaceId = req.query.workspaceId || req.body.workspaceId || req.params.workspaceId;
+
+            // If no workspaceId but we have a campaign ID, look it up from the campaign
+            if (!workspaceId && req.params.id) {
+                const campaign = await prisma.campaign.findUnique({
+                    where: { id: req.params.id },
+                    select: { workspaceId: true }
+                });
+                if (campaign) {
+                    workspaceId = campaign.workspaceId;
+                }
+            }
 
             if (!workspaceId) {
+                console.log('[Gating] No workspaceId found for feature check:', featureName);
                 return res.status(400).json({
                     error: 'Workspace ID required',
                     gated: true

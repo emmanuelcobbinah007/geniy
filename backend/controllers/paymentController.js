@@ -230,3 +230,24 @@ async function handlePaymentFailed(data) {
         });
     }
 }
+
+/**
+ * Cancel a subscription
+ */
+exports.cancelSubscription = async (req, res) => {
+    try {
+        const { workspaceId } = req.body;
+
+        if (!workspaceId) {
+            return res.status(400).json({ error: 'Workspace ID is required' });
+        }
+
+        const result = await PaymentService.cancelSubscription(workspaceId);
+
+        res.status(200).json(result);
+
+    } catch (error) {
+        console.error('Cancel Subscription Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to cancel subscription' });
+    }
+};

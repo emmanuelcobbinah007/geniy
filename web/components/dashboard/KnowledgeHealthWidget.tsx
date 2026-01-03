@@ -375,7 +375,7 @@ export function KnowledgeHealthWidget({ workspaceId }: KnowledgeHealthWidgetProp
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 h-auto py-1"
+                className="w-full text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 h-auto py-2"
             >
                 {isExpanded ? "Show Less" : "View Details"}
             </Button>
