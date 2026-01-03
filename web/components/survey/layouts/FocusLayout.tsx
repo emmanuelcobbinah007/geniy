@@ -405,7 +405,7 @@ export function FocusLayout({
                       />
                     )}
     
-                    {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text") && (
+                    {(currentQ.type === "text" || currentQ.type === "short_text" || currentQ.type === "long_text" || currentQ.type === "textarea") && (
                       <div className="flex gap-2">
                         <Input 
                           className={`h-12 text-lg ${isSystem ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800' : ''}`}
@@ -493,7 +493,7 @@ export function FocusLayout({
                     )}
                     
                     {/* Fallback for other types */}
-                    {!["explainer", "multiple_choice", "checkbox", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
+                    {!["explainer", "multiple_choice", "checkbox", "text", "short_text", "long_text", "textarea", "rating", "ranking"].includes(currentQ.type) && (
                         <div className="text-red-500">Unsupported question type: {currentQ.type}</div>
                     )}
                   </div>

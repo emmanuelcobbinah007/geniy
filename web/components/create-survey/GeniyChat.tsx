@@ -457,9 +457,9 @@ ${response.updatedContext || chatContext}
               }
             }}
             placeholder="Describe your survey goals..."
-            className="pr-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500 min-h-[44px] max-h-[150px] resize-none"
+            className="pr-12 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500 min-h-[80px] max-h-[200px] resize-none"
             disabled={isProcessing}
-            rows={1}
+            rows={3}
           />
           <Button
             size="icon"

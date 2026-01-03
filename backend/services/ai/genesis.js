@@ -274,11 +274,16 @@ class GenesisAgent {
 
         try {
             console.log("[Genesis] Finding audience hangouts...");
+            console.log("[Genesis] Using model:", MODELS.RESEARCH);
             const result = await this.completeWithRetry(prompt, MODELS.RESEARCH, true, TOKEN_LIMITS.VALIDATION);
             console.log("[Genesis] Audience hangouts discovery complete");
+            console.log("[Genesis] Result keys:", Object.keys(result || {}));
             return result;
         } catch (err) {
-            console.error("[Genesis] Audience hangouts discovery failed:", err.message);
+            console.error("[Genesis] Audience hangouts discovery failed:");
+            console.error("[Genesis] Error name:", err.name);
+            console.error("[Genesis] Error message:", err.message);
+            console.error("[Genesis] Error stack:", err.stack?.substring(0, 500));
             return {
                 summary: "Unable to discover audience hangouts at this time.",
                 socialPlatforms: [],

@@ -32,6 +32,8 @@ class OpenRouterService {
                 throw new Error("OpenRouter API Key is missing");
             }
 
+            console.log(`[OpenRouter] Calling model: ${model}, jsonMode: ${jsonMode}, maxTokens: ${maxTokens}`);
+
             const completion = await client.chat.completions.create({
                 model: model,
                 messages: [
@@ -41,10 +43,19 @@ class OpenRouterService {
                 max_tokens: maxTokens
             });
 
-            return completion.choices[0].message.content;
+            const content = completion.choices[0].message.content;
+            console.log(`[OpenRouter] Response received, length: ${content?.length || 0} chars`);
+            return content;
         } catch (error) {
-            console.error("OpenRouter API Error:", error);
-            throw new Error("Failed to generate AI response");
+            console.error("[OpenRouter] API Error Details:");
+            console.error("[OpenRouter] Model:", model);
+            console.error("[OpenRouter] Error name:", error.name);
+            console.error("[OpenRouter] Error message:", error.message);
+            if (error.response) {
+                console.error("[OpenRouter] Response status:", error.response.status);
+                console.error("[OpenRouter] Response data:", JSON.stringify(error.response.data || {}).substring(0, 500));
+            }
+            throw new Error(`Failed to generate AI response: ${error.message}`);
         }
     }
 }
