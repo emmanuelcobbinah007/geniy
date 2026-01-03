@@ -49,11 +49,20 @@ class OpenRouterService {
         } catch (error) {
             console.error("[OpenRouter] API Error Details:");
             console.error("[OpenRouter] Model:", model);
+            console.error("[OpenRouter] Prompt length:", prompt?.length || 0, "chars");
             console.error("[OpenRouter] Error name:", error.name);
             console.error("[OpenRouter] Error message:", error.message);
+            // OpenRouter errors often have the real error in error.error
+            if (error.error) {
+                console.error("[OpenRouter] Error.error:", JSON.stringify(error.error).substring(0, 500));
+            }
             if (error.response) {
                 console.error("[OpenRouter] Response status:", error.response.status);
                 console.error("[OpenRouter] Response data:", JSON.stringify(error.response.data || {}).substring(0, 500));
+            }
+            // Log status code from error if available
+            if (error.status) {
+                console.error("[OpenRouter] Status code:", error.status);
             }
             throw new Error(`Failed to generate AI response: ${error.message}`);
         }

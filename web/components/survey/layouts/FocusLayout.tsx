@@ -55,9 +55,14 @@ export function FocusLayout({
     } as React.CSSProperties : {}
 
     // Ranking Component Logic (Internal)
-    const RankingQuestion = ({ options, onAnswer }: { options: string[], onAnswer: (val: string[]) => void }) => {
+    const RankingQuestion = ({ options, onAnswer }: { options: (string | { text: string; allowOther?: boolean })[], onAnswer: (val: string[]) => void }) => {
+        // Helper to get text from option (handles both string and object formats)
+        const getOptionText = (opt: string | { text: string; allowOther?: boolean }): string => {
+            return typeof opt === 'object' ? opt.text : opt
+        }
+        
         const [ranked, setRanked] = useState<string[]>([])
-        const [available, setAvailable] = useState<string[]>(options)
+        const [available, setAvailable] = useState<string[]>(options.map(getOptionText))
     
         const handleSelect = (opt: string) => {
             setAvailable(prev => prev.filter(o => o !== opt))
@@ -110,14 +115,20 @@ export function FocusLayout({
     }
 
     // Checkbox (Multi-select) Component
-    const CheckboxQuestion = ({ options, onAnswer, theme, isSystem }: { options: string[], onAnswer: (val: string[]) => void, theme?: Theme, isSystem: boolean }) => {
+    const CheckboxQuestion = ({ options, onAnswer, theme, isSystem }: { options: (string | { text: string; allowOther?: boolean })[], onAnswer: (val: string[]) => void, theme?: Theme, isSystem: boolean }) => {
         const [selected, setSelected] = useState<string[]>([])
+
+        // Helper to get text from option (handles both string and object formats)
+        const getOptionText = (opt: string | { text: string; allowOther?: boolean }): string => {
+            return typeof opt === 'object' ? opt.text : opt
+        }
     
-        const toggleOption = (opt: string) => {
+        const toggleOption = (opt: string | { text: string }) => {
+            const optText = getOptionText(opt)
             setSelected(prev => 
-                prev.includes(opt) 
-                    ? prev.filter(o => o !== opt) 
-                    : [...prev, opt]
+                prev.includes(optText) 
+                    ? prev.filter(o => o !== optText) 
+                    : [...prev, optText]
             )
         }
     
@@ -125,38 +136,40 @@ export function FocusLayout({
             <div className="space-y-4">
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Select all that apply</p>
                 <div className="grid gap-3">
-                    {options.map((opt) => (
+                    {options.map((opt) => {
+                        const optText = getOptionText(opt)
+                        return (
                         <button
-                            key={opt}
+                            key={optText}
                             onClick={() => toggleOption(opt)}
                             className={`w-full text-left p-4 border transition-all font-medium flex items-center gap-3 rounded-xl ${
-                                selected.includes(opt)
+                                selected.includes(optText)
                                     ? (isSystem ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300' : '')
                                     : (isSystem ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 text-zinc-700 dark:text-zinc-300' : '')
                             }`}
                             style={{
                                 borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
-                                borderColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--primary)' : 'var(--accent)') : undefined,
-                                backgroundColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--accent)' : 'var(--bg)') : undefined,
+                                borderColor: !isSystem && theme ? (selected.includes(optText) ? 'var(--primary)' : 'var(--accent)') : undefined,
+                                backgroundColor: !isSystem && theme ? (selected.includes(optText) ? 'var(--accent)' : 'var(--bg)') : undefined,
                                 color: !isSystem && theme ? 'var(--text)' : undefined,
                             }}
                         >
                             {/* Checkbox indicator */}
                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                                selected.includes(opt)
+                                selected.includes(optText)
                                     ? (isSystem ? 'bg-violet-600 border-violet-600' : '')
                                     : (isSystem ? 'border-zinc-300 dark:border-zinc-600' : '')
                             }`}
                                 style={{
-                                    backgroundColor: !isSystem && theme && selected.includes(opt) ? 'var(--primary)' : undefined,
-                                    borderColor: !isSystem && theme ? (selected.includes(opt) ? 'var(--primary)' : 'var(--accent)') : undefined,
+                                    backgroundColor: !isSystem && theme && selected.includes(optText) ? 'var(--primary)' : undefined,
+                                    borderColor: !isSystem && theme ? (selected.includes(optText) ? 'var(--primary)' : 'var(--accent)') : undefined,
                                 }}
                             >
-                                {selected.includes(opt) && <Check className="w-3 h-3 text-white" />}
+                                {selected.includes(optText) && <Check className="w-3 h-3 text-white" />}
                             </div>
-                            {opt}
+                            {optText}
                         </button>
-                    ))}
+                    )})}
                 </div>
                 
                 <Button 

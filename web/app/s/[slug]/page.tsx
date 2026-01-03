@@ -16,13 +16,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   try {
     const survey = await api.getSurveyBySlug(slug)
+    const title = survey.title || "Survey"
+    const description = survey.campaign?.name || survey.description || "Please take a moment to complete this survey."
+    
     return {
-      title: survey.title || "Survey | Geniy",
-      description: survey.campaign?.name || "Please take a moment to complete this survey.",
+      title: title,
+      description: description,
+      openGraph: {
+        title: title,
+        description: description,
+        type: "website",
+        siteName: "Geniy",
+      },
+      twitter: {
+        card: "summary",
+        title: title,
+        description: description,
+      },
     }
   } catch (error) {
     return {
       title: "Survey Not Found | Geniy",
+      description: "This survey could not be found or may no longer be available.",
     }
   }
 }
