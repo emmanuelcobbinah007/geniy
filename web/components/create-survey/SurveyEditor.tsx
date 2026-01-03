@@ -137,6 +137,7 @@ function SortableQuestionCard({
                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
                     <SelectItem value="checkbox">Checkbox (Multi-select)</SelectItem>
                     <SelectItem value="rating">Rating</SelectItem>
+                    <SelectItem value="explainer">Explainer (Info Block)</SelectItem>
                   </SelectContent>
                 </Select>
                 

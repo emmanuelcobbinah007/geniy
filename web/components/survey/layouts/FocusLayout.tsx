@@ -245,48 +245,156 @@ export function FocusLayout({
                   className="w-full space-y-8"
                 >
                   <div className="space-y-2">
-                    <h2 className={`text-2xl md:text-3xl font-bold ${isSystem ? 'text-zinc-900 dark:text-zinc-100' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>
-                      {currentQ.question}
-                    </h2>
-                    {currentQ.required && <span className="text-xs text-red-500 uppercase tracking-wider font-medium">Required</span>}
+                    {/* For explainer type, show as an info block */}
+                    {currentQ.type === "explainer" ? (
+                      <div 
+                        className={`p-6 rounded-xl border-2 border-dashed ${isSystem ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800' : ''}`}
+                        style={{ 
+                          backgroundColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                          borderColor: !isSystem && theme ? 'var(--primary)' : undefined
+                        }}
+                      >
+                        <p className={`text-lg leading-relaxed ${isSystem ? 'text-zinc-700 dark:text-zinc-300' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>
+                          {currentQ.question}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* For rating questions, show header separately */}
+                        {currentQ.type === "rating" && currentQ.ratingHeader && (
+                          <p className={`text-base md:text-lg font-medium ${isSystem ? 'text-zinc-500 dark:text-zinc-400' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined, opacity: 0.8 }}>
+                            {currentQ.ratingHeader}
+                          </p>
+                        )}
+                        <h2 className={`text-2xl md:text-3xl font-bold ${isSystem ? 'text-zinc-900 dark:text-zinc-100' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>
+                          {currentQ.question}
+                        </h2>
+                      </>
+                    )}
+                    {currentQ.required && currentQ.type !== "explainer" && <span className="text-xs text-red-500 uppercase tracking-wider font-medium">Required</span>}
                   </div>
     
                   <div className="space-y-3">
-                    {currentQ.type === "multiple_choice" && (
-                      <div className="grid gap-3">
-                        {currentQ.options?.map((opt: string) => (
-                          <button
-                            key={opt}
-                            onClick={() => onAnswer(opt)}
-                            className={`w-full text-left p-4 border transition-all font-medium flex items-center justify-between group rounded-xl ${isSystem ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-zinc-700 dark:text-zinc-300' : ''}`}
-                            style={{
-                                borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
-                                borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
-                                backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
-                                color: !isSystem && theme ? 'var(--text)' : undefined,
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isSystem && theme) {
-                                    e.currentTarget.style.borderColor = 'var(--primary)'
-                                    e.currentTarget.style.backgroundColor = 'var(--accent)'
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isSystem && theme) {
-                                    e.currentTarget.style.borderColor = 'var(--accent)'
-                                    e.currentTarget.style.backgroundColor = 'var(--bg)'
-                                }
-                            }}
-                          >
-                            {opt}
-                            <ArrowRight 
-                                className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-violet-500" 
-                                style={{ color: theme ? 'var(--primary)' : undefined }}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {currentQ.type === "multiple_choice" && (() => {
+                      // Check if any option is an "Other" type that needs text input
+                      const hasOtherOption = currentQ.options?.some((opt: any) => 
+                        (typeof opt === 'object' && opt.allowOther) || 
+                        (typeof opt === 'string' && opt.toLowerCase().includes('other') && opt.toLowerCase().includes('specify'))
+                      );
+                      
+                      const [showOtherInput, setShowOtherInput] = useState(false);
+                      const [otherText, setOtherText] = useState("");
+                      
+                      return (
+                        <div className="grid gap-3">
+                          {currentQ.options?.map((opt: any) => {
+                            const optText = typeof opt === 'object' ? opt.text : opt;
+                            const isOtherOption = (typeof opt === 'object' && opt.allowOther) || 
+                              (typeof optText === 'string' && optText.toLowerCase().includes('other') && optText.toLowerCase().includes('specify'));
+                            
+                            if (isOtherOption && showOtherInput) {
+                              // Show text input for "Other" option
+                              return (
+                                <div key={optText} className="space-y-2">
+                                  <div 
+                                    className={`w-full p-4 border-2 rounded-xl ${isSystem ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30' : ''}`}
+                                    style={{
+                                      borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                                      borderColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                                      backgroundColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                                    }}
+                                  >
+                                    <p className={`font-medium mb-2 ${isSystem ? 'text-zinc-700 dark:text-zinc-300' : ''}`} style={{ color: !isSystem && theme ? 'var(--text)' : undefined }}>
+                                      {optText}
+                                    </p>
+                                    <div className="flex gap-2">
+                                      <Input 
+                                        autoFocus
+                                        className={`h-10 ${isSystem ? 'bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700' : ''}`}
+                                        style={{
+                                          borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                                          borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                                          backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+                                          color: !isSystem && theme ? 'var(--text)' : undefined
+                                        }}
+                                        placeholder="Please specify..."
+                                        value={otherText}
+                                        onChange={(e) => setOtherText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter" && otherText.trim()) {
+                                            onAnswer(`Other: ${otherText.trim()}`);
+                                          }
+                                        }}
+                                      />
+                                      <Button 
+                                        size="icon" 
+                                        className={`h-10 w-10 shrink-0 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
+                                        style={{ 
+                                          backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                                          borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
+                                        }}
+                                        onClick={() => {
+                                          if (otherText.trim()) {
+                                            onAnswer(`Other: ${otherText.trim()}`);
+                                          }
+                                        }}
+                                        disabled={!otherText.trim()}
+                                      >
+                                        <ArrowRight className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                    <button 
+                                      className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mt-2"
+                                      onClick={() => setShowOtherInput(false)}
+                                    >
+                                      ← Choose another option
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <button
+                                key={optText}
+                                onClick={() => {
+                                  if (isOtherOption) {
+                                    setShowOtherInput(true);
+                                  } else {
+                                    onAnswer(optText);
+                                  }
+                                }}
+                                className={`w-full text-left p-4 border transition-all font-medium flex items-center justify-between group rounded-xl ${isSystem ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-zinc-700 dark:text-zinc-300' : ''}`}
+                                style={{
+                                    borderRadius: !isSystem && theme ? 'var(--radius)' : undefined,
+                                    borderColor: !isSystem && theme ? 'var(--accent)' : undefined,
+                                    backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
+                                    color: !isSystem && theme ? 'var(--text)' : undefined,
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!isSystem && theme) {
+                                        e.currentTarget.style.borderColor = 'var(--primary)'
+                                        e.currentTarget.style.backgroundColor = 'var(--accent)'
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isSystem && theme) {
+                                        e.currentTarget.style.borderColor = 'var(--accent)'
+                                        e.currentTarget.style.backgroundColor = 'var(--bg)'
+                                    }
+                                }}
+                              >
+                                {optText}
+                                <ArrowRight 
+                                    className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-violet-500" 
+                                    style={{ color: theme ? 'var(--primary)' : undefined }}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
 
                     {currentQ.type === "checkbox" && (
                       <CheckboxQuestion 
@@ -368,9 +476,24 @@ export function FocusLayout({
                             onAnswer={onAnswer} 
                         />
                     )}
+
+                    {/* Continue button for explainer type */}
+                    {currentQ.type === "explainer" && (
+                      <Button 
+                        size="lg"
+                        className={`mt-4 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
+                        onClick={() => onAnswer("_explainer_continue_")}
+                        style={{ 
+                          backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
+                          borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
+                        }}
+                      >
+                        Continue <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    )}
                     
                     {/* Fallback for other types */}
-                    {!["multiple_choice", "checkbox", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
+                    {!["explainer", "multiple_choice", "checkbox", "text", "short_text", "long_text", "rating", "ranking"].includes(currentQ.type) && (
                         <div className="text-red-500">Unsupported question type: {currentQ.type}</div>
                     )}
                   </div>

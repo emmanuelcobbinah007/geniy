@@ -356,13 +356,32 @@ class GenesisAgent {
 
     /**
      * Helper to clean and parse JSON
+     * Handles responses that may have surrounding text (common with Perplexity)
      */
     safeParse(text) {
         try {
+            // First, try direct parse after removing code blocks
             const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
             return JSON.parse(cleanText);
         } catch (e) {
-            console.error("[Genesis] JSON Parse Failed. Raw text preview:", text.substring(0, 200));
+            // If direct parse fails, try to extract JSON from the text
+            try {
+                // Look for JSON object pattern (starts with { ends with })
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+
+                // Look for JSON array pattern
+                const arrayMatch = text.match(/\[[\s\S]*\]/);
+                if (arrayMatch) {
+                    return JSON.parse(arrayMatch[0]);
+                }
+            } catch (extractError) {
+                console.error("[Genesis] JSON Extraction also failed:", extractError.message);
+            }
+
+            console.error("[Genesis] JSON Parse Failed. Raw text preview:", text.substring(0, 300));
             throw new Error("Invalid JSON response from AI");
         }
     }
@@ -511,16 +530,19 @@ class GenesisAgent {
       3. **Engaging:** People hate surveys. Make this one feel like a conversation.
 
       **QUESTION TYPES:**
-      - "multiple_choice": Single selection from options (radio buttons)
+      - "explainer": An informational block (NOT a question) that provides context about a product/feature before asking questions about it. Use this BEFORE product-related questions to explain what the product is and what it does. The "question" field contains the explanation text.
+      - "multiple_choice": Single selection from options (radio buttons). If you include an "Other (please specify)" option, mark it with "allowOther": true in the options array.
       - "checkbox": Multiple selections allowed (checkboxes) - USE THIS when asking "select all that apply"
       - "text": Open-ended text response
-      - "rating": 1-5 scale rating (always use 1-5, NEVER 1-10)
+      - "rating": 1-5 scale rating. IMPORTANT: Structure rating questions with SEPARATE header and statement. The "question" field should contain ONLY the statement being rated (e.g., "Difficulty accessing GitHub projects on mobile."). Add a "ratingHeader" field with the scale instructions (e.g., "Rate the following issues on a scale of 1-5 (1 = not a problem, 5 = major problem):").
 
       **QUESTION RULES:**
-      1. **Rating Scales:** ALWAYS use a **1-5 scale**. NEVER use 1-10.
+      1. **Rating Scales:** ALWAYS use a **1-5 scale**. NEVER use 1-10. Rating questions MUST have a separate "ratingHeader" field explaining the scale, and "question" should ONLY contain the specific item being rated.
       2. **Question Count:** Generate **20-26 questions** across all 6 phases. The final question MUST be the email opt-in.
       3. **Checkbox Usage:** Use "checkbox" type when the question says "select all that apply" or allows multiple answers.
       4. **Cognitive Load:** Keep options simple and clear.
+      5. **Explainer Usage:** Use "explainer" type ONCE before introducing product-specific questions (typically before Phase 4). Include product name, what it does, and key value propositions.
+      6. **Other Option:** For multiple choice questions where respondents might have an unlisted answer, include "Other (please specify)" as an option and mark it with allowOther: true.
 
       **BRANCHING RULES:**
       1. Include at least 2 questions where different options lead to DIFFERENT questions.
@@ -532,9 +554,10 @@ class GenesisAgent {
           "description": "string",
           "questions": {
               "Q1": {
-                  "type": "multiple_choice" | "checkbox" | "text" | "rating",
+                  "type": "explainer" | "multiple_choice" | "checkbox" | "text" | "rating",
                   "question": "string",
-                  "options": ["string"],
+                  "ratingHeader": "string (for rating type only - contains scale instructions)",
+                  "options": [{"text": "string", "allowOther": boolean}] | ["string"],
                   "required": boolean,
                   "branches": [{ "if": "string", "next": "Q#" }],
                   "next": "Q#"
