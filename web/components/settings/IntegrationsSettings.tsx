@@ -17,6 +17,7 @@ interface IntegrationsSettingsProps {
     initialIntegrations?: {
         slackWebhook?: string
         discordWebhook?: string
+        digestFrequency?: 'daily' | 'weekly' | 'off'
     }
 }
 
@@ -114,6 +115,7 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
     const queryClient = useQueryClient()
     const [slackWebhook, setSlackWebhook] = useState(initialIntegrations?.slackWebhook || "")
     const [discordWebhook, setDiscordWebhook] = useState(initialIntegrations?.discordWebhook || "")
+    const [digestFrequency, setDigestFrequency] = useState<'daily' | 'weekly' | 'off'>(initialIntegrations?.digestFrequency || 'weekly')
     const [expandedCard, setExpandedCard] = useState<string | null>(null)
 
     // Sync if initialIntegrations loads late
@@ -121,13 +123,14 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
         if (initialIntegrations) {
             setSlackWebhook(initialIntegrations.slackWebhook || "")
             setDiscordWebhook(initialIntegrations.discordWebhook || "")
+            setDigestFrequency(initialIntegrations.digestFrequency || 'weekly')
         }
     }, [initialIntegrations])
 
     const saveMutation = useMutation({
         mutationFn: async () => {
             if (!token) return
-            return api.saveIntegrations(workspaceId, { slackWebhook, discordWebhook }, token)
+            return api.saveIntegrations(workspaceId, { slackWebhook, discordWebhook, digestFrequency }, token)
         },
         onSuccess: () => {
             toast.success("Integrations saved successfully")
@@ -201,6 +204,38 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
                     </Button>
                 </div>
             </div>
+
+            {/* Digest Preferences */}
+            <Card className="border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-violet-50/50 to-indigo-50/50 dark:from-violet-900/10 dark:to-indigo-900/10">
+                <CardContent className="p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                <Calendar className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-sm">Geniy's Briefing Frequency</h3>
+                                <p className="text-xs text-zinc-500">How often should Geniy send you strategic updates?</p>
+                            </div>
+                        </div>
+                        <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                            {(['daily', 'weekly', 'off'] as const).map((freq) => (
+                                <button
+                                    key={freq}
+                                    onClick={() => setDigestFrequency(freq)}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                                        digestFrequency === freq 
+                                            ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm' 
+                                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                                    }`}
+                                >
+                                    {freq === 'off' ? 'Off' : freq.charAt(0).toUpperCase() + freq.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Integration Cards - Masonry/Bento Layout */}
             <div className="columns-1 md:columns-2 gap-4 space-y-4">

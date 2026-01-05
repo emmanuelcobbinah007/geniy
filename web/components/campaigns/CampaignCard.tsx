@@ -61,7 +61,7 @@ export function CampaignCard({ id, name, status, responses, date, trend, insight
   }
 
   return (
-    <Card className="p-6 group relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:shadow-xl hover:shadow-violet-500/5 hover:border-violet-500/50 transition-all duration-300">
+    <Card className="p-6 group relative overflow-hidden bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:shadow-xl hover:shadow-violet-500/5 hover:border-violet-500/50 hover:-translate-y-1 transition-all duration-300">
       {/* Status Badge */}
       <div className="absolute top-6 right-6 flex items-center gap-2">
         <Badge variant="outline" className={

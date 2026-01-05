@@ -1,6 +1,8 @@
 const cron = require('node-cron');
 const db = require('../config/db');
 const radarService = require('./radarService');
+const digestService = require('./digestService');
+const notificationService = require('./notificationService');
 
 class CronService {
     constructor() {
@@ -54,6 +56,87 @@ class CronService {
 
         this.jobs.push(dailyScan);
         console.log('✅ CRON: Daily Radar Scan scheduled (00:00).');
+
+        // =================================================================
+        // DIGEST JOBS
+        // =================================================================
+
+        // Daily Digest at 9:00 AM
+        const dailyDigest = cron.schedule('0 9 * * *', async () => {
+            console.log('📬 CRON: Starting Daily Digest delivery...');
+            await this.sendDigests('daily');
+        });
+
+        this.jobs.push(dailyDigest);
+        console.log('✅ CRON: Daily Digest scheduled (09:00).');
+
+        // Weekly Digest on Mondays at 9:00 AM
+        const weeklyDigest = cron.schedule('0 9 * * 1', async () => {
+            console.log('📬 CRON: Starting Weekly Digest delivery...');
+            await this.sendDigests('weekly');
+        });
+
+        this.jobs.push(weeklyDigest);
+        console.log('✅ CRON: Weekly Digest scheduled (Mondays 09:00).');
+    }
+
+    /**
+     * Send digests to all workspaces with configured preferences
+     */
+    async sendDigests(period) {
+        try {
+            // Get all workspaces with integrations configured
+            const workspaces = await db.workspace.findMany({
+                where: {
+                    integrations: {
+                        not: null
+                    }
+                }
+            });
+
+            console.log(`📬 CRON: Found ${workspaces.length} workspaces for ${period} digest.`);
+
+            for (const workspace of workspaces) {
+                try {
+                    const integrations = workspace.integrations || {};
+
+                    // Check if this workspace wants this type of digest
+                    const digestFrequency = integrations.digestFrequency || 'weekly';
+
+                    // Skip if frequency doesn't match
+                    if (digestFrequency === 'off') continue;
+                    if (period === 'daily' && digestFrequency !== 'daily') continue;
+                    if (period === 'weekly' && digestFrequency === 'daily') continue;
+
+                    // Check if they have any notification channels
+                    if (!integrations.slackWebhook && !integrations.discordWebhook) continue;
+
+                    // Compile and send digest
+                    const digest = await digestService.compileDigest(workspace.id, period);
+
+                    if (!digest) continue;
+
+                    // Format for notification
+                    const notification = digestService.formatForNotification(digest);
+
+                    // Send via notification service
+                    await notificationService.send(workspace.id, notification);
+
+                    console.log(`📬 CRON: Sent ${period} digest to ${workspace.name}`);
+
+                    // Small delay between sends
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                } catch (err) {
+                    console.error(`📬 CRON: Failed to send digest to ${workspace.id}:`, err.message);
+                }
+            }
+
+            console.log(`📬 CRON: ${period} digest delivery completed.`);
+
+        } catch (error) {
+            console.error(`📬 CRON: Critical error in ${period} digest:`, error);
+        }
     }
 }
 
