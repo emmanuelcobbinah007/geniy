@@ -184,6 +184,7 @@ const signin = async (req, res) => {
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                profilePicture: user.profilePicture,
                 workspaces: userData.workspaces,
                 sharedWorkspaces: userData.sharedWorkspaces,
                 token: generateToken(user.id),
@@ -237,12 +238,23 @@ const completeGoogleSignup = async (req, res) => {
         const userExists = await prisma.user.findUnique({ where: { email } });
         if (userExists) {
             console.log("User already exists, logging in:", userExists.id);
-            // Should not happen if flow is correct, but handle gracefully by logging in
+
+            // Update profile picture if we have a new one from Google and user doesn't have one
+            if (profilePicture && !userExists.profilePicture) {
+                await prisma.user.update({
+                    where: { id: userExists.id },
+                    data: { profilePicture }
+                });
+                userExists.profilePicture = profilePicture;
+                console.log("Updated profile picture for existing user");
+            }
+
             const userData = await getUserWithWorkspaces(userExists.id);
             return res.json({
                 _id: userExists.id,
                 name: userExists.name,
                 email: userExists.email,
+                profilePicture: userExists.profilePicture || profilePicture,
                 workspaces: userData.workspaces,
                 sharedWorkspaces: userData.sharedWorkspaces,
                 token: generateToken(userExists.id),
@@ -458,6 +470,7 @@ const completeGoogleSignup = async (req, res) => {
             _id: user.id,
             name: user.name,
             email: user.email,
+            profilePicture: user.profilePicture,
             workspaces: userData.workspaces,
             sharedWorkspaces: userData.sharedWorkspaces,
             token: generateToken(user.id),
@@ -477,6 +490,7 @@ const completeGoogleSignup = async (req, res) => {
                         _id: existingUser.id,
                         name: existingUser.name,
                         email: existingUser.email,
+                        profilePicture: existingUser.profilePicture,
                         workspaces: userData.workspaces,
                         sharedWorkspaces: userData.sharedWorkspaces,
                         token: generateToken(existingUser.id),
@@ -526,7 +540,7 @@ const googleAuth = async (req, res) => {
             audience: process.env.GOOGLE_CLIENT_ID,
         });
 
-        const { name, email, sub } = ticket.getPayload();
+        const { name, email, sub, picture } = ticket.getPayload();
 
         // Check if user exists
         let user = await prisma.user.findUnique({
@@ -536,12 +550,23 @@ const googleAuth = async (req, res) => {
         console.timeEnd("GoogleAuth_Total");
 
         if (user) {
+            // Update profile picture if we have one from Google and user doesn't have one
+            if (picture && !user.profilePicture) {
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { profilePicture: picture }
+                });
+                user.profilePicture = picture;
+                console.log("Updated profile picture for existing Google user");
+            }
+
             // Login existing user
             const userData = await getUserWithWorkspaces(user.id);
             res.json({
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                profilePicture: user.profilePicture || picture,
                 workspaces: userData.workspaces,
                 sharedWorkspaces: userData.sharedWorkspaces,
                 token: generateToken(user.id),
@@ -554,6 +579,7 @@ const googleAuth = async (req, res) => {
                 googleUser: {
                     name,
                     email,
+                    picture,
                     tokens // Optional: Might not need to send tokens back if not needed for subsequent calls, but good for re-verification if implemented
                 }
             });

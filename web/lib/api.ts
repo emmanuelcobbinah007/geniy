@@ -261,15 +261,7 @@ export const api = {
     return this.post('/auth/complete-google-signup', { googleUser, planTier, paymentReference, inviteCode });
   },
 
-  async cancelSubscription(workspaceId: string, token: string) {
-    return this.post('/payment/cancel', { workspaceId }, token);
-  },
-
-  async getAdminStats(token: string) {
-    return this.get('/admin/stats', token);
-  },
-
-  async reanalyzeCompetitor(workspaceId: string, competitorName: string, token: string) {
-    return this.post('/ai/analyze-competitor', { workspaceId, competitorName }, token);
+  async getActivity(workspaceId: string, token: string) {
+    return this.get(`/workspaces/dashboard/activity?workspaceId=${workspaceId}`, token);
   },
 };

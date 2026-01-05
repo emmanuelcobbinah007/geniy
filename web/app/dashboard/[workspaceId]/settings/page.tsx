@@ -21,6 +21,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog"
 import { DomainsSettings } from "@/components/settings/DomainsSettings"
@@ -380,9 +381,20 @@ export default function SettingsPage() {
                     {members?.map((member: any) => (
                         <div key={member.id} className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 gap-3">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-medium shrink-0">
-                                    {member.user.name[0]}
-                                </div>
+                                <Avatar className="h-8 w-8">
+                {member.user.profilePicture ? (
+                  <img 
+                    src={member.user.profilePicture} 
+                    alt="" 
+                    className="h-full w-full object-cover rounded-full" 
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                    {member.user.name?.[0] || "U"}
+                  </AvatarFallback>
+                )}
+              </Avatar>
                                 <div className="min-w-0 flex-1">
                                     <div className="font-medium truncate">{member.user.name}</div>
                                     <div className="text-sm text-zinc-500 truncate">{member.user.email}</div>

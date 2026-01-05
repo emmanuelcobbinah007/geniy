@@ -9,6 +9,7 @@ interface User {
   id: string
   name: string | null
   email: string
+  profilePicture?: string | null
   workspaces?: any[]
   sharedWorkspaces?: any[]
   onboardingStatus?: {

@@ -201,7 +201,9 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 text-center">
-                <Button variant="link" size="sm" className="text-xs text-zinc-500">View all activity</Button>
+                <Link href={`/dashboard/${workspaceId}/activity`}>
+                  <Button variant="link" size="sm" className="text-xs text-zinc-500">View all activity</Button>
+                </Link>
               </div>
             </Card>
           </motion.div>

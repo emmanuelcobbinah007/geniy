@@ -11,7 +11,7 @@ const {
     saveIntegrations,
     testIntegrations
 } = require('../controllers/workspaceController');
-const { getDashboardStats, getWorkspaceHealth } = require('../controllers/dashboardController');
+const { getDashboardStats, getWorkspaceHealth, getActivity } = require('../controllers/dashboardController');
 const { addDomain, getDomains, verifyDomain, deleteDomain } = require('../controllers/domainController');
 
 router.put('/:id', protect, updateWorkspace);
@@ -22,7 +22,9 @@ router.get('/:id/members', protect, getWorkspaceMembers);
 // GATED: Team seat limit (FREE: 1, STARTER: 1, PRO: 5)
 router.post('/:id/members', protect, checkLimit('teamSeats', countTeamMembers), addMember);
 
+// Dashboard routes (static paths BEFORE parametric)
 router.get('/dashboard', protect, getDashboardStats);
+router.get('/dashboard/activity', protect, getActivity);
 router.get('/:id/health', protect, getWorkspaceHealth);
 router.get('/:id', protect, getWorkspace);
 

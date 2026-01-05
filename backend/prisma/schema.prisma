@@ -12,6 +12,7 @@ model User {
   name         String?
   email        String            @unique
   passwordHash String
+  profilePicture String?         // Google OAuth profile picture URL
   createdAt    DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   onboardingStatus Json?             // Stores { dashboard: boolean, context: boolean, campaigns: boolean }

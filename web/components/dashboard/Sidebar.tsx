@@ -295,10 +295,18 @@ export function Sidebar() {
               )}
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                  {user?.name?.[0] || "U"}
-                </AvatarFallback>
+                {user?.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="" 
+                    className="h-full w-full object-cover rounded-full" 
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                    {user?.name?.[0] || "U"}
+                  </AvatarFallback>
+                )}
               </Avatar>
               {(!collapsed || isMobile) && (
                 <div className="flex flex-col items-start text-left overflow-hidden">

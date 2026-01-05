@@ -87,15 +87,27 @@ exports.getCampaigns = async (req, res) => {
                 isDeleted: false
             },
             include: {
-                surveys: true,
+                surveys: {
+                    include: {
+                        _count: {
+                            select: { responses: true }
+                        }
+                    }
+                },
                 _count: {
-                    select: { surveys: true } // We might want to count responses later
+                    select: { surveys: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json(campaigns);
+        // Calculate total responses for each campaign
+        const campaignsWithResponseCount = campaigns.map(campaign => ({
+            ...campaign,
+            responseCount: campaign.surveys.reduce((sum, survey) => sum + (survey._count?.responses || 0), 0)
+        }));
+
+        res.json(campaignsWithResponseCount);
     } catch (error) {
         console.error('Error fetching campaigns:', error);
         res.status(500).json({ error: 'Failed to fetch campaigns' });

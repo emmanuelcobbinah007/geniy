@@ -119,7 +119,7 @@ export default function CampaignsPage() {
                 id={campaign.id}
                 name={campaign.name}
                 status={campaign.surveys?.[0]?.isPublished ? "Active" : "Draft"}
-                responses={campaign._count?.surveys || 0} // Using survey count as proxy for now, ideally sum responses
+                responses={campaign.responseCount || 0}
                 date={new Date(campaign.createdAt).toLocaleDateString()}
                 // Mock data for now as backend doesn't provide these yet
                 trend={undefined} 

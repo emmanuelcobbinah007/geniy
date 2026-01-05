@@ -42,6 +42,7 @@ const protect = async (req, res, next) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                profilePicture: user.profilePicture,
                 createdAt: user.createdAt,
                 updatedAt: user.updatedAt,
                 workspaces: ownedWorkspaces,

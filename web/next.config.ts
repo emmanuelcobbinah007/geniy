@@ -4,7 +4,14 @@ const nextConfig: any = {
   /* config options here */
 
   images: {
-    unoptimized: true, // Keep this if you want to avoid Image Optimization costs/complexity, or remove for default optimization
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+    ],
   },
 };
 
