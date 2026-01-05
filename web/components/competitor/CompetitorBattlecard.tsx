@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp, Trash2, History, Activity } from "lucide-react"
+import { Check, X, Target, DollarSign, Zap, ChevronDown, ChevronUp, Trash2, History, Activity, RefreshCw, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
@@ -19,13 +19,15 @@ interface CompetitorBattlecardProps {
   name: string
   analysis: CompetitorAnalysis
   onDelete?: () => void
+  onRedoAnalysis?: () => Promise<void>
   lastScrapedAt?: string | null
   radarStatus?: string
   radarHistory?: Array<{ date: string; status: string; insight: string }>
 }
 
-export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, radarStatus, radarHistory }: CompetitorBattlecardProps) {
+export function CompetitorBattlecard({ name, analysis, onDelete, onRedoAnalysis, lastScrapedAt, radarStatus, radarHistory }: CompetitorBattlecardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isRedoing, setIsRedoing] = useState(false)
 
   // Helper to truncate text
   const truncate = (text: string, length: number) => {
@@ -45,6 +47,19 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
 
   // Get latest valid update
   const latestUpdate = radarHistory && radarHistory.length > 0 ? radarHistory[0] : null;
+
+  // Filter for changes only
+  const changesHistory = radarHistory?.filter(h => h.status === 'changed' && h.insight !== 'Initial baseline established.') || [];
+
+  const handleRedoAnalysis = async () => {
+    if (!onRedoAnalysis) return;
+    setIsRedoing(true);
+    try {
+      await onRedoAnalysis();
+    } finally {
+      setIsRedoing(false);
+    }
+  };
 
   return (
     <Card className={`border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700 ${radarStatus === 'scanning' ? 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-400 dark:ring-amber-600' : ''}`}>
@@ -74,6 +89,22 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* REDO DEEP DIVE BUTTON */}
+                    {onRedoAnalysis && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRedoAnalysis}
+                            disabled={isRedoing}
+                            className="h-7 text-xs text-zinc-500 hover:text-violet-600 hover:border-violet-300 dark:hover:border-violet-700"
+                        >
+                            {isRedoing ? (
+                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Analyzing...</>
+                            ) : (
+                                <><RefreshCw className="w-3 h-3 mr-1" /> Redo Deep Dive</>
+                            )}
+                        </Button>
+                    )}
                     <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 max-w-[120px] truncate">
                         {safeAnalysis.pricingModel}
                     </Badge>
@@ -114,7 +145,6 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
                 <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
                     {latestUpdate.insight}
                 </p>
-                {/* Show View History button if expanded? */}
             </div>
         )}
 
@@ -181,6 +211,29 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
             </div>
         )}
 
+        {/* CHANGES HISTORY - Only show in expanded view */}
+        {isExpanded && changesHistory.length > 0 && (
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 mb-3">
+                    <History className="w-3.5 h-3.5" /> Changes History
+                </h4>
+                <div className="space-y-2">
+                    {changesHistory.slice(0, 5).map((entry, i) => (
+                        <div key={i} className="flex items-start gap-3 p-2 rounded-md bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30">
+                            <div className="flex-shrink-0 w-16">
+                                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                    {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                            </div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                {entry.insight || "Content changed"}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {/* Expand/Collapse for details */}
         <div className="flex justify-center pt-2">
             <Button 
@@ -201,3 +254,4 @@ export function CompetitorBattlecard({ name, analysis, onDelete, lastScrapedAt, 
     </Card>
   )
 }
+

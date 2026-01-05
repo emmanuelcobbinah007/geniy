@@ -343,12 +343,35 @@ exports.chatWithContext = async (req, res) => {
 
 exports.analyzeCompetitor = async (req, res) => {
     try {
-        const { competitorName, industry, workspaceId } = req.body;
-        if (!competitorName || !industry) {
-            return res.status(400).json({ error: "Competitor name and industry are required" });
+        const { competitorName, workspaceId } = req.body;
+        let { industry } = req.body;
+
+        if (!competitorName) {
+            return res.status(400).json({ error: "Competitor name is required" });
         }
 
-        console.log(`🧠 Analyzing ${competitorName} for workspace ${workspaceId}...`);
+        // If industry not provided but workspaceId is, try to infer from workspace context
+        if (!industry && workspaceId) {
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { businessContext: true }
+            });
+
+            if (workspace && workspace.businessContext) {
+                // Try to extract industry from context
+                const industryMatch = workspace.businessContext.match(/Industry:\s*(.+?)(\n|$)/i);
+                if (industryMatch) {
+                    industry = industryMatch[1].trim();
+                }
+            }
+        }
+
+        // Default industry if still not found
+        if (!industry) {
+            industry = "Technology";
+        }
+
+        console.log(`🧠 Analyzing ${competitorName} in ${industry} for workspace ${workspaceId}...`);
 
         const analysis = await genesisAgent.analyzeCompetitor(competitorName, industry);
 

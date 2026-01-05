@@ -304,6 +304,19 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
       }
   }
 
+  // Reanalyze Competitor Mutation (Redo Deep Dive)
+  const handleRedoAnalysis = async (competitorName: string) => {
+    if (!token) return;
+    toast.info(`Re-analyzing ${competitorName}...`, { duration: 3000 });
+    try {
+      await api.reanalyzeCompetitor(workspaceId, competitorName, token);
+      toast.success(`Analysis complete for ${competitorName}!`);
+      queryClient.invalidateQueries({ queryKey: ["context", workspaceId] });
+    } catch (err: any) {
+      toast.error(`Failed to analyze ${competitorName}: ${err.message || 'Unknown error'}`);
+    }
+  };
+
   const [isDragging, setIsDragging] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -549,6 +562,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
                                             onDelete={() => {
                                                 if (confirm(`Delete competitor "${name}"?`)) deleteCompetitorMutation.mutate(name)
                                             }}
+                                            onRedoAnalysis={() => handleRedoAnalysis(name)}
                                             lastScrapedAt={lastScrapedAt}
                                             radarStatus={typeof comp !== 'string' ? comp.radarStatus : undefined}
                                             radarHistory={typeof comp !== 'string' ? comp.radarHistory : undefined}

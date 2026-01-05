@@ -264,4 +264,12 @@ export const api = {
   async cancelSubscription(workspaceId: string, token: string) {
     return this.post('/payment/cancel', { workspaceId }, token);
   },
+
+  async getAdminStats(token: string) {
+    return this.get('/admin/stats', token);
+  },
+
+  async reanalyzeCompetitor(workspaceId: string, competitorName: string, token: string) {
+    return this.post('/ai/analyze-competitor', { workspaceId, competitorName }, token);
+  },
 };

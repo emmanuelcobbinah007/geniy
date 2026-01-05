@@ -44,6 +44,7 @@ app.use('/api/workspaces', require('./routes/workspaceRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes')); // Alias for Paystack webhook
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/', require('./routes/index'));
 
 // Start server
