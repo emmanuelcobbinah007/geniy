@@ -202,12 +202,12 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
                 </div>
             </div>
 
-            {/* Integration Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Integration Cards - Masonry/Bento Layout */}
+            <div className="columns-1 md:columns-2 gap-4 space-y-4">
                 {integrations.map((integration) => (
                     <Card 
                         key={integration.id}
-                        className={`relative overflow-hidden transition-all duration-200 ${
+                        className={`relative overflow-hidden transition-all duration-200 break-inside-avoid mb-4 ${
                             integration.available 
                                 ? 'hover:shadow-lg cursor-pointer border-zinc-200 dark:border-zinc-800' 
                                 : 'opacity-60 border-dashed'
@@ -261,39 +261,37 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
                                 )}
                             </div>
 
-                            {/* Animated Expanded Configuration */}
-                            <div 
-                                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                    expandedCard === integration.id && integration.available 
-                                        ? 'max-h-96 opacity-100 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800' 
-                                        : 'max-h-0 opacity-0'
-                                }`}
-                                onClick={e => e.stopPropagation()}
-                            >
-                                <div className="space-y-3">
-                                    <Input
-                                        value={getWebhookValue(integration.id)}
-                                        onChange={(e) => setWebhookValue(integration.id, e.target.value)}
-                                        placeholder={integration.placeholder}
-                                        className="bg-white dark:bg-zinc-950/50"
-                                    />
-                                    
-                                    <Accordion type="single" collapsible className="w-full">
-                                        <AccordionItem value="instructions" className="border-none">
-                                            <AccordionTrigger className="text-xs text-zinc-500 py-1 hover:no-underline hover:text-violet-600">
-                                                <span className="flex items-center gap-1"><Info className="w-3 h-3" /> How to get this URL?</span>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-md border border-zinc-100 dark:border-zinc-800 mt-2">
-                                                <ol className="list-decimal pl-4 space-y-1">
-                                                    {integration.instructions?.map((step, i) => (
-                                                        <li key={i}>{step}</li>
-                                                    ))}
-                                                </ol>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
+                            {/* Expanded Configuration - Only render when this specific card is expanded */}
+                            {expandedCard === integration.id && integration.available && (
+                                <div 
+                                    className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-200"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <div className="space-y-3">
+                                        <Input
+                                            value={getWebhookValue(integration.id)}
+                                            onChange={(e) => setWebhookValue(integration.id, e.target.value)}
+                                            placeholder={integration.placeholder}
+                                            className="bg-white dark:bg-zinc-950/50"
+                                        />
+                                        
+                                        <Accordion type="single" collapsible className="w-full">
+                                            <AccordionItem value="instructions" className="border-none">
+                                                <AccordionTrigger className="text-xs text-zinc-500 py-1 hover:no-underline hover:text-violet-600">
+                                                    <span className="flex items-center gap-1"><Info className="w-3 h-3" /> How to get this URL?</span>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-md border border-zinc-100 dark:border-zinc-800 mt-2">
+                                                    <ol className="list-decimal pl-4 space-y-1">
+                                                        {integration.instructions?.map((step, i) => (
+                                                            <li key={i}>{step}</li>
+                                                        ))}
+                                                    </ol>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
                 ))}

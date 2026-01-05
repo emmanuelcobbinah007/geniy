@@ -259,6 +259,29 @@ export default function SettingsPage() {
                   <CardDescription>Update your personal information.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Profile Picture */}
+                  <div className="flex items-center gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                    <Avatar className="h-16 w-16">
+                      {user?.profilePicture ? (
+                        <img 
+                          src={user.profilePicture} 
+                          alt="" 
+                          className="h-full w-full object-cover rounded-full" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300 text-xl">
+                          {user?.name?.[0] || "U"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{user?.name || "User"}</div>
+                      <div className="text-sm text-zinc-500">
+                        {user?.profilePicture ? "Profile picture from Google" : "No profile picture set"}
+                      </div>
+                    </div>
+                  </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Name</label>
                     <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-white dark:bg-zinc-950/50 border-zinc-200 dark:border-zinc-800" />
