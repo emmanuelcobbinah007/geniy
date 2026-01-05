@@ -257,7 +257,8 @@ const addMember = async (req, res) => {
 
 const saveIntegrations = async (req, res) => {
     const { id } = req.params;
-    const { slackWebhook, discordWebhook } = req.body;
+    const { slackWebhook, discordWebhook, digestFrequency } = req.body;
+    const notificationService = require('../services/notificationService');
 
     try {
         // Check if user is owner/admin
@@ -273,12 +274,34 @@ const saveIntegrations = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to configure integrations' });
         }
 
-        const integrations = { slackWebhook, discordWebhook };
+        // Get current integrations to detect new connections
+        const currentWorkspace = await prisma.workspace.findUnique({
+            where: { id },
+            select: { integrations: true }
+        });
+        const currentIntegrations = currentWorkspace?.integrations || {};
+
+        const integrations = {
+            slackWebhook,
+            discordWebhook,
+            digestFrequency: digestFrequency || currentIntegrations.digestFrequency || 'weekly'
+        };
 
         const workspace = await prisma.workspace.update({
             where: { id },
             data: { integrations }
         });
+
+        // Send welcome message if this is a NEW connection
+        const isNewSlack = slackWebhook && !currentIntegrations.slackWebhook;
+        const isNewDiscord = discordWebhook && !currentIntegrations.discordWebhook;
+
+        if (isNewSlack) {
+            notificationService.sendWelcome(id, 'slack').catch(console.error);
+        }
+        if (isNewDiscord) {
+            notificationService.sendWelcome(id, 'discord').catch(console.error);
+        }
 
         res.json({ message: "Integrations updated", integrations: workspace.integrations });
 

@@ -163,7 +163,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold font-display tracking-tight">Settings</h1>
         <p className="text-zinc-500 dark:text-zinc-400 mt-1">

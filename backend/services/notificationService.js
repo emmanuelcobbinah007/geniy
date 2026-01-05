@@ -151,6 +151,55 @@ class NotificationService {
             console.error("Failed to send to Discord:", err.message);
         }
     }
+
+    /**
+     * Send a welcome/introduction message when Geniy is first connected
+     * @param {string} workspaceId 
+     * @param {string} platform - 'slack' or 'discord'
+     */
+    async sendWelcome(workspaceId, platform) {
+        try {
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { integrations: true, name: true }
+            });
+
+            if (!workspace || !workspace.integrations) return;
+
+            const welcomeMessage = {
+                title: `Hey there! I'm Geniy, your strategic co-pilot.`,
+                message: `I'm now connected to **${workspace.name}** and here to help your team stay sharp.
+
+**What I'll do:**
+- Send you periodic briefings with competitor updates and recommendations
+- Keep you in the loop when something important happens
+
+**How to chat with me:**
+Just @mention me and talk naturally - I'll figure out what you need:
+- "How are we doing?" → Status update
+- "What should we focus on?" → My recommendations
+- "Tell me about [competitor]" → Intel on them
+- Or ask anything about your business!
+
+Looking forward to working with you.`,
+                type: 'info',
+                link: `${process.env.FRONTEND_URL}/dashboard/${workspaceId}`
+            };
+
+            if (platform === 'slack' && workspace.integrations.slackWebhook) {
+                await this.sendToSlack(workspace.integrations.slackWebhook, welcomeMessage);
+            }
+
+            if (platform === 'discord' && workspace.integrations.discordWebhook) {
+                await this.sendToDiscord(workspace.integrations.discordWebhook, welcomeMessage);
+            }
+
+            console.log(`✅ Sent welcome message to ${platform} for ${workspace.name}`);
+
+        } catch (error) {
+            console.error(`Failed to send welcome to ${platform}:`, error.message);
+        }
+    }
 }
 
 module.exports = new NotificationService();

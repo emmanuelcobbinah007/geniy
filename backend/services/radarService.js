@@ -141,24 +141,30 @@ class RadarService {
                     changeDetected = true;
                     console.log(`🚨 CHANGE DETECTED for ${competitorName}!`);
 
-                    // 4. Generate Insight (AI Diff)
-                    // We ask Genesis to compare old text vs new text? 
-                    // Or just analyze the NEW text for "Updates".
-                    // Saving full old text might be too heavy. 
-                    // Let's just say "Content Changed" for v1.
-                    insight = "Website content has changed significantly.";
+                    // AI-POWERED CHANGE ANALYSIS
+                    insight = await this.analyzeChange(competitorName, scrapeResult.plainText, workspace);
 
-                    // NOTIFICATION: Alert workspace
+                    // Determine alert severity based on insight
+                    const severity = this.classifyAlert(insight);
+
+                    // NOTIFICATION: Alert workspace with smart context
                     await notificationService.send(workspaceId, {
-                        title: `Competitor Update: ${competitorName}`,
-                        message: `Significant changes detected on ${competitorName}'s website. Click to review.`,
-                        type: 'info',
+                        title: `${severity.emoji} ${competitorName} Update`,
+                        message: insight.summary || `Changes detected on ${competitorName}'s website.`,
+                        data: insight.keyPoints,
+                        type: severity.type,
                         link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`
                     });
+
+                    // CONTEXT SELF-LEARNING: Auto-update workspace knowledge
+                    if (insight.shouldLearn) {
+                        await this.updateWorkspaceContext(workspaceId, competitorName, insight);
+                    }
+
                 } else if (!oldHash) {
                     console.log(`✨ First scan for ${competitorName}. Content baseline established.`);
                     changeDetected = true; // Technically a "change" from null
-                    insight = "Initial baseline established.";
+                    insight = { summary: "Initial baseline established.", keyPoints: [], severity: 'low' };
                 } else {
                     console.log(`✅ No change detected for ${competitorName}.`);
                 }
@@ -183,53 +189,19 @@ class RadarService {
                     data: { competitors: competitors }
                 });
 
-                // 6. Notify / Audit Log (Active Notification)
-                if (changeDetected && insight !== "Initial baseline established.") {
+                // Log to audit if significant change
+                if (changeDetected && insight?.summary !== "Initial baseline established.") {
                     await auditService.log({
                         workspaceId: workspaceId,
                         action: 'COMPETITOR_UPDATE',
                         metadata: {
                             competitorName: competitorName,
-                            insight: insight,
+                            insight: insight?.summary || 'Content changed',
+                            category: insight?.category || 'general',
                             url: url
                         }
                     });
-
-                    // LIVE PULSE: Send Webhook Notification
-                    const changeMessages = [
-                        insight || "Website content has changed.",
-                        `Heads up! I detected some updates on ${competitorName}.`,
-                        `Looks like ${competitorName} made some tweaks.`,
-                        `New activity detected on ${competitorName}'s site.`
-                    ];
-                    // Prefer the actual insight if it's descriptive, otherwise pick a random alert
-                    const message = (insight && insight !== "Website content has changed significantly.")
-                        ? insight
-                        : changeMessages[Math.floor(Math.random() * changeMessages.length)];
-
-                    await notificationService.send(workspaceId, {
-                        title: `Competitor Update: ${competitorName}`,
-                        message: message,
-                        link: url,
-                        type: 'warning'
-                    });
-
-                    console.log(`📢 Logged activity and notified for ${competitorName}`);
-                } else if (!changeDetected) {
-                    const stableMessages = [
-                        `Daily scan complete for ${competitorName}. No significant changes detected.`,
-                        `Everything looks quiet on ${competitorName}'s front today.`,
-                        `Checked ${competitorName} just now. All stable.`,
-                        `No major moves from ${competitorName} in the last 24h.`
-                    ];
-                    const message = stableMessages[Math.floor(Math.random() * stableMessages.length)];
-
-                    await notificationService.send(workspaceId, {
-                        title: `System Status: Stable`,
-                        message: message,
-                        link: `${process.env.NEXT_PUBLIC_APP_URL || 'https://geniy.aurorasoftwarelabs.io'}/dashboard/${workspaceId}/context`,
-                        type: 'success'
-                    });
+                    console.log(`📢 Logged activity for ${competitorName}`);
                 }
 
                 return { status: changeDetected ? "changed" : "stable", insight, competitor: updatedCompetitor };
@@ -265,6 +237,144 @@ class RadarService {
         } catch (initialError) {
             console.error(`Radar scan failed completely for ${competitorName}:`, initialError);
             return { status: "error", error: initialError.message };
+        }
+    }
+
+    /**
+     * AI-powered analysis of website changes
+     * Returns structured insight with summary, key points, and learning recommendations
+     */
+    async analyzeChange(competitorName, newContent, workspace) {
+        try {
+            const businessContext = workspace.businessContext || '';
+            const prompt = `Analyze website content changes for competitor "${competitorName}".
+
+Business Context: ${businessContext}
+
+New Website Content (excerpt):
+${newContent.substring(0, 3000)}
+
+Provide a brief, actionable analysis. Focus on:
+1. What's new or changed (product launches, pricing, messaging, features)
+2. Why it matters
+
+Return JSON:
+{
+    "summary": "One sentence summary of the change",
+    "keyPoints": ["Point 1", "Point 2"],
+    "category": "product|pricing|messaging|feature|hiring|general",
+    "impactLevel": "high|medium|low",
+    "shouldLearn": true/false,
+    "learnings": ["Facts to add to workspace knowledge"]
+}`;
+
+            const response = await genesisAgent.research(prompt);
+
+            try {
+                const jsonMatch = response.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+            } catch (e) {
+                // Fallback to basic insight
+            }
+
+            return {
+                summary: `Changes detected on ${competitorName}'s website`,
+                keyPoints: [],
+                category: 'general',
+                impactLevel: 'medium',
+                shouldLearn: false,
+                learnings: []
+            };
+
+        } catch (error) {
+            console.error('AI Change Analysis Error:', error);
+            return {
+                summary: `Website update detected for ${competitorName}`,
+                keyPoints: [],
+                category: 'general',
+                impactLevel: 'low',
+                shouldLearn: false,
+                learnings: []
+            };
+        }
+    }
+
+    /**
+     * Classify alert severity and emoji based on insight
+     */
+    classifyAlert(insight) {
+        const level = insight?.impactLevel || 'medium';
+        const category = insight?.category || 'general';
+
+        // High impact categories
+        if (level === 'high' || category === 'pricing' || category === 'product') {
+            return { type: 'warning', emoji: '' };
+        }
+
+        // Medium impact
+        if (level === 'medium' || category === 'feature' || category === 'messaging') {
+            return { type: 'info', emoji: '' };
+        }
+
+        // Low impact
+        return { type: 'success', emoji: '' };
+    }
+
+    /**
+     * Auto-update workspace context with learnings from radar
+     * This is the "self-learning" feature
+     */
+    async updateWorkspaceContext(workspaceId, competitorName, insight) {
+        if (!insight.learnings || insight.learnings.length === 0) return;
+
+        try {
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+                select: { competitors: true, businessContext: true }
+            });
+
+            if (!workspace) return;
+
+            // Find and update the competitor with new learnings
+            const competitors = workspace.competitors || [];
+            const targetIndex = competitors.findIndex(
+                c => c && c.name && c.name.toLowerCase() === competitorName.toLowerCase()
+            );
+
+            if (targetIndex !== -1) {
+                const competitor = competitors[targetIndex];
+
+                // Add learnings to competitor's analysis
+                const currentAnalysis = competitor.analysis || {};
+                const existingLearnings = currentAnalysis.autoLearnings || [];
+
+                competitors[targetIndex] = {
+                    ...competitor,
+                    analysis: {
+                        ...currentAnalysis,
+                        lastRadarLearning: new Date().toISOString(),
+                        autoLearnings: [
+                            ...insight.learnings.map(l => ({
+                                text: l,
+                                date: new Date().toISOString(),
+                                source: 'radar'
+                            })),
+                            ...existingLearnings
+                        ].slice(0, 20) // Keep last 20 learnings
+                    }
+                };
+
+                await prisma.workspace.update({
+                    where: { id: workspaceId },
+                    data: { competitors }
+                });
+
+                console.log(`📚 Auto-learned ${insight.learnings.length} facts about ${competitorName}`);
+            }
+        } catch (error) {
+            console.error('Context Self-Learning Error:', error);
         }
     }
 }
