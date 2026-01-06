@@ -6,14 +6,14 @@ import { Twitter, Linkedin, Github } from "lucide-react"
 
 const footerLinks = {
   product: [
-    { label: "Features", href: "#features" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Features", href: "/features" },
+    { label: "Pricing", href: "/pricing" },
     { label: "Changelog", href: "#" },
   ],
   company: [
-    { label: "About", href: "#" },
+    { label: "About", href: "/about" },
     { label: "Blog", href: "#" },
-    { label: "Contact", href: "mailto:hello@geniy.io" },
+    { label: "Contact", href: "/contact" },
   ],
   legal: [
     { label: "Privacy", href: "/legal/privacy" },

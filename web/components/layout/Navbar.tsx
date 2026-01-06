@@ -76,17 +76,24 @@ export function Navbar() {
             </Link>
 
             <div className="hidden items-center gap-8 md:flex">
-              {['features', 'comparison', 'pricing'].map((item, i) => (
-                <motion.button 
-                  key={item}
+              {[
+                { label: 'Features', href: '/features' },
+                { label: 'Pricing', href: '/pricing' },
+                { label: 'About', href: '/about' },
+              ].map((item, i) => (
+                <motion.div 
+                  key={item.label}
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + (i * 0.1), duration: 0.5 }}
-                  onClick={() => scrollToSection(item)} 
-                  className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors cursor-pointer capitalize"
                 >
-                  {item === 'why geniy' ? 'Why Geniy' : item}
-                </motion.button>
+                  <Link 
+                    href={item.href}
+                    className="text-sm font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
               ))}
               <motion.div 
                 initial={{ opacity: 0, scaleY: 0 }}
@@ -218,15 +225,15 @@ export function Navbar() {
               </div>
               
               <div className="flex flex-col gap-6 text-center mt-8">
-                <button onClick={() => scrollToSection('features')} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
+                <Link href="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
                   Features
-                </button>
-                <button onClick={() => scrollToSection('comparison')} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
-                  Why Geniy
-                </button>
-                <button onClick={() => scrollToSection('pricing')} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
+                </Link>
+                <Link href="/pricing" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
                   Pricing
-                </button>
+                </Link>
+                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-600 hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400 transition-colors">
+                  About
+                </Link>
                 <div className="h-px w-full bg-zinc-100 dark:bg-zinc-900 my-2" />
                 
                 {user ? (

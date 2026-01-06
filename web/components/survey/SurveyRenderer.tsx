@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { api } from "@/lib/api"
 import { Theme } from "./ThemeEditor"
 import { FocusLayout } from "./layouts/FocusLayout"
 import { BookLayout } from "./layouts/BookLayout"
 import { DeckLayout } from "./layouts/DeckLayout"
 import { TerminalLayout } from "./layouts/TerminalLayout"
+import { Celebrations } from "./Celebrations"
 
 interface SurveyRendererProps {
   surveyData: any;
@@ -22,6 +23,11 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [history, setHistory] = useState<string[]>([])
+  
+  // Gamification state
+  const [celebrationTrigger, setCelebrationTrigger] = useState<'answer' | 'milestone' | 'complete' | null>(null)
+  const [currentMilestone, setCurrentMilestone] = useState<number | undefined>(undefined)
+  const lastMilestoneRef = useRef<number>(0)
 
   useEffect(() => {
     if (surveyData?.jsonSchema?.questions) {
@@ -55,7 +61,23 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     const questions = getQuestions()
     setCurrentQuestionId(Object.keys(questions)[0])
     setHistory([])
+    lastMilestoneRef.current = 0
   }
+
+  // Check for milestones
+  const checkMilestone = useCallback((answeredCount: number, total: number) => {
+    const progress = (answeredCount / total) * 100
+    const milestones = [25, 50, 75]
+    
+    for (const m of milestones) {
+      if (progress >= m && lastMilestoneRef.current < m) {
+        lastMilestoneRef.current = m
+        setCurrentMilestone(m)
+        setCelebrationTrigger('milestone')
+        return
+      }
+    }
+  }, [])
 
   const handleAnswer = (value: any) => {
     if (!currentQuestionId) return
@@ -71,6 +93,11 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
 
     const newAnswers = { ...answers, [currentQuestionId]: value }
     setAnswers(newAnswers)
+
+    // Check for milestone celebration
+    const totalQuestions = Object.keys(questions).length
+    const answeredCount = Object.keys(newAnswers).length
+    checkMilestone(answeredCount, totalQuestions)
 
     // Determine next question
     let nextQId = currentQ.next
@@ -100,6 +127,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const submitSurvey = async (finalAnswers: any) => {
     if (isPreview) {
       setIsCompleted(true)
+      setCelebrationTrigger('complete')
       if (onComplete) onComplete()
       return
     }
@@ -122,6 +150,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
       
       await api.submitResponse(slug, finalAnswers, metadata)
       setIsCompleted(true)
+      setCelebrationTrigger('complete')
       if (onComplete) onComplete()
     } catch (err) {
       alert("Failed to submit response. Please try again.")
@@ -136,6 +165,7 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const questions = getQuestions()
   const currentQ = currentQuestionId ? questions[currentQuestionId] : null
   const totalQuestions = Object.keys(questions).length
+  const timeTaken = Math.round((Date.now() - startTime.current) / 1000)
 
   const [hasStarted, setHasStarted] = useState(false)
 
@@ -152,23 +182,36 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   }[theme?.layout as 'focus' | 'book' | 'deck' | 'terminal' || 'focus']
 
   return (
-      <LayoutComponent 
-          currentQ={currentQ}
-          currentQuestionId={currentQuestionId}
-          isCompleted={isCompleted}
-          history={history}
-          totalQuestions={totalQuestions}
-          theme={theme}
-          onAnswer={handleAnswer}
-          onBack={handleBack}
-          onRestart={handleRestart}
-          isPreview={isPreview}
-          hasStarted={hasStarted}
-          onStart={() => setHasStarted(true)}
-          title={title}
-          description={description}
-          // Pass company name if available in surveyData
-          companyName={surveyData?.companyName || "Geniy"} 
-      />
+      <>
+          {/* Celebration animations */}
+          <Celebrations 
+            trigger={celebrationTrigger}
+            milestone={currentMilestone}
+            onComplete={() => {
+              setCelebrationTrigger(null)
+              setCurrentMilestone(undefined)
+            }}
+          />
+          
+          <LayoutComponent 
+              currentQ={currentQ}
+              currentQuestionId={currentQuestionId}
+              isCompleted={isCompleted}
+              history={history}
+              totalQuestions={totalQuestions}
+              theme={theme}
+              onAnswer={handleAnswer}
+              onBack={handleBack}
+              onRestart={handleRestart}
+              isPreview={isPreview}
+              hasStarted={hasStarted}
+              onStart={() => setHasStarted(true)}
+              title={title}
+              description={description}
+              // Pass company name if available in surveyData
+              companyName={surveyData?.companyName || "Geniy"} 
+          />
+      </>
   )
 }
+

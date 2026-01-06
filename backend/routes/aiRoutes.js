@@ -39,3 +39,4 @@ router.post('/delete-competitor', aiController.deleteCompetitor);
 router.post('/scan-competitor', requireFeature('realTimeScans'), aiController.scanCompetitor);
 
 module.exports = router;
+

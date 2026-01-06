@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Check, Copy, ArrowRight, PartyPopper, Mic, FileText } from "lucide-react"
+import { Check, Copy, ArrowRight, PartyPopper } from "lucide-react"
 import { useState } from "react"
 
 interface ShareModalProps {
@@ -15,14 +15,9 @@ interface ShareModalProps {
 
 export function ShareModal({ open, onOpenChange, shareUrl, onDashboard }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
-  const [mode, setMode] = useState<'text' | 'voice'>('text')
-
-  // Generate voice URL by replacing /s/ with /v/
-  const voiceUrl = shareUrl.replace('/s/', '/v/')
-  const activeUrl = mode === 'voice' ? voiceUrl : shareUrl
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(activeUrl)
+    navigator.clipboard.writeText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -36,43 +31,15 @@ export function ShareModal({ open, onOpenChange, shareUrl, onDashboard }: ShareM
           </div>
           <DialogTitle className="text-center text-xl">Survey Published!</DialogTitle>
           <DialogDescription className="text-center">
-            Your survey is live and ready to collect responses.
+            Your survey is live and ready to collect responses. Share the link below to get started.
           </DialogDescription>
         </DialogHeader>
         
-        {/* Mode Toggle */}
-        <div className="flex items-center justify-center gap-2 mt-2 mb-4">
-          <Button
-            size="sm"
-            variant={mode === 'text' ? 'primary' : 'outline'}
-            onClick={() => setMode('text')}
-            className={mode === 'text' ? 'bg-violet-600 hover:bg-violet-700' : ''}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Text Mode
-          </Button>
-          <Button
-            size="sm"
-            variant={mode === 'voice' ? 'primary' : 'outline'}
-            onClick={() => setMode('voice')}
-            className={mode === 'voice' ? 'bg-violet-600 hover:bg-violet-700' : ''}
-          >
-            <Mic className="w-4 h-4 mr-2" />
-            Voice Mode
-          </Button>
-        </div>
-
-        {mode === 'voice' && (
-          <p className="text-xs text-center text-violet-600 dark:text-violet-400 -mt-2 mb-2">
-            Respondents can speak their answers naturally
-          </p>
-        )}
-        
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mt-4">
           <div className="grid flex-1 gap-2">
             <Input
               readOnly
-              value={activeUrl}
+              value={shareUrl}
               className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
             />
           </div>
@@ -95,4 +62,5 @@ export function ShareModal({ open, onOpenChange, shareUrl, onDashboard }: ShareM
     </Dialog>
   )
 }
+
 
