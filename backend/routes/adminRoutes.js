@@ -8,6 +8,10 @@ const isAdmin = (req, res, next) => {
     const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
     const userEmail = req.user?.email?.toLowerCase();
 
+    console.log('[Admin Check] User email:', userEmail);
+    console.log('[Admin Check] Admin emails:', adminEmails);
+    console.log('[Admin Check] Is admin:', adminEmails.includes(userEmail));
+
     if (!userEmail || !adminEmails.includes(userEmail)) {
         return res.status(403).json({ message: 'Admin access required' });
     }

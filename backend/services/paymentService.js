@@ -290,7 +290,6 @@ const PaymentService = {
             where: { workspaceId },
             data: {
                 status: 'cancelled',
-                cancelledAt: new Date(),
             }
         });
 

@@ -264,4 +264,8 @@ export const api = {
   async getActivity(workspaceId: string, token: string) {
     return this.get(`/workspaces/dashboard/activity?workspaceId=${workspaceId}`, token);
   },
+
+  async cancelSubscription(workspaceId: string, token: string) {
+    return this.post('/payment/cancel', { workspaceId }, token);
+  },
 };
