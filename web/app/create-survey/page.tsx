@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Eye, Play, Sparkles, X, ChevronLeft, ChevronRight, GripVertical } from "lucide-react"
+import { ArrowLeft, Eye, Play, Sparkles, X, ChevronLeft, ChevronRight, GripVertical, Palette } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -15,13 +15,13 @@ import { GeniyChat } from "@/components/create-survey/GeniyChat"
 import { SurveyEditor } from "@/components/create-survey/SurveyEditor"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
-// import { useToast } from "@/components/ui/use-toast"
 
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { SurveyRenderer } from "@/components/survey/SurveyRenderer"
 import { ShareModal } from "@/components/create-survey/ShareModal"
 import { WorkspaceSelectionModal } from "@/components/create-survey/WorkspaceSelectionModal"
 import { useSearchParams } from "next/navigation"
+import { ThemeEditor, Theme, DEFAULT_THEME } from "@/components/survey/ThemeEditor"
 
 import { GenStateIllustration } from "@/components/ui/GenStateIllustration"
 
@@ -39,6 +39,8 @@ function CreateSurveyContent() {
   ])
   const [isPublishing, setIsPublishing] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME)
+  const [showThemePanel, setShowThemePanel] = useState(false)
 
   const [contextData, setContextData] = useState<any>(null)
 
@@ -161,6 +163,8 @@ function CreateSurveyContent() {
     });
 
     return {
+        title: title,
+        description: description,
         questions: questions.reduce((acc: any, q: any) => {
             acc[`Q${q.id}`] = {
                 type: q.type,
@@ -198,10 +202,9 @@ function CreateSurveyContent() {
         description: description,
         surveyTitle: title,
         contextData: contextData, // Pass the AI context data
+        themeConfig: theme, // Include theme customization
         questions: {
-            title: title,
             version: "1.0",
-
             ...getSurveyData()
         },
 
@@ -244,7 +247,7 @@ function CreateSurveyContent() {
             <SurveyRenderer 
                 surveyData={getSurveyData()} 
                 isPreview={true} 
-                theme={undefined}
+                theme={theme}
             />
         </DialogContent>
       </Dialog>
@@ -276,7 +279,18 @@ function CreateSurveyContent() {
 
         <div className="flex items-center gap-2 shrink-0">
 
-
+          <Button 
+            variant={showThemePanel ? "secondary" : "ghost"}
+            size="sm" 
+            className={cn(
+              "px-2",
+              showThemePanel ? "text-violet-600 bg-violet-100 dark:bg-violet-900/30" : "text-zinc-500 hover:text-foreground"
+            )}
+            onClick={() => setShowThemePanel(!showThemePanel)}
+          >
+            <Palette className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Theme</span>
+          </Button>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -414,15 +428,42 @@ function CreateSurveyContent() {
         </AnimatePresence>
 
         {/* Right Panel: Survey Editor (70%) - Natural Flow */}
-        <div className="flex-1 min-w-0">
-          <SurveyEditor 
-            questions={questions} 
-            setQuestions={setQuestions}
-            title={title}
-            setTitle={setTitle}
-            description={description}
-            setDescription={setDescription}
-          />
+        <div className="flex-1 min-w-0 flex">
+          <div className={cn("flex-1 transition-all duration-300", showThemePanel && "md:pr-80")}>
+            <SurveyEditor 
+              questions={questions} 
+              setQuestions={setQuestions}
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+            />
+          </div>
+          
+          {/* Theme Panel - Slides in from right */}
+          <AnimatePresence>
+            {showThemePanel && (
+              <motion.div
+                initial={{ x: "100%", opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: "100%", opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-80 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 overflow-y-auto z-40 shadow-xl"
+              >
+                <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    Survey Theme
+                  </h3>
+                  <Button variant="ghost" size="icon" onClick={() => setShowThemePanel(false)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="p-4">
+                  <ThemeEditor theme={theme} onThemeChange={setTheme} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </main>

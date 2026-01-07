@@ -12,10 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Sparkles, Loader2, Palette } from "lucide-react"
+import { Sparkles, Loader2, Image as ImageIcon, Type, Square, Palette } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export interface Theme {
   mode: 'system' | 'custom'
@@ -26,6 +27,12 @@ export interface Theme {
   accentColor: string
   fontFamily: string
   borderRadius: string
+  // Enhanced styling options
+  backgroundImage?: string
+  backgroundOverlay?: number
+  buttonStyle?: 'filled' | 'outline' | 'soft' | 'pill'
+  logoUrl?: string
+  logoPosition?: 'top-left' | 'top-center' | 'top-right' | 'none'
 }
 
 interface ThemeEditorProps {
@@ -41,60 +48,79 @@ export const DEFAULT_THEME: Theme = {
   textColor: "#18181b",
   accentColor: "#f4f4f5",
   fontFamily: "Inter",
-  borderRadius: "0.5rem"
+  borderRadius: "0.5rem",
+  backgroundImage: "",
+  backgroundOverlay: 40,
+  buttonStyle: "filled",
+  logoUrl: "",
+  logoPosition: "none"
 }
 
-const THEME_PRESETS: Record<string, Theme> = {
-    "Default": DEFAULT_THEME,
-    "Midnight": {
-        mode: 'custom',
-        layout: 'focus',
-        primaryColor: "#6366f1",
-        backgroundColor: "#09090b",
-        textColor: "#f4f4f5",
-        accentColor: "#27272a",
-        fontFamily: "Inter",
-        borderRadius: "0.75rem"
-    },
-    "Swiss": {
-        mode: 'custom',
-        layout: 'focus',
-        primaryColor: "#ef4444",
-        backgroundColor: "#ffffff",
-        textColor: "#000000",
-        accentColor: "#f4f4f5",
-        fontFamily: "Playfair Display",
-        borderRadius: "0px"
-    },
-    "Neon": {
-        mode: 'custom',
-        layout: 'focus',
-        primaryColor: "#d946ef",
-        backgroundColor: "#2e1065",
-        textColor: "#e9d5ff",
-        accentColor: "#4c1d95",
-        fontFamily: "Roboto Mono",
-        borderRadius: "1rem"
-    },
-    "Storybook": {
-        mode: 'custom',
-        layout: 'book',
-        primaryColor: "#8b5cf6",
-        backgroundColor: "#fdfbf7", // Warm paper-like
-        textColor: "#4a4a4a",
-        accentColor: "#e5e5e5",
-        fontFamily: "Playfair Display",
-        borderRadius: "2px"
-    }
-}
+const PRESET_COLORS = [
+  "#7c3aed", "#6366f1", "#3b82f6", "#0ea5e9", "#14b8a6",
+  "#22c55e", "#eab308", "#f97316", "#ef4444", "#ec4899",
+  "#8b5cf6", "#000000"
+]
+
+const FONTS = [
+  { value: "Inter", label: "Inter" },
+  { value: "Poppins", label: "Poppins" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Open Sans", label: "Open Sans" },
+  { value: "Lato", label: "Lato" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Playfair Display", label: "Playfair Display" },
+  { value: "Merriweather", label: "Merriweather" },
+  { value: "Roboto Mono", label: "Roboto Mono" },
+  { value: "Space Grotesk", label: "Space Grotesk" },
+  { value: "DM Sans", label: "DM Sans" },
+]
+
+const GRADIENT_PRESETS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+]
+
+type TabKey = 'logo' | 'font' | 'buttons' | 'background'
 
 export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
   const { token } = useAuth()
+  const [activeTab, setActiveTab] = useState<TabKey>('font')
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingBg, setIsUploadingBg] = useState(false)
 
-  const handleColorChange = (key: keyof Theme, value: string) => {
+  const handleChange = (key: keyof Theme, value: any) => {
     onThemeChange({ ...theme, mode: 'custom', [key]: value })
+  }
+
+  const handleFileUpload = async (file: File, type: 'logo' | 'background') => {
+    if (!token) {
+      toast.error("Please sign in to upload files")
+      return
+    }
+    
+    const setUploading = type === 'logo' ? setIsUploadingLogo : setIsUploadingBg
+    const themeKey = type === 'logo' ? 'logoUrl' : 'backgroundImage'
+    
+    setUploading(true)
+    try {
+      const result = await api.uploadAsset(file, token)
+      if (result.url) {
+        handleChange(themeKey, result.url)
+        toast.success(`${type === 'logo' ? 'Logo' : 'Background'} uploaded!`)
+      }
+    } catch (error) {
+      console.error(`Failed to upload ${type}:`, error)
+      toast.error(`Failed to upload ${type}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleReset = () => {
@@ -110,7 +136,7 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
       const newTheme = await api.generateTheme(prompt, token)
       if (newTheme) {
         onThemeChange({
-            ...theme, // Keep defaults if missing
+            ...theme,
             ...newTheme,
             mode: 'custom'
         })
@@ -124,183 +150,350 @@ export function ThemeEditor({ theme, onThemeChange }: ThemeEditorProps) {
     }
   }
 
-  return (
-    <div className="space-y-6 p-4 border rounded-lg bg-white dark:bg-zinc-900">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-violet-600" />
-            <h3 className="font-semibold">Theme Editor</h3>
-        </div>
-        <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-            Reset to Default
-        </Button>
-      </div>
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: 'logo', label: 'Logo', icon: <ImageIcon className="w-4 h-4" /> },
+    { key: 'font', label: 'Font', icon: <Type className="w-4 h-4" /> },
+    { key: 'buttons', label: 'Buttons', icon: <Square className="w-4 h-4" /> },
+    { key: 'background', label: 'Background', icon: <Palette className="w-4 h-4" /> },
+  ]
 
-      {/* Presets */}
-      <div className="grid grid-cols-4 gap-2">
-        {Object.entries(THEME_PRESETS).map(([name, preset]) => (
-            <button
-                key={name}
-                onClick={() => onThemeChange(preset)}
-                className="group relative flex flex-col items-center gap-1.5 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-violet-500 transition-all"
-            >
-                <div 
-                    className="w-full aspect-square rounded-md shadow-sm border border-zinc-100 dark:border-zinc-800"
-                    style={{ backgroundColor: preset.backgroundColor }}
-                >
-                    <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: preset.primaryColor }} />
-                    </div>
-                </div>
-                <span className="text-[10px] md:text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-violet-600 truncate w-full text-center">{name}</span>
-            </button>
+  return (
+    <div className="flex flex-col h-full">
+      {/* Tabs */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              "flex-1 px-3 py-3 text-sm font-medium transition-all relative",
+              activeTab === tab.key 
+                ? "text-zinc-900 dark:text-white" 
+                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            )}
+          >
+            {tab.label}
+            {activeTab === tab.key && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 dark:bg-white" />
+            )}
+          </button>
         ))}
       </div>
 
-      {/* AI Generator */}
-      <div className="space-y-2 p-4 bg-violet-50 dark:bg-violet-900/10 rounded-lg border border-violet-100 dark:border-violet-900/20">
-        <Label className="text-violet-700 dark:text-violet-300 font-medium flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            AI Magic Theme
-        </Label>
-        <div className="flex gap-2">
-            <Input 
-                placeholder="e.g. 'Cyberpunk neon', 'Forest vibes', 'Minimalist luxury'" 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-800"
-            />
-            <Button 
-                onClick={handleGenerateTheme} 
-                disabled={isGenerating || !prompt}
-                className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
-            >
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
-            </Button>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <Label>Layout Style</Label>
-        <div className="grid grid-cols-2 gap-2">
-            {[
-                { id: 'focus', name: 'Focus', icon: '🎯' },
-                { id: 'book', name: 'Storybook', icon: '📖' },
-                { id: 'deck', name: 'Deck', icon: '🃏' },
-                { id: 'terminal', name: 'Terminal', icon: '💻' }
-            ].map((layout) => (
-                <button
-                    key={layout.id}
-                    onClick={() => handleColorChange("layout", layout.id)}
-                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                        theme.layout === layout.id 
-                        ? 'border-violet-600 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' 
-                        : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-                    }`}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        
+        {/* Logo Tab */}
+        {activeTab === 'logo' && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Upload Logo</Label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileUpload(file, 'logo')
+                  }}
+                  disabled={isUploadingLogo}
+                />
+                <div className={cn(
+                  "flex items-center justify-center gap-2 h-24 rounded-lg border-2 border-dashed transition-all",
+                  isUploadingLogo 
+                    ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20" 
+                    : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600",
+                  theme.logoUrl && "border-solid"
+                )}>
+                  {isUploadingLogo ? (
+                    <div className="flex items-center gap-2 text-violet-600">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm font-medium">Uploading...</span>
+                    </div>
+                  ) : theme.logoUrl ? (
+                    <img 
+                      src={theme.logoUrl} 
+                      alt="Logo" 
+                      className="h-12 object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '' }}
+                    />
+                  ) : (
+                    <div className="text-center text-zinc-500">
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <span className="text-sm">Click to upload logo</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {theme.logoUrl && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs text-zinc-500"
+                  onClick={() => handleChange("logoUrl", "")}
                 >
-                    <span className="text-xl">{layout.icon}</span>
-                    <span className="text-sm font-medium">{layout.name}</span>
-                </button>
-            ))}
-        </div>
-      </div>
+                  Remove logo
+                </Button>
+              )}
+            </div>
+            
+            {theme.logoUrl && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Position</Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'top-left', label: 'Left' },
+                    { value: 'top-center', label: 'Center' },
+                    { value: 'top-right', label: 'Right' },
+                  ].map((pos) => (
+                    <button
+                      key={pos.value}
+                      onClick={() => handleChange("logoPosition", pos.value)}
+                      className={cn(
+                        "flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-all",
+                        theme.logoPosition === pos.value
+                          ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900"
+                          : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300"
+                      )}
+                    >
+                      {pos.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-      <div className="grid gap-4">
-        {/* Colors */}
-        <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label>Primary Color</Label>
-                <div className="flex gap-2">
-                    <Input 
-                        type="color" 
-                        value={theme.primaryColor} 
-                        onChange={(e) => handleColorChange("primaryColor", e.target.value)}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                    />
-                    <Input 
-                        value={theme.primaryColor} 
-                        onChange={(e) => handleColorChange("primaryColor", e.target.value)}
-                        className="font-mono"
-                    />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label>Background</Label>
-                <div className="flex gap-2">
-                    <Input 
-                        type="color" 
-                        value={theme.backgroundColor} 
-                        onChange={(e) => handleColorChange("backgroundColor", e.target.value)}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                    />
-                    <Input 
-                        value={theme.backgroundColor} 
-                        onChange={(e) => handleColorChange("backgroundColor", e.target.value)}
-                        className="font-mono"
-                    />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label>Text Color</Label>
-                <div className="flex gap-2">
-                    <Input 
-                        type="color" 
-                        value={theme.textColor} 
-                        onChange={(e) => handleColorChange("textColor", e.target.value)}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                    />
-                    <Input 
-                        value={theme.textColor} 
-                        onChange={(e) => handleColorChange("textColor", e.target.value)}
-                        className="font-mono"
-                    />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label>Accent Color</Label>
-                <div className="flex gap-2">
-                    <Input 
-                        type="color" 
-                        value={theme.accentColor} 
-                        onChange={(e) => handleColorChange("accentColor", e.target.value)}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                    />
-                    <Input 
-                        value={theme.accentColor} 
-                        onChange={(e) => handleColorChange("accentColor", e.target.value)}
-                        className="font-mono"
-                    />
-                </div>
-            </div>
-        </div>
-
-        {/* Typography */}
-        <div className="space-y-2">
-            <Label>Font Family</Label>
-            <Select value={theme.fontFamily} onValueChange={(v) => handleColorChange("fontFamily", v)}>
-                <SelectTrigger>
-                    <SelectValue />
+        {/* Font Tab */}
+        {activeTab === 'font' && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Font</Label>
+              <Select value={theme.fontFamily} onValueChange={(v) => handleChange("fontFamily", v)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="Inter">Inter (Clean)</SelectItem>
-                    <SelectItem value="Playfair Display">Playfair Display (Elegant)</SelectItem>
-                    <SelectItem value="Roboto Mono">Roboto Mono (Tech)</SelectItem>
-                    <SelectItem value="Comic Sans MS">Comic Sans (Playful)</SelectItem>
+                  {FONTS.map((font) => (
+                    <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                      {font.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
-            </Select>
-        </div>
+              </Select>
+            </div>
 
-        {/* Border Radius */}
-        <div className="space-y-2">
-            <Label>Border Radius ({theme.borderRadius})</Label>
-            <Slider 
-                min={0} 
-                max={24} 
-                step={2}
-                value={[parseInt(theme.borderRadius) || 0]}
-                onValueChange={(v) => handleColorChange("borderRadius", `${v[0]}px`)}
-            />
-        </div>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Text Color</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {["#000000", "#18181b", "#3f3f46", "#71717a", "#a1a1aa", "#ffffff"].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => handleChange("textColor", color)}
+                    className={cn(
+                      "w-full aspect-square rounded-lg border-2 transition-all",
+                      theme.textColor === color ? "border-violet-500 scale-110" : "border-zinc-200 dark:border-zinc-700"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Buttons Tab */}
+        {activeTab === 'buttons' && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Button Color</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => handleChange("primaryColor", color)}
+                    className={cn(
+                      "w-full aspect-square rounded-lg border-2 transition-all",
+                      theme.primaryColor === color ? "border-zinc-900 dark:border-white scale-110" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Button Style</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'filled', label: 'Filled' },
+                  { value: 'outline', label: 'Outline' },
+                  { value: 'soft', label: 'Soft' },
+                  { value: 'pill', label: 'Pill' },
+                ].map((style) => (
+                  <button
+                    key={style.value}
+                    onClick={() => handleChange("buttonStyle", style.value)}
+                    className={cn(
+                      "py-2.5 px-4 text-sm font-medium rounded-lg border transition-all",
+                      theme.buttonStyle === style.value
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900"
+                        : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300"
+                    )}
+                  >
+                    {style.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Corner Radius</Label>
+              <div className="flex gap-2">
+                {[
+                  { value: '0px', label: 'Sharp' },
+                  { value: '8px', label: 'Rounded' },
+                  { value: '16px', label: 'Soft' },
+                ].map((radius) => (
+                  <button
+                    key={radius.value}
+                    onClick={() => handleChange("borderRadius", radius.value)}
+                    className={cn(
+                      "flex-1 py-2 px-3 text-sm font-medium border transition-all",
+                      theme.borderRadius === radius.value
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900"
+                        : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300"
+                    )}
+                    style={{ borderRadius: radius.value }}
+                  >
+                    {radius.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Background Tab */}
+        {activeTab === 'background' && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Background Color</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {["#ffffff", "#fafafa", "#f4f4f5", "#18181b", "#09090b", "#000000"].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => { handleChange("backgroundColor", color); handleChange("backgroundImage", ""); }}
+                    className={cn(
+                      "w-full aspect-square rounded-lg border-2 transition-all",
+                      theme.backgroundColor === color && !theme.backgroundImage 
+                        ? "border-violet-500 scale-110" 
+                        : "border-zinc-200 dark:border-zinc-700"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Gradient</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {GRADIENT_PRESETS.map((gradient, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleChange("backgroundImage", gradient)}
+                    className={cn(
+                      "w-full aspect-video rounded-lg border-2 transition-all",
+                      theme.backgroundImage === gradient 
+                        ? "border-violet-500 scale-105" 
+                        : "border-transparent"
+                    )}
+                    style={{ background: gradient }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {theme.backgroundImage && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm font-medium">Overlay</Label>
+                  <span className="text-sm text-zinc-500">{theme.backgroundOverlay}%</span>
+                </div>
+                <Slider 
+                  min={0} 
+                  max={80} 
+                  step={5}
+                  value={[theme.backgroundOverlay || 40]}
+                  onValueChange={(v) => handleChange("backgroundOverlay", v[0])}
+                />
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Upload Image</Label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileUpload(file, 'background')
+                  }}
+                  disabled={isUploadingBg}
+                />
+                <div className={cn(
+                  "flex items-center justify-center gap-2 h-24 rounded-lg border-2 border-dashed transition-all overflow-hidden",
+                  isUploadingBg 
+                    ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20" 
+                    : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400",
+                  theme.backgroundImage?.startsWith('http') && "border-solid"
+                )}>
+                  {isUploadingBg ? (
+                    <div className="flex items-center gap-2 text-violet-600">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm font-medium">Uploading...</span>
+                    </div>
+                  ) : theme.backgroundImage?.startsWith('http') ? (
+                    <img 
+                      src={theme.backgroundImage} 
+                      alt="Background preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center text-zinc-500">
+                      <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                      <span className="text-xs">Click to upload</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {theme.backgroundImage?.startsWith('http') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs text-zinc-500"
+                  onClick={() => handleChange("backgroundImage", "")}
+                >
+                  Remove image
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-between">
+        <Button variant="ghost" size="sm" onClick={handleReset}>
+          Revert
+        </Button>
       </div>
     </div>
   )

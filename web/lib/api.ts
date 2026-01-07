@@ -268,4 +268,19 @@ export const api = {
   async cancelSubscription(workspaceId: string, token: string) {
     return this.post('/payment/cancel', { workspaceId }, token);
   },
+
+  async uploadAsset(file: File, token: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch(`${API_URL}/context/upload-asset`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    
+    return this.handleResponse(response);
+  },
 };

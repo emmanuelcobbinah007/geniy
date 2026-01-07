@@ -54,6 +54,58 @@ export function FocusLayout({
       "--font": theme.fontFamily,
     } as React.CSSProperties : {}
 
+    // Get button classes based on style
+    const getButtonClasses = () => {
+        if (isSystem) return 'bg-violet-600 hover:bg-violet-700 text-white'
+        const style = theme?.buttonStyle || 'filled'
+        switch (style) {
+            case 'outline':
+                return 'bg-transparent border-2 hover:opacity-80'
+            case 'soft':
+                return 'hover:opacity-80'
+            case 'pill':
+                return 'hover:opacity-90'
+            default: // filled
+                return 'hover:opacity-90'
+        }
+    }
+
+    const getButtonStyle = () => {
+        if (isSystem || !theme) return {}
+        const style = theme.buttonStyle || 'filled'
+        const baseStyle: React.CSSProperties = {
+            borderRadius: style === 'pill' ? '9999px' : theme.borderRadius,
+        }
+        switch (style) {
+            case 'outline':
+                return { ...baseStyle, backgroundColor: 'transparent', borderColor: theme.primaryColor, color: theme.primaryColor }
+            case 'soft':
+                return { ...baseStyle, backgroundColor: theme.primaryColor + '20', color: theme.primaryColor }
+            default: // filled, pill
+                return { ...baseStyle, backgroundColor: theme.primaryColor, color: '#ffffff' }
+        }
+    }
+
+    // Logo component
+    const LogoBranding = () => {
+        if (!theme?.logoUrl || theme.logoPosition === 'none') return null
+        const positionClasses = {
+            'top-left': 'left-4 md:left-8',
+            'top-center': 'left-1/2 -translate-x-1/2',
+            'top-right': 'right-4 md:right-8',
+        }
+        return (
+            <div className={`absolute top-4 md:top-6 ${positionClasses[theme.logoPosition || 'top-left']} z-10`}>
+                <img 
+                    src={theme.logoUrl} 
+                    alt="Logo" 
+                    className="h-8 md:h-10 w-auto object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+            </div>
+        )
+    }
+
     // Ranking Component Logic (Internal)
     const RankingQuestion = ({ options, onAnswer }: { options: (string | { text: string; allowOther?: boolean })[], onAnswer: (val: string[]) => void }) => {
         // Helper to get text from option (handles both string and object formats)
@@ -173,13 +225,10 @@ export function FocusLayout({
                 </div>
                 
                 <Button 
-                    className={`w-full mt-2 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
+                    className={`w-full mt-2 ${getButtonClasses()}`}
                     disabled={selected.length === 0}
                     onClick={() => onAnswer(selected)}
-                    style={{ 
-                        backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
-                        borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
-                    }}
+                    style={getButtonStyle()}
                 >
                     Continue <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -189,7 +238,7 @@ export function FocusLayout({
 
     return (
         <div 
-            className={`flex flex-col h-full w-full transition-colors duration-300 ${isSystem ? 'bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50' : ''}`}
+            className={`flex flex-col h-full w-full transition-colors duration-300 relative ${isSystem ? 'bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50' : ''}`}
             style={{
                 ...themeStyles,
                 backgroundColor: !isSystem && theme ? 'var(--bg)' : undefined,
@@ -197,8 +246,33 @@ export function FocusLayout({
                 fontFamily: !isSystem && theme ? 'var(--font)' : undefined,
             }}
         >
+          {/* Background Image */}
+          {theme?.backgroundImage && !isSystem && (
+            <>
+              <div 
+                className="absolute inset-0 z-0"
+                style={{
+                    background: theme.backgroundImage.startsWith('http') 
+                        ? `url(${theme.backgroundImage}) center/cover no-repeat`
+                        : theme.backgroundImage,
+                }}
+              />
+              {/* Overlay for readability */}
+              <div 
+                className="absolute inset-0 z-0"
+                style={{
+                    backgroundColor: theme.backgroundColor,
+                    opacity: (theme.backgroundOverlay ?? 40) / 100,
+                }}
+              />
+            </>
+          )}
+
+          {/* Logo */}
+          <LogoBranding />
+
           {/* Progress Bar (Simple) */}
-          <div className={`h-1 w-full shrink-0 ${isSystem ? 'bg-zinc-200 dark:bg-zinc-800' : ''}`} style={{ backgroundColor: !isSystem && theme ? 'var(--accent)' : undefined }}>
+          <div className={`h-1 w-full shrink-0 relative z-10 ${isSystem ? 'bg-zinc-200 dark:bg-zinc-800' : ''}`} style={{ backgroundColor: !isSystem && theme ? 'var(--accent)' : undefined }}>
             <div 
                 className={`h-full transition-all duration-500 ${isSystem ? 'bg-violet-600 dark:bg-violet-500' : ''}`}
                 style={{ 
@@ -208,7 +282,7 @@ export function FocusLayout({
             />
           </div>
     
-          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full overflow-y-auto relative">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-2xl mx-auto w-full overflow-y-auto relative z-10">
             {/* Back Button */}
             {!isCompleted && hasStarted && history.length > 0 && (
                 <button 
@@ -239,12 +313,9 @@ export function FocusLayout({
                     </div>
                     <Button 
                         size="lg"
-                        className={`mt-8 px-8 text-lg h-14 ${isSystem ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`}
+                        className={`mt-8 px-8 text-lg h-14 ${getButtonClasses()}`}
                         onClick={onStart}
-                        style={{ 
-                            backgroundColor: !isSystem && theme ? 'var(--primary)' : undefined,
-                            borderRadius: !isSystem && theme ? 'var(--radius)' : undefined
-                        }}
+                        style={getButtonStyle()}
                     >
                         Start Survey <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>

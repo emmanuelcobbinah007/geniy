@@ -9,6 +9,12 @@ import { DeckLayout } from "./layouts/DeckLayout"
 import { TerminalLayout } from "./layouts/TerminalLayout"
 import { Celebrations } from "./Celebrations"
 
+// Supported Google Fonts for surveys
+const GOOGLE_FONTS = [
+  'Inter', 'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',
+  'Playfair Display', 'Merriweather', 'Roboto Mono', 'Space Grotesk', 'DM Sans'
+]
+
 interface SurveyRendererProps {
   surveyData: any;
   slug?: string; // Required for submission if not preview
@@ -28,6 +34,22 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
   const [celebrationTrigger, setCelebrationTrigger] = useState<'answer' | 'milestone' | 'complete' | null>(null)
   const [currentMilestone, setCurrentMilestone] = useState<number | undefined>(undefined)
   const lastMilestoneRef = useRef<number>(0)
+
+  // Load Google Font dynamically
+  useEffect(() => {
+    if (theme?.fontFamily && GOOGLE_FONTS.includes(theme.fontFamily)) {
+      const fontName = theme.fontFamily.replace(/ /g, '+')
+      const linkId = `google-font-${fontName}`
+      
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link')
+        link.id = linkId
+        link.rel = 'stylesheet'
+        link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700&display=swap`
+        document.head.appendChild(link)
+      }
+    }
+  }, [theme?.fontFamily])
 
   useEffect(() => {
     if (surveyData?.jsonSchema?.questions) {

@@ -66,7 +66,32 @@ const getUploadMiddleware = () => {
     });
 };
 
+/**
+ * Cloudinary-only upload for public images (logos, backgrounds)
+ * Always uses Cloudinary regardless of UPLOAD_PROVIDER setting
+ */
+const getImageUploadMiddleware = () => {
+    const storage = new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: async (req, file) => {
+            return {
+                folder: 'geniy/survey_assets',
+                resource_type: 'image',
+                format: 'webp', // Optimize to webp
+                transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+                public_id: 'asset-' + Date.now() + '-' + Math.round(Math.random() * 1E9),
+            };
+        },
+    });
+
+    return multer({
+        storage: storage,
+        limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit for images
+    });
+};
+
 module.exports = {
     upload: getUploadMiddleware(),
+    imageUpload: getImageUploadMiddleware(),
     s3Client: s3Client
 };
