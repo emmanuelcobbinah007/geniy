@@ -16,10 +16,10 @@ const { protect } = require('../middleware/authMiddleware');
 // =============================================================================
 
 /**
- * Start Slack OAuth flow
+ * Start Slack OAuth flow (no auth required - browser redirect)
  * GET /api/integrations/slack/oauth/start?workspaceId=xxx
  */
-router.get('/slack/oauth/start', protect, oauthController.initiateSlackOAuth);
+router.get('/slack/oauth/start', oauthController.initiateSlackOAuth);
 
 /**
  * Slack OAuth callback
@@ -38,10 +38,10 @@ router.post('/slack/disconnect', protect, oauthController.disconnectSlack);
 // =============================================================================
 
 /**
- * Start Discord OAuth flow
+ * Start Discord OAuth flow (no auth required - browser redirect)
  * GET /api/integrations/discord/oauth/start?workspaceId=xxx
  */
-router.get('/discord/oauth/start', protect, oauthController.initiateDiscordOAuth);
+router.get('/discord/oauth/start', oauthController.initiateDiscordOAuth);
 
 /**
  * Discord OAuth callback
