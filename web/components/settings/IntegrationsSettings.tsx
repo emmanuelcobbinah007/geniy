@@ -176,7 +176,8 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
         setIsConnecting(platform)
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
         // Open OAuth in same window - will redirect back after auth
-        window.location.href = `${apiUrl}/api/integrations/${platform}/oauth/start?workspaceId=${workspaceId}`
+        // Note: apiUrl already ends with /api, so we use /integrations not /api/integrations
+        window.location.href = `${apiUrl}/integrations/${platform}/oauth/start?workspaceId=${workspaceId}`
     }
 
     const handleDisconnect = (platform: 'slack' | 'discord') => {
