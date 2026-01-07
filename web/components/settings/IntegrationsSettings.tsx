@@ -4,11 +4,9 @@ import { useState, useEffect } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Loader2, Info, Check, X, Send, Zap, Webhook, Bot, Bell, Calendar, Mail } from "lucide-react"
+import { Loader2, Check, X, Send, Zap, Webhook, Bot, Calendar, Mail } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { Badge } from "@/components/ui/badge"
 
@@ -16,7 +14,12 @@ interface IntegrationsSettingsProps {
     workspaceId: string
     initialIntegrations?: {
         slackWebhook?: string
+        slackTeamName?: string
+        slackChannelName?: string
+        slackConnectedAt?: string
         discordWebhook?: string
+        discordGuildName?: string
+        discordConnectedAt?: string
         digestFrequency?: 'daily' | 'weekly' | 'off'
     }
 }
@@ -117,6 +120,7 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
     const [discordWebhook, setDiscordWebhook] = useState(initialIntegrations?.discordWebhook || "")
     const [digestFrequency, setDigestFrequency] = useState<'daily' | 'weekly' | 'off'>(initialIntegrations?.digestFrequency || 'weekly')
     const [expandedCard, setExpandedCard] = useState<string | null>(null)
+    const [isConnecting, setIsConnecting] = useState<string | null>(null)
 
     // Sync if initialIntegrations loads late
     useEffect(() => {
@@ -154,22 +158,53 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
         }
     })
 
-    const getWebhookValue = (id: string) => {
-        if (id === 'slack') return slackWebhook
-        if (id === 'discord') return discordWebhook
-        return ''
+    const disconnectMutation = useMutation({
+        mutationFn: async (platform: 'slack' | 'discord') => {
+            if (!token) return
+            return api.disconnectIntegration(workspaceId, platform, token)
+        },
+        onSuccess: (_, platform) => {
+            toast.success(`${platform === 'slack' ? 'Slack' : 'Discord'} disconnected`)
+            queryClient.invalidateQueries({ queryKey: ["workspace", workspaceId] })
+        },
+        onError: () => {
+            toast.error("Failed to disconnect")
+        }
+    })
+
+    const handleConnect = (platform: 'slack' | 'discord') => {
+        setIsConnecting(platform)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+        // Open OAuth in same window - will redirect back after auth
+        window.location.href = `${apiUrl}/api/integrations/${platform}/oauth/start?workspaceId=${workspaceId}`
     }
 
-    const setWebhookValue = (id: string, value: string) => {
-        if (id === 'slack') setSlackWebhook(value)
-        if (id === 'discord') setDiscordWebhook(value)
+    const handleDisconnect = (platform: 'slack' | 'discord') => {
+        if (confirm(`Are you sure you want to disconnect ${platform === 'slack' ? 'Slack' : 'Discord'}?`)) {
+            disconnectMutation.mutate(platform)
+        }
     }
 
-    const isConnected = (id: string) => {
-        if (id === 'slack') return !!slackWebhook
-        if (id === 'discord') return !!discordWebhook
-        return false
+    const getConnectionInfo = (id: string) => {
+        if (id === 'slack') {
+            return {
+                connected: !!initialIntegrations?.slackWebhook || !!initialIntegrations?.slackTeamName,
+                name: initialIntegrations?.slackTeamName,
+                channel: initialIntegrations?.slackChannelName,
+                connectedAt: initialIntegrations?.slackConnectedAt
+            }
+        }
+        if (id === 'discord') {
+            return {
+                connected: !!initialIntegrations?.discordWebhook || !!initialIntegrations?.discordGuildName,
+                name: initialIntegrations?.discordGuildName,
+                connectedAt: initialIntegrations?.discordConnectedAt
+            }
+        }
+        return { connected: false }
     }
+
+    const isConnected = (id: string) => getConnectionInfo(id).connected
 
     return (
         <div className="space-y-6">
@@ -301,29 +336,60 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
                                     className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-200"
                                     onClick={e => e.stopPropagation()}
                                 >
-                                    <div className="space-y-3">
-                                        <Input
-                                            value={getWebhookValue(integration.id)}
-                                            onChange={(e) => setWebhookValue(integration.id, e.target.value)}
-                                            placeholder={integration.placeholder}
-                                            className="bg-white dark:bg-zinc-950/50"
-                                        />
-                                        
-                                        <Accordion type="single" collapsible className="w-full">
-                                            <AccordionItem value="instructions" className="border-none">
-                                                <AccordionTrigger className="text-xs text-zinc-500 py-1 hover:no-underline hover:text-violet-600">
-                                                    <span className="flex items-center gap-1"><Info className="w-3 h-3" /> How to get this URL?</span>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-md border border-zinc-100 dark:border-zinc-800 mt-2">
-                                                    <ol className="list-decimal pl-4 space-y-1">
-                                                        {integration.instructions?.map((step, i) => (
-                                                            <li key={i}>{step}</li>
-                                                        ))}
-                                                    </ol>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </Accordion>
-                                    </div>
+                                    {isConnected(integration.id) ? (
+                                        // Connected state - show info and disconnect
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Check className="w-4 h-4 text-emerald-500" />
+                                                <span className="text-zinc-600 dark:text-zinc-400">
+                                                    Connected to <strong>{getConnectionInfo(integration.id).name || integration.name}</strong>
+                                                    {getConnectionInfo(integration.id).channel && (
+                                                        <> in #{getConnectionInfo(integration.id).channel}</>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => testMutation.mutate()}
+                                                    disabled={testMutation.isPending}
+                                                >
+                                                    {testMutation.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
+                                                    Test
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    onClick={() => handleDisconnect(integration.id as 'slack' | 'discord')}
+                                                    disabled={disconnectMutation.isPending}
+                                                >
+                                                    {disconnectMutation.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
+                                                    Disconnect
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        // Not connected - show connect button
+                                        <div className="space-y-3">
+                                            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                                Connect your {integration.name} workspace to chat with Geniy and receive notifications.
+                                            </p>
+                                            <Button
+                                                onClick={() => handleConnect(integration.id as 'slack' | 'discord')}
+                                                disabled={isConnecting === integration.id}
+                                                className={`bg-gradient-to-r ${integration.color} text-white hover:opacity-90`}
+                                            >
+                                                {isConnecting === integration.id ? (
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                ) : (
+                                                    integration.icon
+                                                )}
+                                                <span className="ml-2">Connect {integration.name}</span>
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

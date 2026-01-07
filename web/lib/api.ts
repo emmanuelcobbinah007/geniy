@@ -175,6 +175,10 @@ export const api = {
       return this.post(`/workspaces/${workspaceId}/integrations/test`, {}, token);
   },
 
+  async disconnectIntegration(workspaceId: string, platform: 'slack' | 'discord', token: string) {
+    return this.post(`/integrations/${platform}/disconnect`, { workspaceId }, token);
+  },
+
   async getWorkspaceHealth(workspaceId: string, token: string) {
     return this.get(`/workspaces/${workspaceId}/health`, token);
   },
