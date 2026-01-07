@@ -608,7 +608,11 @@ export function FocusLayout({
                     Your feedback is incredibly valuable and will help us build a beautiful product tailored to your needs.
                   </p>
                   {isPreview && onRestart && (
-                    <Button variant="outline" className="mt-8" onClick={onRestart}>
+                    <Button 
+                      className={`mt-8 px-6 py-3 font-medium ${getButtonClasses()}`}
+                      style={getButtonStyle()}
+                      onClick={onRestart}
+                    >
                         Restart Preview
                     </Button>
                   )}

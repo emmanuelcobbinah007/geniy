@@ -57,16 +57,27 @@ function requireTier(requiredTier) {
 function requireFeature(featureName) {
     return async (req, res, next) => {
         try {
-            let workspaceId = req.query.workspaceId || req.body.workspaceId || req.params.workspaceId;
+            // Check common places for workspaceId (including :id param which may be workspaceId)
+            let workspaceId = req.query.workspaceId || req.body.workspaceId || req.params.workspaceId || req.params.id;
 
-            // If no workspaceId but we have a campaign ID, look it up from the campaign
-            if (!workspaceId && req.params.id) {
-                const campaign = await prisma.campaign.findUnique({
-                    where: { id: req.params.id },
-                    select: { workspaceId: true }
+            // If we have an ID but it's not a valid workspace, it might be a campaign ID
+            if (workspaceId) {
+                const workspace = await prisma.workspace.findUnique({
+                    where: { id: workspaceId },
+                    select: { id: true }
                 });
-                if (campaign) {
-                    workspaceId = campaign.workspaceId;
+
+                // If not a workspace, try looking it up as a campaign
+                if (!workspace) {
+                    const campaign = await prisma.campaign.findUnique({
+                        where: { id: workspaceId },
+                        select: { workspaceId: true }
+                    });
+                    if (campaign) {
+                        workspaceId = campaign.workspaceId;
+                    } else {
+                        workspaceId = null; // Not a valid workspace or campaign
+                    }
                 }
             }
 
