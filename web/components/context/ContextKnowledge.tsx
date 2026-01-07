@@ -309,7 +309,7 @@ export function ContextKnowledge({ initialContext, documents, workspaceId, compe
     if (!token) return;
     toast.info(`Re-analyzing ${competitorName}...`, { duration: 3000 });
     try {
-      await api.reanalyzeCompetitor(workspaceId, competitorName, token);
+      await api.scanCompetitor(workspaceId, competitorName, token);
       toast.success(`Analysis complete for ${competitorName}!`);
       queryClient.invalidateQueries({ queryKey: ["context", workspaceId] });
     } catch (err: any) {
