@@ -172,10 +172,16 @@ function CreateSurveyContent() {
                 options: q.options,
                 required: q.required,
                 next: nextMap[q.id],
-                branches: q.logic?.map((l: any) => ({
-                    if: l.if,
-                    next: l.then === "end" ? "END" : `Q${l.then}`
-                }))
+                branches: q.logic
+                    ?.filter((l: any) => 
+                        // Only include rules that have both a condition AND a destination
+                        l.if !== undefined && l.if !== null && l.if !== "" && 
+                        l.then !== undefined && l.then !== null && l.then !== ""
+                    )
+                    .map((l: any) => ({
+                        if: l.if,
+                        next: l.then === "end" ? "END" : `Q${l.then}`
+                    })) || undefined
             };
             return acc;
         }, {})
