@@ -29,7 +29,7 @@ router.get('/:id/analytics', campaignController.getCampaignAnalytics);
 
 // GET /api/campaigns/:id/export - Export responses as CSV
 // GATED: Requires csvExport feature (STARTER+)
-router.get('/:id/export', requireFeature('csvExport'), campaignController.exportCampaignResponses);
+router.get('/:id/export', authenticateToken, requireFeature('csvExport'), campaignController.exportCampaignResponses);
 
 // DELETE /api/campaigns/:id - Delete a campaign
 router.delete('/:id', campaignController.deleteCampaign);

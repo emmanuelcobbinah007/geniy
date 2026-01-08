@@ -26,12 +26,14 @@ exports.initiateSlackOAuth = async (req, res) => {
             userId: req.user?.id
         })).toString('base64');
 
+        // Note: We don't use incoming-webhook because Slack's channel picker fails
+        // in some workspaces. Instead, we use chat:write and let users select channels in our app.
         const scopes = [
-            'chat:write',
-            'commands',
-            'app_mentions:read',
-            'channels:history',
-            'incoming-webhook'
+            'chat:write',           // Send messages to channels
+            'commands',             // Slash commands
+            'app_mentions:read',    // Respond to @mentions
+            'channels:read',        // List public channels
+            'channels:history'      // Read channel history for context
         ].join(',');
 
         const redirectUri = `${process.env.API_URL || 'http://localhost:5000'}/api/integrations/slack/oauth/callback`;

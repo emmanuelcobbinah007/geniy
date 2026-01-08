@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   })
 
   // Fetch Full Workspace (for Integrations)
-  const { data: workspace } = useQuery({
+  const { data: workspace, refetch: refetchWorkspace } = useQuery({
       queryKey: ["workspace", workspaceId],
       queryFn: async () => {
           if (!token || !workspaceId) return null
@@ -154,6 +154,23 @@ export default function SettingsPage() {
       },
       enabled: !!token && !!workspaceId
   })
+
+  // Refetch workspace data after OAuth redirect (integration connection)
+  useEffect(() => {
+    const integration = searchParams.get("integration")
+    const status = searchParams.get("status")
+    
+    if (integration && status === "success") {
+      refetchWorkspace()
+      toast.success(`${integration.charAt(0).toUpperCase() + integration.slice(1)} connected successfully!`)
+      // Clean up URL params
+      window.history.replaceState({}, '', `/dashboard/${workspaceId}/settings?tab=integrations`)
+    } else if (integration && status === "error") {
+      const message = searchParams.get("message") || "Connection failed"
+      toast.error(`Failed to connect ${integration}: ${message}`)
+      window.history.replaceState({}, '', `/dashboard/${workspaceId}/settings?tab=integrations`)
+    }
+  }, [searchParams, refetchWorkspace, workspaceId])
 
   const fadeIn = {
     initial: { opacity: 0, y: 10, scale: 0.98 },
