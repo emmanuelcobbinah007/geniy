@@ -124,16 +124,41 @@ export function SurveyRenderer({ surveyData, slug, isPreview = false, onComplete
     // Determine next question
     let nextQId = currentQ.next
 
-    // Check branches
-    if (currentQ.branches) {
+    // Check branches for conditional navigation
+    if (currentQ.branches && Array.isArray(currentQ.branches)) {
       for (const branch of currentQ.branches) {
-        if (branch.if === true || branch.if === value) {
+        // Skip branches with empty or undefined conditions
+        if (branch.if === undefined || branch.if === null || branch.if === "") {
+          continue
+        }
+        
+        // Skip branches without a valid destination
+        if (!branch.next) {
+          continue
+        }
+
+        let conditionMet = false
+        
+        // Handle different matching scenarios
+        if (branch.if === true) {
+          // Universal branch (always matches) - typically used as fallback
+          conditionMet = true
+        } else if (Array.isArray(value)) {
+          // Multi-select: check if any selected option matches the condition
+          conditionMet = value.includes(branch.if)
+        } else {
+          // Single value: exact match
+          conditionMet = branch.if === value
+        }
+
+        if (conditionMet) {
           nextQId = branch.next
           break
         }
       }
     }
 
+    // Navigate to next question or submit
     if (nextQId === "END" || !nextQId || !questions[nextQId]) {
       submitSurvey(newAnswers)
     } else {
