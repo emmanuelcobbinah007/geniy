@@ -115,9 +115,20 @@ class IntegrationChatService {
     detectIntent(message, workspace) {
         const lowerMessage = message.toLowerCase().trim();
 
-        // Status/overview intent
+        // Personal/conversational questions - route to AI
+        const personalPatterns = [
+            /how are you/,
+            /how('?re| are) you (doing|feeling)/,
+            /what('?s| is) up/,
+            /how('?s| is) it going/
+        ];
+        if (personalPatterns.some(p => p.test(lowerMessage))) {
+            return { intent: 'ask', params: {} };
+        }
+
+        // Status/overview intent (business-specific)
         const statusPatterns = [
-            /how('?s| is| are)?\s*(we|things|it|the team|our)?\s*(doing|going)?/,
+            /how('?s| is| are)\s+(we|our team|the team|things|the business)\s*(doing|going)?/,
             /what('?s| is) (our |the )?(status|situation|update)/,
             /give me (a |an |the )?(status|update|overview|summary)/,
             /quick (update|summary|overview|status)/,
@@ -461,11 +472,22 @@ No special commands needed - just @mention me and chat.
     formatResponse(title, message, footer = null) {
         return {
             success: true,
-            title,
-            message,
-            footer,
+            title: this.toSlackFormat(title),
+            message: this.toSlackFormat(message),
+            footer: footer ? this.toSlackFormat(footer) : null,
             type: 'info'
         };
+    }
+
+    /**
+     * Convert markdown to Slack mrkdwn format
+     */
+    toSlackFormat(text) {
+        if (!text) return text;
+        return text
+            .replace(/\*\*(.+?)\*\*/g, '*$1*')  // **bold** -> *bold*
+            .replace(/\*\*(.+?)\*\*/g, '*$1*')  // Handle nested
+            .replace(/~~(.+?)~~/g, '~$1~');     // ~~strike~~ -> ~strike~
     }
 
     formatError(message) {

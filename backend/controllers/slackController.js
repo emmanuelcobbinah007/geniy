@@ -54,8 +54,9 @@ exports.handleSlackCommand = async (req, res) => {
             query
         );
 
-        // Format and send response
-        const slackMessage = formatSlackMessage(result);
+        // Format and send response (include user's message for context)
+        const userMessage = text ? `/geniy ${text}` : '/geniy';
+        const slackMessage = formatSlackMessage(result, user_name, userMessage);
         await sendSlackResponse(response_url, slackMessage);
 
     } catch (error) {
@@ -145,18 +146,33 @@ async function findWorkspaceBySlackTeam(teamId) {
 /**
  * Format response for Slack
  */
-function formatSlackMessage(result) {
+function formatSlackMessage(result, userName = null, userMessage = null) {
     const color = result.type === 'error' ? '#ef4444' : '#8b5cf6';
 
-    const blocks = [
-        {
-            type: 'section',
-            text: {
-                type: 'mrkdwn',
-                text: `*${result.title}*\n${result.message}`
-            }
+    const blocks = [];
+
+    // Show what the user asked (makes conversation visible to channel)
+    if (userName && userMessage) {
+        blocks.push({
+            type: 'context',
+            elements: [
+                {
+                    type: 'mrkdwn',
+                    text: `💬 *${userName}* asked: _${userMessage}_`
+                }
+            ]
+        });
+        blocks.push({ type: 'divider' });
+    }
+
+    // Main response content
+    blocks.push({
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text: result.title ? `*${result.title}*\n${result.message}` : result.message
         }
-    ];
+    });
 
     if (result.footer) {
         blocks.push({
