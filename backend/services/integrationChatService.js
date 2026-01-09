@@ -52,10 +52,11 @@ class IntegrationChatService {
      */
     async processMessage(workspaceId, message, additionalQuery = '') {
         try {
+            // Note: competitors, businessContext, gapAnalysis are JSON fields (not relations),
+            // so they're included by default without needing 'include'
             const workspace = await prisma.workspace.findUnique({
                 where: { id: workspaceId },
                 include: {
-                    // Note: competitors is a JSON field, not a relation, so it's included by default
                     campaigns: {
                         include: {
                             surveys: {
@@ -64,9 +65,7 @@ class IntegrationChatService {
                                 }
                             }
                         }
-                    },
-                    businessContext: true,
-                    gapAnalysis: true
+                    }
                 }
             });
 
