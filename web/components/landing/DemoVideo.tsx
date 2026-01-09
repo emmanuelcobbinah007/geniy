@@ -1,9 +1,20 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Play } from "lucide-react"
+import { Volume2, VolumeX } from "lucide-react"
+import { useRef, useState } from "react"
 
 export function DemoVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [isMuted, setIsMuted] = useState(true)
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted
+      setIsMuted(videoRef.current.muted)
+    }
+  }
+
   return (
     <section className="py-12 md:py-24 relative z-10">
       <div className="container mx-auto px-4 md:px-6">
@@ -28,38 +39,35 @@ export function DemoVideo() {
               </div>
             </div>
 
-            {/* Video Placeholder Area */}
-            <div className="aspect-video relative bg-zinc-950 flex items-center justify-center group cursor-pointer overflow-hidden">
+            {/* Video Area */}
+            <div className="aspect-video relative bg-zinc-950 flex items-center justify-center overflow-hidden">
               
-              {/* Actual Video would go here. For now, a placeholder gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-zinc-900 to-zinc-950" />
-              
-              {/* Play Button & Overlay */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
-                 <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
-                    <Play className="w-8 h-8 text-white fill-white ml-1" />
-                 </div>
-              </div>
-
-              {/* Teaser Text (Visible when no video is playing) */}
-              <div className="text-center relative z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-300">
-                 <h3 className="text-2xl font-semibold text-white mb-2">See Geniy in 60 Seconds</h3>
-                 <p className="text-zinc-400">Watch a founder go from confused to clear</p>
-              </div>
-
-              {/* Add your <video> tag here later */}
-              {/* 
+              {/* Self-hosted Video */}
               <video 
+                ref={videoRef}
                 className="w-full h-full object-cover" 
                 autoPlay 
                 muted 
                 loop 
                 playsInline
-                poster="/thumbnail.jpg"
+                poster="/demo-thumbnail.png"
               >
                 <source src="/demo.mp4" type="video/mp4" />
-              </video> 
-              */}
+                Your browser does not support the video tag.
+              </video>
+
+              {/* Sound Toggle Button */}
+              <button 
+                onClick={toggleMute}
+                className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-black/50 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl hover:bg-black/70 hover:scale-110 transition-all duration-300 z-10"
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-5 h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
+                )}
+              </button>
             </div>
           </div>
           
