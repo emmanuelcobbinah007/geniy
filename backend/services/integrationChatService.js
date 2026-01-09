@@ -55,7 +55,7 @@ class IntegrationChatService {
             const workspace = await prisma.workspace.findUnique({
                 where: { id: workspaceId },
                 include: {
-                    competitors: true,
+                    // Note: competitors is a JSON field, not a relation, so it's included by default
                     campaigns: {
                         include: {
                             surveys: {
