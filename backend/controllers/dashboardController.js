@@ -279,7 +279,7 @@ exports.getActivity = async (req, res) => {
                                 id: `competitor-${comp.name}-${i}`,
                                 type: 'competitor',
                                 title: `Competitor Update: ${comp.name}`,
-                                description: entry.insight || 'Content changed detected',
+                                description: typeof entry.insight === 'object' ? entry.insight.summary : (entry.insight || 'Content changed detected'),
                                 timestamp: entry.date,
                                 timeAgo: getTimeAgo(new Date(entry.date))
                             });
