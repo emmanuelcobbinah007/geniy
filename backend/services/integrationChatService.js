@@ -233,10 +233,9 @@ class IntegrationChatService {
 
         try {
             // Use Genesis agent for intelligent response
-            const response = await genesisAgent.chat(
-                question,
+            const response = await genesisAgent.chatWithBrain(
                 context,
-                [] // No chat history for integration channels
+                [{ role: 'user', content: question }]
             );
 
             // Add personality touches

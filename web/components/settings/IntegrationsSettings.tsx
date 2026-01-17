@@ -118,7 +118,7 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
     const queryClient = useQueryClient()
     const [slackWebhook, setSlackWebhook] = useState(initialIntegrations?.slackWebhook || "")
     const [discordWebhook, setDiscordWebhook] = useState(initialIntegrations?.discordWebhook || "")
-    const [digestFrequency, setDigestFrequency] = useState<'daily' | 'weekly' | 'off'>(initialIntegrations?.digestFrequency || 'weekly')
+    const [digestFrequency, setDigestFrequency] = useState<'daily' | 'weekly' | 'off'>(initialIntegrations?.digestFrequency || 'daily')
     const [expandedCard, setExpandedCard] = useState<string | null>(null)
     const [isConnecting, setIsConnecting] = useState<string | null>(null)
 
@@ -127,7 +127,7 @@ export function IntegrationsSettings({ workspaceId, initialIntegrations }: Integ
         if (initialIntegrations) {
             setSlackWebhook(initialIntegrations.slackWebhook || "")
             setDiscordWebhook(initialIntegrations.discordWebhook || "")
-            setDigestFrequency(initialIntegrations.digestFrequency || 'weekly')
+            setDigestFrequency(initialIntegrations.digestFrequency || 'daily')
         }
     }, [initialIntegrations])
 

@@ -284,7 +284,7 @@ const saveIntegrations = async (req, res) => {
         const integrations = {
             slackWebhook,
             discordWebhook,
-            digestFrequency: digestFrequency || currentIntegrations.digestFrequency || 'weekly'
+            digestFrequency: digestFrequency || currentIntegrations.digestFrequency || 'daily'
         };
 
         const workspace = await prisma.workspace.update({
